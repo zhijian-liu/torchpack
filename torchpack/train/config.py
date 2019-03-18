@@ -1,6 +1,4 @@
-
-__all__ = ['TrainConfig', 'AutoResumeTrainConfig', 'DEFAULT_CALLBACKS', 'DEFAULT_MONITORS']
-
+__all__ = ['TrainConfig']
 
 
 class TrainConfig(object):
@@ -15,9 +13,7 @@ class TrainConfig(object):
                  dataflow=None, data=None,
                  model=None,
                  callbacks=None, extra_callbacks=None, monitors=None,
-                 session_init=None,
-                 starting_epoch=1, steps_per_epoch=None, max_epoch=99999,
-                 **kwargs):
+                 starting_epoch=1, steps_per_epoch=None, max_epoch=99999):
         """
         Args:
             dataflow (DataFlow):
@@ -57,45 +53,28 @@ class TrainConfig(object):
 
         # process data & model
         assert data is None or dataflow is None, "dataflow and data cannot be both presented in TrainConfig!"
-        if dataflow is not None:
-            assert_type(dataflow, DataFlow, 'dataflow')
-        if data is not None:
-            assert_type(data, InputSource, 'data')
         self.dataflow = dataflow
         self.data = data
 
-        if model is not None:
-            assert_type(model, ModelDescBase, 'model')
+        # if model is not None:
+        #     assert_type(model, ModelDescBase, 'model')
         self.model = model
 
-        if callbacks is not None:
-            assert_type(callbacks, list, 'callbacks')
-        self.callbacks = callbacks
-        if extra_callbacks is not None:
-            assert_type(extra_callbacks, list, 'extra_callbacks')
-        self.extra_callbacks = extra_callbacks
-        if monitors is not None:
-            assert_type(monitors, list, 'monitors')
-        self.monitors = monitors
-        if session_init is not None:
-            assert_type(session_init, SessionInit, 'session_init')
-        self.session_init = session_init
+        # if callbacks is not None:
+        #     assert_type(callbacks, list, 'callbacks')
+        # self.callbacks = callbacks
+        # if extra_callbacks is not None:
+        #     assert_type(extra_callbacks, list, 'extra_callbacks')
+        # self.extra_callbacks = extra_callbacks
+        # if monitors is not None:
+        #     assert_type(monitors, list, 'monitors')
+        # self.monitors = monitors
 
         if steps_per_epoch is None:
-            try:
-                if dataflow is not None:
-                    steps_per_epoch = len(dataflow)
-                elif data is not None:
-                    steps_per_epoch = data.size()
-                else:
-                    raise NotImplementedError()
-            except NotImplementedError:
-                logger.error("You must set `TrainConfig(steps_per_epoch)` if the size of your input is not available.")
-                raise
+            steps_per_epoch = len(dataflow)
         else:
             steps_per_epoch = int(steps_per_epoch)
         self.steps_per_epoch = steps_per_epoch
 
         self.starting_epoch = int(starting_epoch)
         self.max_epoch = int(max_epoch)
-

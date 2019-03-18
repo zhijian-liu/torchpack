@@ -18,29 +18,31 @@ def launch_train_with_config(config, trainer):
         launch_train_with_config(
             config, SyncMultiGPUTrainerParameterServer(8, ps_device='gpu'))
     """
-    assert isinstance(trainer, SingleCostTrainer), trainer
-    assert isinstance(config, TrainConfig), config
+    # assert isinstance(trainer, SingleCostTrainer), trainer
+    # assert isinstance(config, TrainConfig), config
     assert config.model is not None
     assert config.dataflow is not None or config.data is not None
 
     model = config.model
     input = config.data or config.dataflow
-    input = apply_default_prefetch(input, trainer)
+    # input = apply_default_prefetch(input, trainer)
 
     # This is the only place where the `ModelDesc` abstraction is useful.
     # We should gradually stay away from this unuseful abstraction.
     # TowerFuncWrapper is a better abstraction (similar to tf.defun in the future)
-    trainer.setup_graph(
-        model.train_step)
-    trainer.setup_graph(
-        model.get_inputs_desc(), input,
-        model._build_graph_get_cost, model.get_optimizer)
-    trainer.train_with_defaults(
-        callbacks=config.callbacks,
-        monitors=config.monitors,
-        session_creator=config.session_creator,
-        session_init=config.session_init,
+    # trainer.setup_graph(
+    #     model.train_step)
+    # trainer.setup_graph(
+    #     model.get_inputs_desc(), input,
+    #     model._build_graph_get_cost, model.get_optimizer)
+    trainer.train(
+        # callbacks=config.callbacks,
+        # monitors=config.monitors,
+        # session_creator=config.session_creator,
+        # session_init=config.session_init,
+        model=model,
+        data=input,
         steps_per_epoch=config.steps_per_epoch,
         starting_epoch=config.starting_epoch,
-        max_epoch=config.max_epoch,
-        extra_callbacks=config.extra_callbacks)
+        max_epoch=config.max_epoch)
+    # extra_callbacks=config.extra_callbacks)
