@@ -6,8 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from torchpack.model.desc import SimpleModelDesc
-from torchpack.train.base import Trainer
+from torchpack.train.base import Trainer, SimpleTrainer
 from torchpack.train.config import TrainConfig
 from torchpack.train.interface import launch_train_with_config
 
@@ -31,7 +30,7 @@ class Model(nn.Module):
         return x
 
 
-class MNISTDesc(SimpleModelDesc):
+class MNISTDesc(SimpleTrainer):
     model = Model()
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
@@ -47,7 +46,13 @@ loader = torch.utils.data.DataLoader(
 
 config = TrainConfig(
     model=MNISTDesc(),
-    dataflow=loader,
+    dataflow=torch.utils.data.DataLoader(
+        datasets.MNIST('./data', train=True, download=True,
+                       transform=transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+                       ])),
+        batch_size=64, shuffle=True, num_workers=1, pin_memory=True),
     max_epoch=30
 )
 launch_train_with_config(config, Trainer())

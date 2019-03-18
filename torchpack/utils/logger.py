@@ -27,7 +27,7 @@ def mkdir_p(dirname):
             raise e
 
 
-class _MyFormatter(logging.Formatter):
+class _Formatter(logging.Formatter):
     def format(self, record):
         date = colored('[%(asctime)s @%(filename)s:%(lineno)d]', 'green')
         msg = '%(message)s'
@@ -43,7 +43,7 @@ class _MyFormatter(logging.Formatter):
             # Python3 compatibility
             self._style._fmt = fmt
         self._fmt = fmt
-        return super(_MyFormatter, self).format(record)
+        return super(_Formatter, self).format(record)
 
 
 def _getlogger():
@@ -51,7 +51,7 @@ def _getlogger():
     logger.propagate = False
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(_MyFormatter(datefmt='%m%d %H:%M:%S'))
+    handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
     logger.addHandler(handler)
     return logger
 
@@ -82,9 +82,8 @@ def _set_file(path):
         backup_name = path + '.' + _get_time_str()
         shutil.move(path, backup_name)
         _logger.info("Existing log file '{}' backuped to '{}'".format(path, backup_name))  # noqa: F821
-    hdl = logging.FileHandler(
-        filename=path, encoding='utf-8', mode='w')
-    hdl.setFormatter(_MyFormatter(datefmt='%m%d %H:%M:%S'))
+    hdl = logging.FileHandler(filename=path, encoding='utf-8', mode='w')
+    hdl.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
 
     _FILE_HANDLER = hdl
     _logger.addHandler(hdl)
@@ -122,9 +121,9 @@ def set_logger_dir(dirname, action=None):
 
     if dir_nonempty(dirname):
         if not action:
-            _logger.warn("""\
+            _logger.warning("""\
 Log directory {} exists! Use 'd' to delete it. """.format(dirname))
-            _logger.warn("""\
+            _logger.warning("""\
 If you're resuming from a previous run, you can choose to keep it.
 Press any other key to exit. """)
         while not action:

@@ -1,7 +1,7 @@
 import functools
 import sys
 
-__all__ = ['get_current_context', 'context_inputs', 'context_outputs', 'context_locals']
+__all__ = ['get_current_context', 'context_load_inputs', 'context_save_outputs', 'context_save_locals']
 
 _context = dict()
 
@@ -10,7 +10,7 @@ def get_current_context():
     return _context
 
 
-def context_inputs(*names, context=None):
+def context_load_inputs(*names, context=None):
     if context is None:
         context = get_current_context()
 
@@ -27,7 +27,7 @@ def context_inputs(*names, context=None):
     return decorator
 
 
-def context_outputs(*names, context=None):
+def context_save_outputs(*names, context=None):
     if context is None:
         context = get_current_context()
 
@@ -44,7 +44,7 @@ def context_outputs(*names, context=None):
     return decorator
 
 
-def context_locals(*names, context=None):
+def context_save_locals(*names, context=None):
     if context is None:
         context = get_current_context()
 

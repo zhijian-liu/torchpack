@@ -32,17 +32,13 @@ def launch_train_with_config(config, trainer):
     # TowerFuncWrapper is a better abstraction (similar to tf.defun in the future)
     # trainer.setup_graph(
     #     model.train_step)
-    # trainer.setup_graph(
-    #     model.get_inputs_desc(), input,
-    #     model._build_graph_get_cost, model.get_optimizer)
+    trainer.setup_graph(
+        input,
+        model._build_graph_get_cost, model.get_optimizer)
     trainer.train(
-        # callbacks=config.callbacks,
-        # monitors=config.monitors,
-        # session_creator=config.session_creator,
-        # session_init=config.session_init,
-        model=model,
-        data=input,
+        callbacks=config.callbacks,
+        monitors=config.monitors,
         steps_per_epoch=config.steps_per_epoch,
         starting_epoch=config.starting_epoch,
-        max_epoch=config.max_epoch)
-    # extra_callbacks=config.extra_callbacks)
+        max_epoch=config.max_epoch,
+        extra_callbacks=config.extra_callbacks)
