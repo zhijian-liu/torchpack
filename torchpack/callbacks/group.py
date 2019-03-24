@@ -1,43 +1,16 @@
 import traceback
-from contextlib import contextmanager
 from time import perf_counter as timer
 
 from .base import Callback
 from ..utils import logger
-from ..utils.utils import humanize_time_delta
+from ..utils.utils import humanize_time
 
 __all__ = ['Callbacks']
-
-
-class CallbackTimeLogger(object):
-    def __init__(self):
-        self.times = []
-        self.tot = 0
-
-    def add(self, name, time):
-        self.tot += time
-        self.times.append((name, time))
-
-    @contextmanager
-    def timed_callback(self, name):
-        start = timer()
-        yield
-        self.add(name, timer() - start)
-
-    def log(self):
-        if self.tot < 3:
-            return
-        msgs = []
-        for name, t in self.times:
-            if t / self.tot > 0.3 and t > 1:
-                msgs.append(name + ": " + humanize_time_delta(t))
-        logger.info("Callbacks took {:.3f} sec in total. {}".format(self.tot, '; '.join(msgs)))
 
 
 class Callbacks(Callback):
     """
     A container to hold all callbacks, and trigger them iteratively.
-    Note that it does nothing to before_run/after_run.
     """
 
     def __init__(self, callbacks):
@@ -67,14 +40,26 @@ class Callbacks(Callback):
             callback.trigger_step()
 
     def _trigger_epoch(self):
-        logger = CallbackTimeLogger()
+        total_time = 0
+        times = []
 
         for callback in self.callbacks:
-            name = str(callback)
-            with logger.timed_callback(name):
-                callback.trigger_epoch()
+            start = timer()
+            callback.trigger_epoch()
+            time = timer() - start
 
-        logger.log()
+            total_time += time
+            times.append((str(callback), time))
+
+        if total_time < 3:
+            return
+
+        messages = []
+        for name, time in self.times:
+            if time / self.total_time > 0.3 and time > 1:
+                messages.append(name + ': ' + humanize_time(time))
+
+        logger.info('Callbacks took {:.3f} sec in total. {}'.format(self.total_time, '; '.join(messages)))
 
     def _before_epoch(self):
         for callback in self.callbacks:
@@ -83,3 +68,11 @@ class Callbacks(Callback):
     def _after_epoch(self):
         for callback in self.callbacks:
             callback.after_epoch()
+
+    def _before_run(self):
+        for callback in self.callbacks:
+            callback.before_run()
+
+    def _after_run(self):
+        for callback in self.callbacks:
+            callback.after_run()

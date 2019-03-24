@@ -5,10 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
-
-from torchpack.train.base import Trainer, SimpleTrainer
-from torchpack.train.config import TrainConfig
-from torchpack.train.interface import launch_train_with_config
+from torchpack.callbacks.steps import ProgressBar
+from torchpack import *
 
 
 class Model(nn.Module):
@@ -30,12 +28,6 @@ class Model(nn.Module):
         return x
 
 
-class MNISTDesc(SimpleTrainer):
-    model = Model()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-
-
 loader = torch.utils.data.DataLoader(
     datasets.MNIST('./data', train=True, download=True,
                    transform=transforms.Compose([
@@ -44,15 +36,21 @@ loader = torch.utils.data.DataLoader(
                    ])),
     batch_size=64, shuffle=True, num_workers=1, pin_memory=True)
 
-config = TrainConfig(
-    model=MNISTDesc(),
-    dataflow=torch.utils.data.DataLoader(
-        datasets.MNIST('./data', train=True, download=True,
-                       transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
-                       ])),
-        batch_size=64, shuffle=True, num_workers=1, pin_memory=True),
+model = Model()
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+
+trainer = Trainer(
+    model=model,
+    loader=loader,
+    criterion=criterion,
+    optimizer=optimizer
+)
+
+trainer.train(
+    callbacks=[ProgressBar()],
+    monitors=[],
+    steps_per_epoch=len(loader),
+    starting_epoch=1,
     max_epoch=30
 )
-launch_train_with_config(config, Trainer())

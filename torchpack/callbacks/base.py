@@ -14,17 +14,11 @@ class Callback(object):
 
     Attributes:
         epoch_num(int): trainer.epoch_num
-        global_step(int): trainer.global_step
         local_step(int): trainer.local_step
+        global_step(int): trainer.global_step
         trainer(Trainer): the trainer.
-        graph(tf.Graph): the graph.
-
-    Note:
-        These attributes are available only after (and including)
-        :meth:`_setup_graph`.
 
     .. document private functions
-    .. automethod:: _setup_graph
     .. automethod:: _before_train
     .. automethod:: _after_train
     .. automethod:: _before_run
@@ -140,12 +134,12 @@ class Callback(object):
         return self.trainer.epoch_num
 
     @property
-    def global_step(self):
-        return self.trainer.global_step
-
-    @property
     def local_step(self):
         return self.trainer.local_step
+
+    @property
+    def global_step(self):
+        return self.trainer.global_step
 
     def __str__(self):
         return type(self).__name__

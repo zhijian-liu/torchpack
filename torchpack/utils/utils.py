@@ -17,11 +17,11 @@ __all__ = ['change_env',
            'fix_rng_seed',
            'get_tqdm',
            'execute_only_once',
-           'humanize_time_delta'
+           'humanize_time'
            ]
 
 
-def humanize_time_delta(sec):
+def humanize_time(sec):
     """Humanize timedelta given in seconds
 
     Args:

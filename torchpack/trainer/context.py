@@ -3,6 +3,18 @@ import sys
 
 __all__ = ['get_current_context', 'context_load_inputs', 'context_save_outputs', 'context_save_locals']
 
+
+class Context(object):
+    def __init__(self):
+        self.context = dict()
+
+    def update(self, key, val):
+        self.context[key] = val
+
+    def get(self, key):
+        return self.context[key]
+
+
 _context = dict()
 
 
