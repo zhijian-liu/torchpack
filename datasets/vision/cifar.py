@@ -20,6 +20,7 @@ class CIFAR10(Dataset):
             'test': datasets.CIFAR10(
                 root=root, train=False, download=True,
                 transform=transforms.Compose([
+                    transforms.Resize(image_size),
                     transforms.ToTensor(),
                     transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010]),
                 ])
