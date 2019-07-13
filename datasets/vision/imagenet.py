@@ -12,6 +12,7 @@ warnings.filterwarnings('ignore')
 
 class ImageNet(Dataset):
     def __init__(self, root, num_classes, image_size):
+        # todo: support customized transforms
         super().__init__({
             'train': datasets.ImageNet(
                 root=root, split='train', download=True,
@@ -33,41 +34,37 @@ class ImageNet(Dataset):
             )
         })
 
-        classes_new = [None for _ in range(1000)]
+        # sample subset by strided indexing
+        classes = dict()
         for k in range(num_classes):
-            classes_new[(1000 // num_classes) * k] = k
+            classes[k * (1000 // num_classes)] = k
 
-        for split in ['train', 'test']:
-            samples = []
-            for sample in self[split].samples:
-                if classes_new[sample[1]] is None:
-                    continue
+        # select samples and targets from subset
+        for split, dataset in self.items():
+            samples, targets = [], []
+            for x, y in dataset.samples:
+                if y in classes:
+                    samples.append((x, classes[y]))
+                    targets.append(classes[y])
 
-                samples.append((sample[0], classes_new[sample[1]]))
             self[split].samples = samples
-
-        # for split in ['train', 'test']:
-        # print(self[split].classes)
-        # self.classes = classes
-        # print(self[split].class_to_idx)
-        # self.samples = samples
-        # print(self[split].samples)
+            self[split].targets = targets
 
         # for split in ['train', 'test']:
         #     print(self[split].targets)
         # print(self[split].wnids)
         # print(self[split].wnid_to_idx)
 
-    # for split in ['train', 'test']:
-    # wnid_to_classes = self._load_meta_file()[0]
+        # for split in ['train', 'test']:
+        # wnid_to_classes = self._load_meta_file()[0]
 
-    # super(ImageNet, self).__init__(self.split_folder, **kwargs)
-    # self.root = root
+        # super(ImageNet, self).__init__(self.split_folder, **kwargs)
+        # self.root = root
 
-    # idcs = [idx for _, idx in self.imgs]
-    # self.wnids = self.classes
-    # self.wnid_to_idx = {wnid: idx for idx, wnid in zip(idcs, self.wnids)}
-    # self.classes = [wnid_to_classes[wnid] for wnid in self.wnids]
-    # self.class_to_idx = {cls: idx
-    #                      for clss, idx in zip(self.classes, idcs)
-    #                      for cls in clss}
+        # idcs = [idx for _, idx in self.imgs]
+        # self.wnids = self.classes
+        # self.wnid_to_idx = {wnid: idx for idx, wnid in zip(idcs, self.wnids)}
+        # self.classes = [wnid_to_classes[wnid] for wnid in self.wnids]
+        # self.class_to_idx = {cls: idx
+        #                      for clss, idx in zip(self.classes, idcs)
+        #                      for cls in clss}
