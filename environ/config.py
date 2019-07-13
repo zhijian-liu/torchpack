@@ -63,12 +63,11 @@ def update_configs_from_modules(modules, recursive=True):
         module = module.replace('.py', '').replace('/', '.')
 
         if recursive:
-            prefix = ''
-            for name in module.split('.')[:-1]:
-                prefix += name + '.'
-                if prefix + '__init__' not in imported_modules:
-                    imported_modules.add(prefix + '__init__')
-                    importlib.import_module(prefix + '__init__')
+            for index in [index for index, char in enumerate(module) if char == '.']:
+                submod = module[:index + 1] + '__init__'
+                if submod not in imported_modules:
+                    imported_modules.add(submod)
+                    importlib.import_module(submod)
 
         if module not in imported_modules:
             imported_modules.add(module)
