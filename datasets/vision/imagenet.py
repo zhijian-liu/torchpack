@@ -34,37 +34,15 @@ class ImageNet(Dataset):
             )
         })
 
-        # sample subset by strided indexing
+        # sample classes by strided indexing
         classes = dict()
         for k in range(num_classes):
             classes[k * (1000 // num_classes)] = k
 
-        # select samples and targets from subset
+        # reduce dataset to sampled classes
+        # fixme: edit wnids and wnid_to_idx accordingly
         for split, dataset in self.items():
-            samples, targets = [], []
-            for x, y in dataset.samples:
-                if y in classes:
-                    samples.append((x, classes[y]))
-                    targets.append(classes[y])
-
-            self[split].samples = samples
-            self[split].targets = targets
-
-        # for split in ['train', 'test']:
-        #     print(self[split].targets)
-        # print(self[split].wnids)
-        # print(self[split].wnid_to_idx)
-
-        # for split in ['train', 'test']:
-        # wnid_to_classes = self._load_meta_file()[0]
-
-        # super(ImageNet, self).__init__(self.split_folder, **kwargs)
-        # self.root = root
-
-        # idcs = [idx for _, idx in self.imgs]
-        # self.wnids = self.classes
-        # self.wnid_to_idx = {wnid: idx for idx, wnid in zip(idcs, self.wnids)}
-        # self.classes = [wnid_to_classes[wnid] for wnid in self.wnids]
-        # self.class_to_idx = {cls: idx
-        #                      for clss, idx in zip(self.classes, idcs)
-        #                      for cls in clss}
+            self[split].samples = [(x, classes[c]) for x, c in dataset.samples if c in classes]
+            self[split].targets = [classes[c] for c in dataset.targets if c in classes]
+            self[split].classes = [x for c, x in enumerate(dataset.classes) if c in classes]
+            self[split].class_to_idx = {x: c for x, c in dataset.class_to_idx.items() if c in classes}
