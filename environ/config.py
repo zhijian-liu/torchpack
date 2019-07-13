@@ -56,19 +56,16 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_modules(modules, recursive=True):
-    imported_modules = set()
-
+def update_configs_from_modules(modules, recursive=False):
+    imports = set()
     for module in modules:
         module = module.replace('.py', '').replace('/', '.')
-
         if recursive:
             for index in [index for index, char in enumerate(module) if char == '.']:
                 submod = module[:index + 1] + '__init__'
-                if submod not in imported_modules:
-                    imported_modules.add(submod)
+                if submod not in imports:
+                    imports.add(submod)
                     importlib.import_module(submod)
-
-        if module not in imported_modules:
-            imported_modules.add(module)
+        if module not in imports:
+            imports.add(module)
             importlib.import_module(module)
