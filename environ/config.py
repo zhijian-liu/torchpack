@@ -1,6 +1,8 @@
+import importlib
+
 from .container import G
 
-__all__ = ['Config', 'configs']
+__all__ = ['Config', 'configs', 'update_configs_from_modules']
 
 
 class Config(G):
@@ -52,3 +54,22 @@ class Config(G):
 
 
 configs = Config()
+
+
+def update_configs_from_modules(modules, recursive=True):
+    imported_modules = set()
+
+    for module in modules:
+        module = module.replace('.py', '').replace('/', '.')
+
+        if recursive:
+            prefix = ''
+            for name in module.split('.')[:-1]:
+                prefix += name + '.'
+                if prefix + '__init__' not in imported_modules:
+                    imported_modules.add(prefix + '__init__')
+                    importlib.import_module(prefix + '__init__')
+
+        if module not in imported_modules:
+            imported_modules.add(module)
+            importlib.import_module(module)
