@@ -60,12 +60,8 @@ def update_configs_from_modules(modules, recursive=False):
     imports = set()
 
     for module in modules:
-        # format: aaa/bbb/ccc/ddd.py => aaa/bbb/ccc/ddd
-        if module.endswith('.py'):
-            module = module[:-3]
-
-        # format: aaa/bbb/ccc/ddd => aaa.bbb.ccc.ddd
-        module = module.replace('/', '.')
+        # format: aaa/bbb/ccc/ddd.py => aaa.bbb.ccc.ddd
+        module = module.replace('.py', '').replace('/', '.')
 
         # import: aaa.__init__, aaa.bbb.__init__, aaa.bbb.ccc.__init__
         if recursive:
