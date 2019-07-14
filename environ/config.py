@@ -58,14 +58,24 @@ configs = Config()
 
 def update_configs_from_modules(modules, recursive=False):
     imports = set()
+
     for module in modules:
-        module = module.replace('.py', '').replace('/', '.')
+        # format: aaa/bbb/ccc/ddd.py => aaa/bbb/ccc/ddd
+        if module.endswith('.py'):
+            module = module[:-3]
+
+        # format: aaa/bbb/ccc/ddd => aaa.bbb.ccc.ddd
+        module = module.replace('/', '.')
+
+        # import: aaa.__init__, aaa.bbb.__init__, aaa.bbb.ccc.__init__
         if recursive:
             for index in [index for index, char in enumerate(module) if char == '.']:
                 submod = module[:index + 1] + '__init__'
                 if submod not in imports:
                     imports.add(submod)
                     importlib.import_module(submod)
+
+        # import: aaa.bbb.ccc.ddd
         if module not in imports:
             imports.add(module)
             importlib.import_module(module)
