@@ -2,7 +2,7 @@ import importlib
 
 from .container import G
 
-__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_modules']
+__all__ = ['Config', 'configs', 'update_configs_from_module']
 
 
 class Config(G):
@@ -56,26 +56,7 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(module, recursive=False):
-    update_configs_from_modules([module], recursive=recursive)
-
-
-def update_configs_from_modules(modules, recursive=False):
-    imports = set()
-
+def update_configs_from_module(*modules):
     for module in modules:
-        # format: aaa/bbb/ccc/ddd.py => aaa.bbb.ccc.ddd
         module = module.replace('.py', '').replace('/', '.')
-
-        # import: aaa.__init__, aaa.bbb.__init__, aaa.bbb.ccc.__init__
-        if recursive:
-            for index in [index for index, char in enumerate(module) if char == '.']:
-                submod = module[:index + 1] + '__init__'
-                if submod not in imports:
-                    imports.add(submod)
-                    importlib.import_module(submod)
-
-        # import: aaa.bbb.ccc.ddd
-        if module not in imports:
-            imports.add(module)
-            importlib.import_module(module)
+        importlib.import_module(module)
