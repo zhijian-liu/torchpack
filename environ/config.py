@@ -2,7 +2,7 @@ import importlib
 
 from .container import G
 
-__all__ = ['Config', 'configs', 'update_configs_from_modules']
+__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_modules']
 
 
 class Config(G):
@@ -54,6 +54,10 @@ class Config(G):
 
 
 configs = Config()
+
+
+def update_configs_from_module(module, recursive=False):
+    update_configs_from_modules([module], recursive=recursive)
 
 
 def update_configs_from_modules(modules, recursive=False):
