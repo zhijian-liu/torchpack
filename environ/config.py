@@ -11,19 +11,21 @@ class Config(G):
         self.__callable__ = callable
 
     def keys(self):
-        for key in super().keys():
-            if key != '__callable__':
-                yield key
+        for k in super().keys():
+            if k != '__callable__':
+                yield k
 
     def items(self):
-        for key, val in super().items():
-            if key != '__callable__':
-                yield key, val
+        for k, v in super().items():
+            if k != '__callable__':
+                yield k, v
 
     def __call__(self, *args, **kwargs):
-        for key, val in self.items():
-            if key not in kwargs:
-                kwargs[key] = val
+        if self.__callable__ is None:
+            return self
+        for k, v in self.items():
+            if k not in kwargs:
+                kwargs[k] = v() if isinstance(v, Config) else v
         return self.__callable__(*args, **kwargs)
 
     def __str__(self, indent=0, verbose=None):
@@ -39,14 +41,14 @@ class Config(G):
             text += str(self.__callable__) + '\n'
             indent += 2
 
-        for key, val in self.items():
-            text += ' ' * indent + '[{}]'.format(key)
-            if not isinstance(val, Config):
-                text += ' = {}'.format(val)
+        for k, v in self.items():
+            text += ' ' * indent + '[{}]'.format(k)
+            if not isinstance(v, Config):
+                text += ' = {}'.format(v)
             else:
-                if val.__callable__ is not None:
-                    text += ' = ' + str(val.__callable__)
-                text += '\n' + val.__str__(indent + 2, verbose=verbose)
+                if v.__callable__ is not None:
+                    text += ' = ' + str(v.__callable__)
+                text += '\n' + v.__str__(indent + 2, verbose=verbose)
             text += '\n'
 
         # remove the last newline
