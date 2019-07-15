@@ -25,6 +25,7 @@ class Config(G):
             return self
         for k, v in self.items():
             if k not in kwargs:
+                # behavior: instantiate arguments if callable
                 kwargs[k] = v() if isinstance(v, Config) else v
         return self.__callable__(*args, **kwargs)
 
