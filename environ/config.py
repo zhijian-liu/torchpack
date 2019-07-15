@@ -23,6 +23,7 @@ class Config(G):
     def __call__(self, *args, **kwargs):
         if self.__callable__ is None:
             return self
+
         for k, v in self.items():
             if k not in kwargs:
                 # behavior: instantiate arguments if callable
