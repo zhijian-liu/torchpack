@@ -97,14 +97,21 @@ def update_configs_from_arguments(args):
         else:
             index, ks, v = index + 2, arg.split('.'), args[index + 1]
 
-        if v.startswith('float{') and v.endswith('}'):
-            v = float(v.replace('float{', '').replace('}', ''))
-        elif v.startswith('int{') and v.endswith('}'):
+        if v.startswith('int{') and v.endswith('}'):
+            # int{xxx} => int
             v = int(v.replace('int{', '').replace('}', ''))
+        elif v.startswith('float{') and v.endswith('}'):
+            # float{xxx} => float
+            v = float(v.replace('float{', '').replace('}', ''))
         elif v.lower() in ['true', 'false']:
+            # true/false => boolean
             v = (v.lower() == 'true')
         elif v.lower() == 'none':
+            # none => none
             v = None
+        else:
+            # default => str
+            pass
 
         o = configs
         for k in ks[:-1]:
