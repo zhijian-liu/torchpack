@@ -98,16 +98,13 @@ def update_configs_from_arguments(opts):
             keys, val = opts[index], opts[index + 1]
             index += 2
 
-        # int{xxx} => xxx
+        keys = keys.split('.')
         if val.startswith('int{') and val.endswith('}'):
             val = int(val[4:-1])
-
-        # float{xxx} => xxx
-        if val.startswith('float{') and val.endswith('}'):
+        elif val.startswith('float{') and val.endswith('}'):
             val = float(val[6:-1])
 
         obj = configs
-        keys = keys.split('.')
         for key in keys[:-1]:
             if key not in obj:
                 obj[key] = Config()
