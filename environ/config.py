@@ -3,7 +3,7 @@ import os
 
 from .container import G
 
-__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_options']
+__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_arguments']
 
 
 class Config(G):
@@ -79,32 +79,36 @@ def update_configs_from_module(*modules):
         import_module(m)
 
 
-def update_configs_from_options(opts):
-    index = 1 if opts[0] == '--' else 0
-    while index < len(opts):
-        opt = opts[index]
-        if opts[0] != '--' and opt.startswith('--configs.'):
-            opt = opt.replace('--configs.', '')
-        elif opts[0] == '--' and opt.startswith('configs.'):
-            opt = opt.replace('configs.', '')
-        else:
-            raise Exception('unrecognized options "{}"'.format(opt))
+def update_configs_from_arguments(args):
+    index = 1 if args[0] == '--' else 0
 
-        if '=' in opt:
-            keys, val, index = opt[:opt.index('=')], opt[opt.index('=') + 1:], index + 1
-        else:
-            keys, val, index = opts[index], opts[index + 1], index + 2
+    while index < len(args):
+        arg = args[index]
 
-        keys = keys.split('.')
-        if val.startswith('int{') and val.endswith('}'):
-            val = int(val[4:-1])
-        elif val.startswith('float{') and val.endswith('}'):
-            val = float(val[6:-1])
+        if args[0] != '--' and arg.startswith('--configs.'):
+            arg = arg.replace('--configs.', '')
+        elif args[0] == '--' and arg.startswith('configs.'):
+            arg = arg.replace('configs.', '')
+        else:
+            raise Exception('unrecognized argument "{}"'.format(arg))
+
+        if '=' in arg:
+            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
+        else:
+            index, ks, v = index + 2, arg.split('.'), args[index + 1]
+
+        if v.startswith('float{') and v.endswith('}'):
+            v = float(v.replace('float{', '').replace('}', ''))
+        elif v.startswith('int{') and v.endswith('}'):
+            v = int(v.replace('int{', '').replace('}', ''))
+        elif v.lower() in ['true', 'false']:
+            v = (v.lower() == 'true')
+        elif v.lower() == 'none':
+            v = None
 
         o = configs
-        for i, k in enumerate(keys):
-            if i == len(keys) - 1:
-                o[k] = val
-            elif k not in o:
+        for k in ks[:-1]:
+            if k not in o:
                 o[k] = Config()
             o = o[k]
+        o[ks[-1]] = v
