@@ -1,4 +1,4 @@
-import importlib
+import importlib.util
 
 from .container import G
 
@@ -23,10 +23,9 @@ class Config(G):
     def __call__(self, *args, **kwargs):
         if self.__callable__ is None:
             return self
-
         for k, v in self.items():
             if k not in kwargs:
-                # behavior: instantiate arguments if callable
+                # instantiate arguments if callable
                 kwargs[k] = v() if isinstance(v, Config) else v
         return self.__callable__(*args, **kwargs)
 
@@ -60,7 +59,21 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(*modules):
+def update_configs_from_module(*modules, recursive=True):
+    imported = set()
+
+    def import_module(module):
+        if module in imported:
+            return
+        imported.add(module)
+
+        # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
+        spec = importlib.util.spec_from_file_location(module.split('/')[-1], module)
+        foo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(foo)
+
     for module in modules:
-        module = module.replace('.py', '').replace('/', '.')
-        importlib.import_module(module)
+        if recursive:
+            for index in [index for index, char in enumerate(module) if char == '/']:
+                import_module(module[:index + 1] + '__init__.py')
+        import_module(module)
