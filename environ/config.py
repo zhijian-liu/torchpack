@@ -60,7 +60,7 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(*paths):
+def update_configs_from_module(*modules):
     imported_modules = set()
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
@@ -71,27 +71,45 @@ def update_configs_from_module(*paths):
             spec.loader.exec_module(foo)
             imported_modules.add(module)
 
-    for path in paths:
-        for index in [index for index, char in enumerate(path) if char == '/']:
-            import_module(path[:index + 1] + '__init__.py')
-        import_module(path)
+    for m in modules:
+        for k, c in enumerate(m):
+            if c == '/':
+                import_module(m[:k + 1] + '__init__.py')
+        import_module(m)
 
 
 def update_configs_from_arguments(opts):
-    for opt in opts:
-        if not opt.startswith('--configs.'):
-            continue
+    index = 1 if opts[0] == '--' else 0
 
-        opt = opt.replace('--configs.', '')
+    while index < len(opts):
+        opt = opts[index]
 
-        index = opt.index('=')
-        a = opt[:index]
-        b = opt[index + 1:]
+        if opts[0] != '--' and opt.startswith('--configs.'):
+            opt = opt.replace('--configs.', '')
+        elif opts[0] == '--' and opt.startswith('configs.'):
+            opt = opt.replace('configs.', '')
+        else:
+            raise NotImplementedError
 
-        if b.startswith('float'):
-            b = float(b[6:-1])
+        if '=' in opt:
+            keys, val = opt[:opt.index('=')], opt[opt.index('=') + 1:]
+            index += 1
+        else:
+            keys, val = opts[index], opts[index + 1]
+            index += 2
 
-        current = configs
-        for k in a.split('.')[:-1]:
-            current = current[k]
-        current[a.split('.')[-1]] = b
+        # int{xxx} => xxx
+        if val.startswith('int{') and val.endswith('}'):
+            val = int(val[4:-1])
+
+        # float{xxx} => xxx
+        if val.startswith('float{') and val.endswith('}'):
+            val = float(val[6:-1])
+
+        obj = configs
+        keys = keys.split('.')
+        for key in keys[:-1]:
+            if key not in obj:
+                obj[key] = Config()
+            obj = obj[key]
+        obj[keys[-1]] = val
