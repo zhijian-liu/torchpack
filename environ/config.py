@@ -2,7 +2,7 @@ import importlib.util
 
 from .container import G
 
-__all__ = ['Config', 'configs', 'update_configs_from_module']
+__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_arguments']
 
 
 class Config(G):
@@ -75,3 +75,23 @@ def update_configs_from_module(*paths):
         for index in [index for index, char in enumerate(path) if char == '/']:
             import_module(path[:index + 1] + '__init__.py')
         import_module(path)
+
+
+def update_configs_from_arguments(opts):
+    for opt in opts:
+        if not opt.startswith('--configs.'):
+            continue
+
+        opt = opt.replace('--configs.', '')
+
+        index = opt.index('=')
+        a = opt[:index]
+        b = opt[index + 1:]
+
+        if b.startswith('float'):
+            b = float(b[6:-1])
+
+        current = configs
+        for k in a.split('.')[:-1]:
+            current = current[k]
+        current[a.split('.')[-1]] = b
