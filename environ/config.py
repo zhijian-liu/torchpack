@@ -59,21 +59,18 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(*paths, recursive=True):
+def update_configs_from_module(*paths):
     imported_modules = set()
 
+    # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
     def import_module(module):
-        if module in imported_modules:
-            return
-        imported_modules.add(module)
-
-        # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-        spec = importlib.util.spec_from_file_location(module.split('/')[-1], module)
-        foo = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(foo)
+        if module not in imported_modules:
+            spec = importlib.util.spec_from_file_location(module.split('/')[-1], module)
+            foo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(foo)
+            imported_modules.add(module)
 
     for path in paths:
-        if recursive:
-            for index in [index for index, char in enumerate(path) if char == '/']:
-                import_module(path[:index + 1] + '__init__.py')
+        for index in [index for index, char in enumerate(path) if char == '/']:
+            import_module(path[:index + 1] + '__init__.py')
         import_module(path)
