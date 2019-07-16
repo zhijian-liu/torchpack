@@ -23,9 +23,10 @@ class Config(G):
     def __call__(self, *args, **kwargs):
         if self.__callable__ is None:
             return self
+
+        # instantiate arguments if callable
         for k, v in self.items():
             if k not in kwargs:
-                # instantiate arguments if callable
                 kwargs[k] = v() if isinstance(v, Config) else v
         return self.__callable__(*args, **kwargs)
 
