@@ -99,10 +99,12 @@ def update_configs_from_arguments(args):
 
         if v.startswith('int{') and v.endswith('}'):
             # int{xxx} => int
-            v = int(v.replace('int{', '').replace('}', ''))
+            v = v.replace('int{', '').replace('}', '')
+            v = int(v)
         elif v.startswith('float{') and v.endswith('}'):
             # float{xxx} => float
-            v = float(v.replace('float{', '').replace('}', ''))
+            v = v.replace('float{', '').replace('}', '')
+            v = float(v)
         elif v.lower() in ['true', 'false']:
             # true/false => boolean
             v = (v.lower() == 'true')
@@ -111,7 +113,7 @@ def update_configs_from_arguments(args):
             v = None
         else:
             # default => str
-            pass
+            v = str(v)
 
         o = configs
         for k in ks[:-1]:
