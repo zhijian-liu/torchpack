@@ -1,8 +1,9 @@
 import importlib.util
+import os
 
 from .container import G
 
-__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_arguments']
+__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_options']
 
 
 class Config(G):
@@ -24,7 +25,7 @@ class Config(G):
         if self.__callable__ is None:
             return self
 
-        # instantiate arguments if callable
+        # instantiate if callable
         for k, v in self.items():
             if k not in kwargs:
                 kwargs[k] = v() if isinstance(v, Config) else v
@@ -73,30 +74,26 @@ def update_configs_from_module(*modules):
 
     for m in modules:
         for k, c in enumerate(m):
-            if c == '/':
+            if c == '/' and os.path.exists(m[:k + 1] + '__init__.py'):
                 import_module(m[:k + 1] + '__init__.py')
         import_module(m)
 
 
-def update_configs_from_arguments(opts):
+def update_configs_from_options(opts):
     index = 1 if opts[0] == '--' else 0
-
     while index < len(opts):
         opt = opts[index]
-
         if opts[0] != '--' and opt.startswith('--configs.'):
             opt = opt.replace('--configs.', '')
         elif opts[0] == '--' and opt.startswith('configs.'):
             opt = opt.replace('configs.', '')
         else:
-            raise NotImplementedError
+            raise Exception('unrecognized options "{}"'.format(opt))
 
         if '=' in opt:
-            keys, val = opt[:opt.index('=')], opt[opt.index('=') + 1:]
-            index += 1
+            keys, val, index = opt[:opt.index('=')], opt[opt.index('=') + 1:], index + 1
         else:
-            keys, val = opts[index], opts[index + 1]
-            index += 2
+            keys, val, index = opts[index], opts[index + 1], index + 2
 
         keys = keys.split('.')
         if val.startswith('int{') and val.endswith('}'):
@@ -104,9 +101,10 @@ def update_configs_from_arguments(opts):
         elif val.startswith('float{') and val.endswith('}'):
             val = float(val[6:-1])
 
-        obj = configs
-        for key in keys[:-1]:
-            if key not in obj:
-                obj[key] = Config()
-            obj = obj[key]
-        obj[keys[-1]] = val
+        o = configs
+        for i, k in enumerate(keys):
+            if i == len(keys) - 1:
+                o[k] = val
+            elif k not in o:
+                o[k] = Config()
+            o = o[k]
