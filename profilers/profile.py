@@ -7,16 +7,18 @@ import torch.nn as nn
 
 from .default_handlers import default_flops_handlers, default_params_handlers
 
-__all__ = ['profile', 'profile_params', 'profile_flops']
+__all__ = ['profile', 'profile_flops', 'profile_params']
 
 
 def profile(model, *inputs, handlers):
     stats = {}
 
     def hook_stats(module, inputs, outputs, handler, name):
-        if isinstance(model, nn.DataParallel):
-            name += '/cuda:' + str(torch.cuda.current_device())
         stats[name] = handler(module, inputs, outputs)
+
+    # quick fix for data-parallel model
+    if isinstance(model, nn.DataParallel):
+        model = model.module
 
     hooks = []
     for name, module in model.named_modules():
@@ -39,21 +41,21 @@ def profile(model, *inputs, handlers):
     return stats
 
 
-def profile_params(model, *inputs, handlers=None):
-    if handlers is None:
-        handlers = default_params_handlers
+def profile_flops(model, *inputs, handlers=None):
+    if handlers is not None:
+        handlers = default_flops_handlers
     else:
-        handlers += default_params_handlers
+        handlers += default_flops_handlers
 
     stats = profile(model, *inputs, handlers=handlers)
     return np.sum(list(stats.values())), stats
 
 
-def profile_flops(model, *inputs, handlers=None):
+def profile_params(model, *inputs, handlers=None):
     if handlers is None:
-        handlers = default_flops_handlers
+        handlers = default_params_handlers
     else:
-        handlers += default_flops_handlers
+        handlers += default_params_handlers
 
     stats = profile(model, *inputs, handlers=handlers)
     return np.sum(list(stats.values())), stats
