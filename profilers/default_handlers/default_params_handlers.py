@@ -9,7 +9,6 @@ def module(module, inputs, outputs):
     if list(module.children()):
         return None
 
-    # take all parameters into consideration
     return np.sum(param.numel() for param in module.parameters())
 
 
