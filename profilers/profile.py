@@ -38,7 +38,8 @@ def profile(model, *inputs, handlers):
     for hook in hooks:
         hook.remove()
 
-    return stats
+    # filter out nones from stats
+    return {k: v for k, v in stats.items() if v is not None}
 
 
 def profile_flops(model, *inputs, handlers=None):
