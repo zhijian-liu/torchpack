@@ -8,8 +8,12 @@ __all__ = ['CIFAR']
 
 class CIFAR(Dataset):
     def __init__(self, root, num_classes, image_size):
-        assert num_classes in [10, 100]
-        dataset = datasets.CIFAR10 if num_classes == 10 else datasets.CIFAR100
+        if num_classes == 10:
+            dataset = datasets.CIFAR10
+        elif num_classes == 100:
+            dataset = datasets.CIFAR100
+        else:
+            raise NotImplementedError('currently only support CIFAR10/100')
 
         super().__init__({
             'train': dataset(
