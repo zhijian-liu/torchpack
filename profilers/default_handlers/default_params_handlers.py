@@ -5,6 +5,11 @@ __all__ = ['default_params_handlers']
 
 
 def module(module, inputs, outputs):
+    # only leaf modules should be profiled
+    if list(module.children()):
+        return None
+
+    # take all parameters into consideration
     return np.sum(param.numel() for param in module.parameters())
 
 
