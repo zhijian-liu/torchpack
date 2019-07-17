@@ -1,7 +1,7 @@
 import numpy as np
 import torch.nn as nn
 
-__all__ = ['flops_handlers']
+__all__ = ['default_flops_handlers']
 
 
 def conv(module, inputs, outputs):
@@ -16,7 +16,7 @@ def gemm(module, inputs, outputs):
     return np.prod([output_size[0]] + list(kernel_size))
 
 
-flops_handlers = [
+default_flops_handlers = [
     (nn.Linear, gemm),
     ((nn.Conv1d, nn.Conv2d, nn.Conv3d), conv),
     ((nn.ConvTranspose1d, nn.ConvTranspose2d, nn.ConvTranspose3d), conv),
