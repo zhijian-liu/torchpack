@@ -25,10 +25,15 @@ class Config(G):
         if self.__callable__ is None:
             return self
 
-        # instantiate if callable
+        # override with kwargs (call v() if callable)
         for k, v in self.items():
             if k not in kwargs:
-                kwargs[k] = v() if isinstance(v, Config) else v
+                if isinstance(v, Config):
+                    kwargs[k] = v()
+                else:
+                    kwargs[k] = v
+
+        # call with args and kwargs
         return self.__callable__(*args, **kwargs)
 
     def __str__(self, indent=0, verbose=None):
@@ -97,13 +102,14 @@ def update_configs_from_arguments(args):
         else:
             index, ks, v = index + 2, arg.split('.'), args[index + 1]
 
-        if v.lower().startswith('int{') and v.lower().endswith('}'):
-            v = int(v.lower().replace('int{', '').replace('}', ''))
-        elif v.lower().startswith('float{') and v.lower().endswith('}'):
-            v = float(v.lower().replace('float{', '').replace('}', ''))
-        elif v.lower() in ['true', 'false']:
-            v = (v.lower() == 'true')
-        elif v.lower() == 'none':
+        u = v.lower()
+        if u.startswith('int{') and u.endswith('}'):
+            v = int(u.replace('int{', '').replace('}', ''))
+        elif u.startswith('float{') and u.endswith('}'):
+            v = float(u.replace('float{', '').replace('}', ''))
+        elif u in ['true', 'false']:
+            v = (u == 'true')
+        elif u == 'none':
             v = None
 
         o = configs
