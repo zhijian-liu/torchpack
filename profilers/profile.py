@@ -1,4 +1,5 @@
 import functools
+import warnings
 
 import numpy as np
 import torch
@@ -12,29 +13,28 @@ __all__ = ['profile', 'profile_params', 'profile_flops']
 def profile(model, *inputs, handlers):
     stats = {}
 
-    def hook(module, inputs, outputs, name):
-        # rename module for data-parallel model
+    def hook_stats(module, inputs, outputs, name, handler):
         if isinstance(model, nn.DataParallel):
             name = name + '/' + str(outputs.device)
+        stats[name] = handler(module, inputs, outputs)
 
+    hooks = []
+    for name, module in model.named_modules():
         for types, handler in handlers:
             if isinstance(module, types):
-                stats[name] = handler(module, inputs, outputs)
-                return
-
-        # todo: issue a warning (for leaf modules)
-        return
-
-    handles = []
-    for name, module in model.named_modules():
-        handle = module.register_forward_hook(functools.partial(hook, name=name))
-        handles.append(handle)
+                if handler is not None:
+                    hook = functools.partial(hook_stats, name=name, handler=handler)
+                    hooks.append(module.register_forward_hook(hook))
+                break
+        else:
+            if not list(module.children()):
+                warnings.warn('ignore module "{}": no handler for "{}"'.format(name, type(module)))
 
     with torch.no_grad():
         model(*inputs)
 
-    for handle in handles:
-        handle.remove()
+    for hook in hooks:
+        hook.remove()
 
     return stats
 

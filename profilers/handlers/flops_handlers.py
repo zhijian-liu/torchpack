@@ -17,7 +17,16 @@ def gemm(module, inputs, outputs):
 
 
 flops_handlers = [
+    (nn.Linear, gemm),
+
     ((nn.Conv1d, nn.Conv2d, nn.Conv3d), conv),
     ((nn.ConvTranspose1d, nn.ConvTranspose2d, nn.ConvTranspose3d), conv),
-    (nn.Linear, gemm)
+
+    ((nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d), None),
+    ((nn.ReLU, nn.ReLU6), None),
+
+    ((nn.MaxPool1d, nn.MaxPool2d, nn.MaxPool3d), None),
+    ((nn.AvgPool1d, nn.AvgPool2d, nn.AvgPool3d), None),
+    ((nn.AdaptiveMaxPool1d, nn.AdaptiveMaxPool2d, nn.AdaptiveMaxPool3d), None),
+    ((nn.AdaptiveAvgPool1d, nn.AdaptiveAvgPool2d, nn.AdaptiveAvgPool3d), None)
 ]
