@@ -97,10 +97,10 @@ def update_configs_from_arguments(args):
         else:
             index, ks, v = index + 2, arg.split('.'), args[index + 1]
 
-        if v.startswith('int{') and v.endswith('}'):
-            v = int(v.replace('int{', '').replace('}', ''))
-        elif v.startswith('float{') and v.endswith('}'):
-            v = float(v.replace('float{', '').replace('}', ''))
+        if v.lower().startswith('int{') and v.lower().endswith('}'):
+            v = int(v.lower().replace('int{', '').replace('}', ''))
+        elif v.lower().startswith('float{') and v.lower().endswith('}'):
+            v = float(v.lower().replace('float{', '').replace('}', ''))
         elif v.lower() in ['true', 'false']:
             v = (v.lower() == 'true')
         elif v.lower() == 'none':
