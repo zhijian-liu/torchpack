@@ -13,7 +13,6 @@ warnings.filterwarnings('ignore')
 
 class ImageNet(Dataset):
     def __init__(self, root, num_classes, image_size):
-        # todo: support customized transforms
         super().__init__({
             'train': datasets.ImageNet(
                 root=root, split='train', download=True,
@@ -41,9 +40,9 @@ class ImageNet(Dataset):
             classes[k * (1000 // num_classes)] = k
 
         # reduce dataset to sampled classes
-        # fixme: edit wnids and wnid_to_idx accordingly
-        for split, dataset in self.items():
-            self[split].samples = [(x, classes[c]) for x, c in dataset.samples if c in classes]
-            self[split].targets = [classes[c] for c in dataset.targets if c in classes]
-            self[split].classes = [x for c, x in enumerate(dataset.classes) if c in classes]
-            self[split].class_to_idx = {x: c for x, c in dataset.class_to_idx.items() if c in classes}
+        # fixme: update wnids and wnid_to_idx accordingly
+        for dataset in self.values():
+            dataset.samples = [(x, classes[c]) for x, c in dataset.samples if c in classes]
+            dataset.targets = [classes[c] for c in dataset.targets if c in classes]
+            dataset.classes = [x for c, x in enumerate(dataset.classes) if c in classes]
+            dataset.class_to_idx = {x: c for x, c in dataset.class_to_idx.items() if c in classes}
