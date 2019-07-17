@@ -80,7 +80,7 @@ def update_configs_from_module(*modules):
 
 
 def update_configs_from_arguments(args):
-    index = 1 if args[0] == '--' else 0
+    index = 1 if args and args[0] == '--' else 0
 
     while index < len(args):
         arg = args[index]
