@@ -43,7 +43,7 @@ def profile(model, *inputs, handlers):
 
 
 def profile_flops(model, *inputs, handlers=None):
-    if handlers is not None:
+    if handlers is None:
         handlers = default_flops_handlers
     else:
         handlers += default_flops_handlers
