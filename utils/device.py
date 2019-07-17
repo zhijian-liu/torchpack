@@ -11,7 +11,6 @@ def set_cuda_visible_devices(devs):
             continue
         if dev.startswith('gpu'):
             dev = dev[3:]
-
         if '-' in dev:
             l, r = map(int, dev.split('-'))
             gpus.extend(range(l, r + 1))
