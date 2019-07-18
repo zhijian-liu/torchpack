@@ -33,7 +33,7 @@ class Config(G):
                 else:
                     kwargs[k] = v
 
-        # call with args and kwargs
+        # call/instantiate with args and kwargs
         return self.__callable__(*args, **kwargs)
 
     def __str__(self, indent=0, verbose=None):
