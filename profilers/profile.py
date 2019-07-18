@@ -30,7 +30,7 @@ def profile(model, *inputs, handlers):
                 break
         else:
             if not list(module.children()):
-                warnings.warn('no handler for {}'.format(type(module)))
+                warnings.warn('no handler for {}'.format(type(module)), UserWarning)
 
     with torch.no_grad():
         model(*inputs)

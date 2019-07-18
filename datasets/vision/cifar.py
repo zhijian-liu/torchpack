@@ -13,7 +13,7 @@ class CIFAR(Dataset):
         elif num_classes == 100:
             dataset = datasets.CIFAR100
         else:
-            raise NotImplementedError('currently only support CIFAR10/100')
+            raise NotImplementedError('only support CIFAR10/100 for now')
 
         super().__init__({
             'train': dataset(

@@ -5,7 +5,7 @@ __all__ = ['default_params_handlers']
 
 
 def module(module, inputs, outputs):
-    # only leaf modules should be profiled
+    # only leaf modules should be taken into account
     if list(module.children()):
         return None
 
