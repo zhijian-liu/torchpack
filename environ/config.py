@@ -7,8 +7,8 @@ __all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_fr
 
 
 class Config(G):
-    def __init__(self, callable=None):
-        super().__init__()
+    def __init__(self, callable=None, **kwargs):
+        super().__init__(**kwargs)
         self.__callable__ = callable
 
     def keys(self):
