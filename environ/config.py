@@ -88,8 +88,10 @@ def update_configs_from_arguments(args):
     def parse(x):
         y = x.lower()
 
-        # "xxx" => str
-        if y.startswith('"') and y.endswith('"'):
+        # 'xxx' / "xxx" => str
+        if y.startswith('\'') and y.endswith('\''):
+            return x[1:-1]
+        if y.startswith('\"') and y.endswith('\"'):
             return x[1:-1]
 
         # int{xxx} / float{xxx} => int / float
@@ -111,16 +113,15 @@ def update_configs_from_arguments(args):
     while index < len(args):
         arg = args[index]
 
-        if not arg.startswith('--configs.'):
+        if arg.startswith('--configs.'):
+            arg = arg.replace('--configs.', '')
+        else:
             raise Exception('unrecognized argument "{}"'.format(arg))
 
-        arg = arg.replace('--configs.', '')
-        if '=' not in arg:
-            ks, v = arg[:arg.index('=')].split('.'), parse(arg[arg.index('=') + 1:])
-            index += 1
+        if '=' in arg:
+            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), parse(arg[arg.index('=') + 1:])
         else:
-            ks, v = arg.split('.'), parse(args[index + 1])
-            index += 2
+            index, ks, v = index + 2, arg.split('.'), parse(args[index + 1])
 
         o = configs
         for k in ks[:-1]:
