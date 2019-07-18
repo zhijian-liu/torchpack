@@ -106,7 +106,6 @@ def update_configs_from_arguments(args):
         if y == 'none':
             return None
 
-        # default => str
         return x
 
     index = 0
