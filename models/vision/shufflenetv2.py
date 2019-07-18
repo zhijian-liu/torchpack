@@ -8,7 +8,7 @@ __all__ = ['ShuffleNetV2', 'ShuffleBlockV2']
 def shuffle_channel(inputs, groups):
     batch_size, num_channels, height, width = inputs.size()
     return inputs.view(batch_size, groups, num_channels // groups, height, width) \
-        .transpose(1, 2).view(batch_size, num_channels, height, width).contiguous()
+        .transpose(1, 2).contiguous().view(batch_size, num_channels, height, width)
 
 
 class ShuffleBlockV2(nn.Module):
@@ -51,10 +51,10 @@ class ShuffleBlockV2(nn.Module):
         )
 
     def forward(self, x):
-        if self.stride != 1:
-            x1, x2 = self.branch1(x), self.branch2(x)
-        else:
+        if self.stride == 1:
             x1, x2 = x[:, :x.size(1) // 2], self.branch2(x[:, x.size(1) // 2:])
+        else:
+            x1, x2 = self.branch1(x), self.branch2(x)
         return shuffle_channel(torch.cat([x1, x2], dim=1), groups=2)
 
 
