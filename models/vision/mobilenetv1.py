@@ -29,7 +29,6 @@ class MobileNetV1(nn.Module):
 
     def __init__(self, num_classes, width_multiplier=1.0):
         super().__init__()
-
         input_channels = round(self.first_channels * width_multiplier)
 
         layers = [nn.Sequential(
@@ -44,7 +43,7 @@ class MobileNetV1(nn.Module):
                 layers.append(MobileBlockV1(input_channels, output_channels, 3, stride))
                 input_channels = output_channels
 
-        self.feature = nn.Sequential(*layers)
+        self.features = nn.Sequential(*layers)
         self.classifier = nn.Linear(input_channels, num_classes)
 
         for m in self.modules():

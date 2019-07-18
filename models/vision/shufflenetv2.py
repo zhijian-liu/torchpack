@@ -64,7 +64,6 @@ class ShuffleNetV2(nn.Module):
 
     def __init__(self, num_classes, width_multiplier=1.0):
         super().__init__()
-
         input_channels = round(self.first_channels * width_multiplier)
         last_channels = round(self.last_channels * max(width_multiplier, 1.0))
 
