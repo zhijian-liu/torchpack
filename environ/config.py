@@ -25,7 +25,7 @@ class Config(G):
         if self.__callable__ is None:
             return self
 
-        # override with kwargs (call v() if callable)
+        # override kwargs: call v() if callable
         for k, v in self.items():
             if k not in kwargs:
                 if isinstance(v, Config):
@@ -85,32 +85,42 @@ def update_configs_from_module(*modules):
 
 
 def update_configs_from_arguments(args):
-    index = 1 if args and args[0] == '--' else 0
+    def parse(x):
+        y = x.lower()
 
+        # "xxx" => str
+        if y.startswith('"') and y.endswith('"'):
+            return x[1:-1]
+
+        # int{xxx} / float{xxx} => int / float
+        if y.startswith('int{') and y.endswith('}'):
+            return int(y[4:-1])
+        if y.startswith('float{') and y.endswith('}'):
+            return float(y[6:-1])
+
+        # true / false / none
+        if y in ['true', 'false']:
+            return y == 'true'
+        if y == 'none':
+            return None
+
+        # default => str
+        return x
+
+    index = 0
     while index < len(args):
         arg = args[index]
 
-        if args[0] != '--' and arg.startswith('--configs.'):
-            arg = arg.replace('--configs.', '')
-        elif args[0] == '--' and arg.startswith('configs.'):
-            arg = arg.replace('configs.', '')
-        else:
+        if not arg.startswith('--configs.'):
             raise Exception('unrecognized argument "{}"'.format(arg))
 
-        if '=' in arg:
-            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
+        arg = arg.replace('--configs.', '')
+        if '=' not in arg:
+            ks, v = arg[:arg.index('=')].split('.'), parse(arg[arg.index('=') + 1:])
+            index += 1
         else:
-            index, ks, v = index + 2, arg.split('.'), args[index + 1]
-
-        u = v.lower()
-        if u.startswith('int{') and u.endswith('}'):
-            v = int(u.replace('int{', '').replace('}', ''))
-        elif u.startswith('float{') and u.endswith('}'):
-            v = float(u.replace('float{', '').replace('}', ''))
-        elif u in ['true', 'false']:
-            v = (u == 'true')
-        elif u == 'none':
-            v = None
+            ks, v = arg.split('.'), parse(args[index + 1])
+            index += 2
 
         o = configs
         for k in ks[:-1]:
