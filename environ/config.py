@@ -63,34 +63,44 @@ class Config(G):
 
         return self._func_(*args, **kwargs)
 
-    def __str__(self, indent=0, verbose=None):
-        # default value: True for non-callable; False for callable
-        verbose = (self._func_ is None) if verbose is None else verbose
-
-        assert self._func_ is not None or verbose
-        if self._func_ is not None and not verbose:
-            return str(self._func_)
-
+    def __str__(self, indent=0):
         text = ''
         if self._func_ is not None and indent == 0:
             text += str(self._func_) + '\n'
+            if self._args_ is not None:
+                text += ' ' * (indent + 2) + '[args] = ' + str(self._args_) + '\n'
             indent += 2
 
         for k, v in self.items():
             text += ' ' * indent + '[{}]'.format(k)
             if not isinstance(v, Config):
-                text += ' = {}'.format(v)
+                text += ' = ' + str(v)
             else:
                 if v._func_ is not None:
                     text += ' = ' + str(v._func_)
                     if v._args_ is not None:
-                        text += '\n' + ' ' * (indent + 2) + str(v._args_)
-                if list(v.items()):
-                    text += '\n' + v.__str__(indent + 2, verbose=verbose)
+                        text += '\n' + ' ' * (indent + 2) + '[args] = ' + str(v._args_)
+                text += '\n' + v.__str__(indent + 2)
             text += '\n'
 
-        # remove the last newline
-        return text[:-1]
+        while text and text[-1] == '\n':
+            text = text[:-1]
+        return text
+
+    def __repr__(self):
+        if self._func_ is None:
+            return repr({k: v for k, v in self.items()})
+
+        text = repr(self._func_)
+        text += '('
+        if self._args_:
+            text += repr(self._args_)
+        if self._args_ and list(self.items()):
+            text += ', '
+        if list(self.items()):
+            text += ', '.join('{}={}'.format(k, v) for k, v in self.items())
+        text += ')'
+        return text
 
 
 configs = Config()
