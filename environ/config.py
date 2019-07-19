@@ -127,15 +127,15 @@ def update_configs_from_arguments(args):
             raise Exception('unrecognized argument "{}"'.format(arg))
 
         if '=' not in arg:
-            index, ks, v = index + 2, arg.split('.'), args[index + 1]
+            index, keys, val = index + 2, arg.split('.'), args[index + 1]
         else:
-            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
+            index, keys, val = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
 
-        c = configs
-        for k in ks[:-1]:
-            if k not in c:
-                c[k] = Config()
-            c = c[k]
+        config = configs
+        for k in keys[:-1]:
+            if k not in config:
+                config[k] = Config()
+            config = config[k]
 
         def parse(x):
             if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
@@ -146,4 +146,4 @@ def update_configs_from_arguments(args):
                 pass
             return x
 
-        c[ks[-1]] = parse(v)
+        config[keys[-1]] = parse(val)
