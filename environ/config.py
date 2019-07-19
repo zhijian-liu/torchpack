@@ -84,25 +84,18 @@ def update_configs_from_module(*modules):
         import_module(m)
 
 
-def parse(x):
-    # str
-    if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
-        return x[1:-1]
-
-    # int / float
-    try:
-        x = eval(x)
-    except:
-        pass
-    else:
-        return x
-
-    # str
-    return x
-
-
 def update_configs_from_arguments(args):
     index = 0
+
+    def parse(x):
+        if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
+            return x[1:-1]
+        try:
+            x = eval(x)
+        except:
+            pass
+        return x
+
     while index < len(args):
         arg = args[index]
 
