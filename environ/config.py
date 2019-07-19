@@ -1,5 +1,9 @@
+import collections
 import importlib.util
 import os
+from collections import deque
+
+import six
 
 from .container import G
 
@@ -25,15 +29,30 @@ class Config(G):
         if self.__callable__ is None:
             return self
 
-        # override kwargs: call v() if callable
         for k, v in self.items():
             if k not in kwargs:
-                if isinstance(v, Config):
-                    kwargs[k] = v()
-                else:
-                    kwargs[k] = v
+                kwargs[k] = v
 
-        # call/instantiate with args and kwargs
+        queue = deque([args, kwargs])
+        while queue:
+            x = queue.popleft()
+
+            if isinstance(x, six.string_types):
+                iterable = []
+            elif isinstance(x, (collections.Sequence, collections.UserList)):
+                iterable = enumerate(x)
+            elif isinstance(x, (collections.Mapping, collections.UserDict)):
+                iterable = x.items()
+            else:
+                iterable = []
+
+            for k, v in iterable:
+                if isinstance(v, tuple):
+                    x[k] = list(v)
+                elif isinstance(v, Config):
+                    x[k] = v()
+                queue.append(x[k])
+
         return self.__callable__(*args, **kwargs)
 
     def __str__(self, indent=0, verbose=None):
@@ -66,26 +85,26 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(*modules):
+def update_configs_from_module(*modules, recursive=False):
     imported_modules = set()
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-    def import_module(mod):
-        if mod not in imported_modules:
-            spec = importlib.util.spec_from_file_location(os.path.basename(mod), mod)
-            foo = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(foo)
-            imported_modules.add(mod)
+    def import_once(mod):
+        if mod in imported_modules:
+            return
+        imported_modules.add(mod)
+        spec = importlib.util.spec_from_file_location(os.path.basename(mod), mod)
+        foo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(foo)
 
     for module in modules:
         module = os.path.normpath(module)
         for k, c in enumerate(module):
-            if k != 0 and c != os.sep:
-                continue
-            submod = os.path.join(module[:k], '__init__.py')
-            if os.path.exists(submod):
-                import_module(submod)
-        import_module(module)
+            if c == os.sep:
+                submod = os.path.join(module[:k], '__init__.py')
+                if os.path.exists(submod):
+                    import_once(submod)
+        import_once(module)
 
 
 def update_configs_from_arguments(args):
