@@ -11,59 +11,69 @@ __all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_fr
 
 
 class Config(G):
-    def __init__(self, callable=None, **kwargs):
+    def __init__(self, func=None, args=None, **kwargs):
         super().__init__(**kwargs)
-        self.__callable__ = callable
-
-    def keys(self):
-        for k in super().keys():
-            if k != '__callable__':
-                yield k
+        self._func_ = func
+        self._args_ = args
 
     def items(self):
         for k, v in super().items():
-            if k != '__callable__':
+            if k not in ['_func_', '_args_']:
                 yield k, v
 
-    def __call__(self, *args, **kwargs):
-        if self.__callable__ is None:
-            raise Exception
+    def keys(self):
+        for k, v in self.items():
+            yield k
 
+    def __call__(self, *args, **kwargs):
+        if self._func_ is None:
+            return self
+
+        # override args
+        if args:
+            args = list(args)
+        elif self._args_:
+            args = list(self._args_)
+
+        # override kwargs
         for k, v in self.items():
             if k not in kwargs:
                 kwargs[k] = v
 
-        queue = deque([kwargs])
+        # call all funcs in a recursive manner
+        queue = deque([args, kwargs])
         while queue:
             x = queue.popleft()
 
             if not isinstance(x, six.string_types) and isinstance(x, (collections.Sequence, collections.UserList)):
                 children = enumerate(x)
+            elif isinstance(x, Config):
+                children = x.__dict__.items()
             elif isinstance(x, (collections.Mapping, collections.UserDict)):
                 children = x.items()
             else:
                 children = []
 
             for k, v in children:
-                if isinstance(v, Config) and v.__callable__ is not None:
-                    x[k] = v = v()
+                if isinstance(v, Config):
+                    v = x[k] = v()
                 if isinstance(v, tuple):
-                    x[k] = v = list(v)
+                    v = x[k] = list(v)
                 queue.append(v)
 
-        return self.__callable__(*args, **kwargs)
+        return self._func_(*args, **kwargs)
 
     def __str__(self, indent=0, verbose=None):
         # default value: True for non-callable; False for callable
-        verbose = (self.__callable__ is None) if verbose is None else verbose
+        verbose = (self._func_ is None) if verbose is None else verbose
 
-        assert self.__callable__ is not None or verbose
-        if self.__callable__ is not None and not verbose:
-            return str(self.__callable__)
+        assert self._func_ is not None or verbose
+        if self._func_ is not None and not verbose:
+            return str(self._func_)
 
         text = ''
-        if self.__callable__ is not None and indent == 0:
-            text += str(self.__callable__) + '\n'
+        if self._func_ is not None and indent == 0:
+            text += str(self._func_) + '\n'
             indent += 2
 
         for k, v in self.items():
@@ -71,8 +81,8 @@ class Config(G):
             if not isinstance(v, Config):
                 text += ' = {}'.format(v)
             else:
-                if v.__callable__ is not None:
-                    text += ' = ' + str(v.__callable__)
+                if v._func_ is not None:
+                    text += ' = ' + str(v._func_)
                 text += '\n' + v.__str__(indent + 2, verbose=verbose)
             text += '\n'
 
