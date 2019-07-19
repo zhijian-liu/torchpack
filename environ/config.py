@@ -84,30 +84,24 @@ def update_configs_from_module(*modules):
         import_module(m)
 
 
-def update_configs_from_arguments(args):
-    def parse(x):
-        y = x.lower()
+def parse(x):
+    # str
+    if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
+        return x[1:-1]
 
-        # 'xxx' / "xxx" => str
-        if y.startswith('\'') and y.endswith('\''):
-            return x[1:-1]
-        if y.startswith('\"') and y.endswith('\"'):
-            return x[1:-1]
-
-        # int{xxx} / float{xxx} => int / float
-        if y.startswith('int{') and y.endswith('}'):
-            return int(y[4:-1])
-        if y.startswith('float{') and y.endswith('}'):
-            return float(y[6:-1])
-
-        # true / false / none
-        if y in ['true', 'false']:
-            return y == 'true'
-        if y == 'none':
-            return None
-
+    # int / float
+    try:
+        x = eval(x)
+    except:
+        pass
+    else:
         return x
 
+    # str
+    return x
+
+
+def update_configs_from_arguments(args):
     index = 0
     while index < len(args):
         arg = args[index]
@@ -117,10 +111,10 @@ def update_configs_from_arguments(args):
         else:
             raise Exception('unrecognized argument "{}"'.format(arg))
 
-        if '=' in arg:
-            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), parse(arg[arg.index('=') + 1:])
-        else:
+        if '=' not in arg:
             index, ks, v = index + 2, arg.split('.'), parse(args[index + 1])
+        else:
+            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), parse(arg[arg.index('=') + 1:])
 
         o = configs
         for k in ks[:-1]:
