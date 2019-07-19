@@ -81,9 +81,11 @@ class Config(G):
             if not isinstance(v, Config):
                 text += ' = {}'.format(v)
             else:
+                # fixme: add args info
                 if v._func_ is not None:
                     text += ' = ' + str(v._func_)
-                text += '\n' + v.__str__(indent + 2, verbose=verbose)
+                if list(v.items()):
+                    text += '\n' + v.__str__(indent + 2, verbose=verbose)
             text += '\n'
 
         # remove the last newline
