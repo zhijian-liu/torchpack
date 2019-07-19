@@ -91,15 +91,6 @@ def update_configs_from_module(*modules):
 def update_configs_from_arguments(args):
     index = 0
 
-    def parse(x):
-        if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
-            return x[1:-1]
-        try:
-            x = eval(x)
-        except:
-            pass
-        return x
-
     while index < len(args):
         arg = args[index]
 
@@ -113,9 +104,19 @@ def update_configs_from_arguments(args):
         else:
             index, ks, v = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
 
-        o = configs
+        c = configs
         for k in ks[:-1]:
-            if k not in o:
-                o[k] = Config()
-            o = o[k]
-        o[ks[-1]] = parse(v)
+            if k not in c:
+                c[k] = Config()
+            c = c[k]
+
+        def parse(x):
+            if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
+                return x[1:-1]
+            try:
+                x = eval(x)
+            except:
+                pass
+            return x
+
+        c[ks[-1]] = parse(v)
