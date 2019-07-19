@@ -93,7 +93,7 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(*modules, recursive=False):
+def update_configs_from_module(*modules):
     imported_modules = set()
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
@@ -108,7 +108,7 @@ def update_configs_from_module(*modules, recursive=False):
     for module in modules:
         module = os.path.normpath(module)
         for index, char in enumerate(module):
-            if char == os.sep:
+            if index == 0 or char == os.sep:
                 submod = os.path.join(module[:index], '__init__.py')
                 if os.path.exists(submod):
                     exec_module_once(submod)
