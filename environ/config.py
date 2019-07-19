@@ -81,9 +81,10 @@ class Config(G):
             if not isinstance(v, Config):
                 text += ' = {}'.format(v)
             else:
-                # fixme: add args info
                 if v._func_ is not None:
                     text += ' = ' + str(v._func_)
+                    if v._args_ is not None:
+                        text += '\n' + ' ' * (indent + 2) + str(v._args_)
                 if list(v.items()):
                     text += '\n' + v.__str__(indent + 2, verbose=verbose)
             text += '\n'
