@@ -70,18 +70,19 @@ def update_configs_from_module(*modules):
     imported_modules = set()
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-    def import_module(module):
-        if module not in imported_modules:
-            spec = importlib.util.spec_from_file_location(module.split('/')[-1], module)
+    def import_module(mod):
+        if mod not in imported_modules:
+            spec = importlib.util.spec_from_file_location(os.path.basename(mod), mod)
             foo = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(foo)
-            imported_modules.add(module)
+            imported_modules.add(mod)
 
-    for m in modules:
-        for k, c in enumerate(m):
-            if c == '/' and os.path.exists(m[:k + 1] + '__init__.py'):
-                import_module(m[:k + 1] + '__init__.py')
-        import_module(m)
+    for module in modules:
+        module = os.path.normpath(module)
+        for k, c in enumerate(module):
+            if c == os.sep and os.path.exists(module[:k + 1] + '__init__.py'):
+                import_module(module[:k + 1] + '__init__.py')
+        import_module(module)
 
 
 def update_configs_from_arguments(args):
