@@ -80,8 +80,11 @@ def update_configs_from_module(*modules):
     for module in modules:
         module = os.path.normpath(module)
         for k, c in enumerate(module):
-            if c == os.sep and os.path.exists(module[:k + 1] + '__init__.py'):
-                import_module(module[:k + 1] + '__init__.py')
+            if k != 0 and c != os.sep:
+                continue
+            submod = os.path.join(module[:k], '__init__.py')
+            if os.path.exists(submod):
+                import_module(submod)
         import_module(module)
 
 
