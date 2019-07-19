@@ -105,13 +105,13 @@ def update_configs_from_arguments(args):
             raise Exception('unrecognized argument "{}"'.format(arg))
 
         if '=' not in arg:
-            index, ks, v = index + 2, arg.split('.'), parse(args[index + 1])
+            index, ks, v = index + 2, arg.split('.'), args[index + 1]
         else:
-            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), parse(arg[arg.index('=') + 1:])
+            index, ks, v = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
 
         o = configs
         for k in ks[:-1]:
             if k not in o:
                 o[k] = Config()
             o = o[k]
-        o[ks[-1]] = v
+        o[ks[-1]] = parse(v)
