@@ -27,31 +27,29 @@ class Config(G):
 
     def __call__(self, *args, **kwargs):
         if self.__callable__ is None:
-            return self
+            raise Exception
 
         for k, v in self.items():
             if k not in kwargs:
                 kwargs[k] = v
 
-        queue = deque([args, kwargs])
+        queue = deque([kwargs])
         while queue:
             x = queue.popleft()
 
-            if isinstance(x, six.string_types):
-                iterable = []
-            elif isinstance(x, (collections.Sequence, collections.UserList)):
-                iterable = enumerate(x)
+            if not isinstance(x, six.string_types) and isinstance(x, (collections.Sequence, collections.UserList)):
+                children = enumerate(x)
             elif isinstance(x, (collections.Mapping, collections.UserDict)):
-                iterable = x.items()
+                children = x.items()
             else:
-                iterable = []
+                children = []
 
-            for k, v in iterable:
+            for k, v in children:
+                if isinstance(v, Config) and v.__callable__ is not None:
+                    x[k] = v = v()
                 if isinstance(v, tuple):
-                    x[k] = list(v)
-                elif isinstance(v, Config):
-                    x[k] = v()
-                queue.append(x[k])
+                    x[k] = v = list(v)
+                queue.append(v)
 
         return self.__callable__(*args, **kwargs)
 
@@ -89,7 +87,7 @@ def update_configs_from_module(*modules, recursive=False):
     imported_modules = set()
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-    def import_once(mod):
+    def exec_module_once(mod):
         if mod in imported_modules:
             return
         imported_modules.add(mod)
@@ -99,12 +97,12 @@ def update_configs_from_module(*modules, recursive=False):
 
     for module in modules:
         module = os.path.normpath(module)
-        for k, c in enumerate(module):
-            if c == os.sep:
-                submod = os.path.join(module[:k], '__init__.py')
+        for index, char in enumerate(module):
+            if char == os.sep:
+                submod = os.path.join(module[:index], '__init__.py')
                 if os.path.exists(submod):
-                    import_once(submod)
-        import_once(module)
+                    exec_module_once(submod)
+        exec_module_once(module)
 
 
 def update_configs_from_arguments(args):
