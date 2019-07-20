@@ -92,11 +92,15 @@ class Config(G):
             return repr({k: v for k, v in self.items()})
 
         args = []
-        if self._args_ is not None:
+        if self._passive_call_ is False:
+            args += ['passive_call=False']
+        if self._args_:
             args += [repr(arg) for arg in self._args_]
         if list(self.items()):
             args += [str(k) + '=' + repr(v) for k, v in self.items()]
-        return repr(self._func_) + '(' + ', '.join(args) + ')'
+
+        text = repr(self._func_) + '(' + ', '.join(args) + ')'
+        return text
 
 
 configs = Config()
