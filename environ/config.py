@@ -11,14 +11,15 @@ __all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_fr
 
 
 class Config(G):
-    def __init__(self, func=None, args=None, **kwargs):
+    def __init__(self, func=None, args=None, passive_call=True, **kwargs):
         super().__init__(**kwargs)
         self._func_ = func
         self._args_ = args
+        self._passive_call_ = passive_call
 
     def items(self):
         for k, v in super().items():
-            if k not in ['_func_', '_args_']:
+            if k not in ['_func_', '_args_', '_passive_call_']:
                 yield k, v
 
     def keys(self):
@@ -55,7 +56,7 @@ class Config(G):
                 children = []
 
             for k, v in children:
-                if isinstance(v, Config):
+                if isinstance(v, Config) and v._passive_call_:
                     v = x[k] = v()
                 if isinstance(v, tuple):
                     v = x[k] = list(v)
@@ -65,21 +66,20 @@ class Config(G):
 
     def __str__(self, indent=0):
         text = ''
-        if self._func_ is not None and indent == 0:
-            text += str(self._func_) + '\n'
-            if self._args_ is not None:
-                text += ' ' * (indent + 2) + '[args] = ' + str(self._args_) + '\n'
-            indent += 2
+
+        if self._func_ is not None:
+            text += ' ' * indent + '[func] = ' + str(self._func_)
+            if self._passive_call_ is False:
+                text += '(passive_call=False)'
+            text += '\n'
+        if self._args_ is not None:
+            text += ' ' * indent + '[args] = ' + str(self._args_) + '\n'
 
         for k, v in self.items():
             text += ' ' * indent + '[{}]'.format(k)
             if not isinstance(v, Config):
                 text += ' = ' + str(v)
             else:
-                if v._func_ is not None:
-                    text += ' = ' + str(v._func_)
-                    if v._args_ is not None:
-                        text += '\n' + ' ' * (indent + 2) + '[args] = ' + str(v._args_)
                 text += '\n' + v.__str__(indent + 2)
             text += '\n'
 
@@ -91,16 +91,12 @@ class Config(G):
         if self._func_ is None:
             return repr({k: v for k, v in self.items()})
 
-        text = repr(self._func_)
-        text += '('
-        if self._args_:
-            text += repr(self._args_)
-        if self._args_ and list(self.items()):
-            text += ', '
+        args = []
+        if self._args_ is not None:
+            args += [repr(arg) for arg in self._args_]
         if list(self.items()):
-            text += ', '.join('{}={}'.format(k, v) for k, v in self.items())
-        text += ')'
-        return text
+            args += [str(k) + '=' + repr(v) for k, v in self.items()]
+        return repr(self._func_) + '(' + ', '.join(args) + ')'
 
 
 configs = Config()
