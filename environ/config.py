@@ -31,6 +31,10 @@ class Config(G):
         for k, v in self.items():
             yield k
 
+    def values(self):
+        for k, v in self.items():
+            yield v
+
     def __call__(self, *args, **kwargs):
         if self._func_ is None:
             return self
