@@ -41,7 +41,7 @@ class Config(G):
             if k not in kwargs:
                 kwargs[k] = v
 
-        # call all funcs in a recursive manner
+        # call all non-detached funcs recursively
         queue = deque([args, kwargs])
         while queue:
             x = queue.popleft()
@@ -56,13 +56,12 @@ class Config(G):
                 children = []
 
             for k, v in children:
-                if isinstance(v, Config):
-                    if not v._detach_:
-                        v = x[k] = v()
-                    else:
-                        continue
-                elif isinstance(v, tuple):
+                if isinstance(v, tuple):
                     v = x[k] = list(v)
+                elif isinstance(v, Config):
+                    if not v._detach_:
+                        continue
+                    v = x[k] = v()
                 queue.append(v)
 
         return self._func_(*args, **kwargs)
@@ -102,7 +101,9 @@ class Config(G):
         if self._detach_:
             args += ['detach=True']
 
-        text = repr(self._func_) + '(' + ', '.join(args) + ')'
+        text = repr(self._func_)
+        if args:
+            text += '(' + ', '.join(args) + ')'
         return text
 
 
