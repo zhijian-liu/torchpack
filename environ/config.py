@@ -11,15 +11,15 @@ __all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_fr
 
 
 class Config(G):
-    def __init__(self, func=None, args=None, passive_call=True, **kwargs):
+    def __init__(self, func=None, args=None, detach=False, **kwargs):
         super().__init__(**kwargs)
         self._func_ = func
         self._args_ = args
-        self._passive_call_ = passive_call
+        self._detach_ = detach
 
     def items(self):
         for k, v in super().items():
-            if k not in ['_func_', '_args_', '_passive_call_']:
+            if k not in ['_func_', '_args_', '_detach_']:
                 yield k, v
 
     def keys(self):
@@ -56,9 +56,12 @@ class Config(G):
                 children = []
 
             for k, v in children:
-                if isinstance(v, Config) and v._passive_call_:
-                    v = x[k] = v()
-                if isinstance(v, tuple):
+                if isinstance(v, Config):
+                    if not v._detach_:
+                        v = x[k] = v()
+                    else:
+                        continue
+                elif isinstance(v, tuple):
                     v = x[k] = list(v)
                 queue.append(v)
 
@@ -69,8 +72,8 @@ class Config(G):
 
         if self._func_ is not None:
             text += ' ' * indent + '[func] = ' + str(self._func_)
-            if self._passive_call_ is False:
-                text += '(passive_call=False)'
+            if self._detach_:
+                text += '(detach=True)'
             text += '\n'
         if self._args_ is not None:
             text += ' ' * indent + '[args] = ' + str(self._args_) + '\n'
@@ -92,12 +95,12 @@ class Config(G):
             return repr({k: v for k, v in self.items()})
 
         args = []
-        if self._passive_call_ is False:
-            args += ['passive_call=False']
         if self._args_:
             args += [repr(arg) for arg in self._args_]
         if list(self.items()):
             args += [str(k) + '=' + repr(v) for k, v in self.items()]
+        if self._detach_:
+            args += ['detach=True']
 
         text = repr(self._func_) + '(' + ', '.join(args) + ')'
         return text
