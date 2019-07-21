@@ -7,7 +7,7 @@ class G(dict):
     def __getattr__(self, k):
         if k not in self:
             # todo: issue a warning
-            self[k] = G()
+            self[k] = type(self)()
         return self[k]
 
     def __setattr__(self, k, v):
