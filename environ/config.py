@@ -12,12 +12,11 @@ __all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_fr
 
 class Config(G):
     def __init__(self, func=None, args=None, detach=False, **kwargs):
+        super().__init__(**kwargs)
         if func is not None and not callable(func):
             raise Exception('func "{}" is not a callable function or class'.format(repr(func)))
         if args is not None and not isinstance(args, (collections.Sequence, collections.UserList)):
             raise Exception('args "{}" is not an iterable tuple or list'.format(repr(args)))
-
-        super().__init__(**kwargs)
         self._func_ = func
         self._args_ = args
         self._detach_ = detach
@@ -111,26 +110,26 @@ class Config(G):
 configs = Config()
 
 
-def update_configs_from_module(*modules):
+def update_configs_from_module(*mods):
     imported_modules = set()
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-    def exec_module_once(mod):
-        if mod in imported_modules:
+    def exec_module_once(module):
+        if module in imported_modules:
             return
-        imported_modules.add(mod)
-        spec = importlib.util.spec_from_file_location(os.path.basename(mod), mod)
+        imported_modules.add(module)
+        spec = importlib.util.spec_from_file_location(os.path.basename(module), module)
         foo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(foo)
 
-    for module in modules:
-        module = os.path.normpath(module)
-        for index, char in enumerate(module):
+    for mod in mods:
+        mod = os.path.normpath(mod)
+        for index, char in enumerate(mod):
             if index == 0 or char == os.sep:
-                submod = os.path.join(module[:index], '__init__.py')
+                submod = os.path.join(mod[:index], '__init__.py')
                 if os.path.exists(submod):
                     exec_module_once(submod)
-        exec_module_once(module)
+        exec_module_once(mod)
 
 
 def update_configs_from_arguments(args):
