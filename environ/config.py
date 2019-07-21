@@ -41,7 +41,7 @@ class Config(G):
             if k not in kwargs:
                 kwargs[k] = v
 
-        # call all non-detached funcs recursively
+        # recursively call non-detached funcs
         queue = deque([args, kwargs])
         while queue:
             x = queue.popleft()
@@ -74,10 +74,9 @@ class Config(G):
             if self._detach_:
                 text += '(detach=True)'
             text += '\n'
-
-        if self._args_ is not None:
-            for k, arg in enumerate(self._args_):
-                text += ' ' * indent + '[args:{}] = '.format(k) + str(arg) + '\n'
+            if self._args_:
+                for k, v in enumerate(self._args_):
+                    text += ' ' * indent + '[args:' + str(k) + '] = ' + str(v) + '\n'
 
         for k, v in self.items():
             text += ' ' * indent + '[' + str(k) + ']'
@@ -92,19 +91,18 @@ class Config(G):
         return text
 
     def __repr__(self):
-        if self._func_ is None:
-            return repr({k: v for k, v in self.items()})
+        text = ''
+        if self._func_ is not None:
+            text += repr(self._func_)
 
         args = []
-        if self._args_:
+        if self._func_ is not None and self._args_:
             args += [repr(arg) for arg in self._args_]
-        if list(self.items()):
-            args += [str(k) + '=' + repr(v) for k, v in self.items()]
-        if self._detach_:
+        args += [str(k) + '=' + repr(v) for k, v in self.items()]
+        if self._func_ is not None and self._detach_:
             args += ['detach=True']
 
-        text = repr(self._func_)
-        if args:
+        if self._func_ is None or args:
             text += '(' + ', '.join(args) + ')'
         return text
 
