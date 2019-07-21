@@ -59,7 +59,7 @@ class Config(G):
                 if isinstance(v, tuple):
                     v = x[k] = list(v)
                 elif isinstance(v, Config):
-                    if not v._detach_:
+                    if v._detach_:
                         continue
                     v = x[k] = v()
                 queue.append(v)
@@ -68,7 +68,6 @@ class Config(G):
 
     def __str__(self, indent=0):
         text = ''
-
         if self._func_ is not None:
             text += ' ' * indent + '[func] = ' + str(self._func_)
             if self._detach_:
@@ -78,7 +77,7 @@ class Config(G):
             text += ' ' * indent + '[args] = ' + str(self._args_) + '\n'
 
         for k, v in self.items():
-            text += ' ' * indent + '[{}]'.format(k)
+            text += ' ' * indent + '[' + str(k) + ']'
             if not isinstance(v, Config):
                 text += ' = ' + str(v)
             else:
