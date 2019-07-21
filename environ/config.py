@@ -99,10 +99,9 @@ class Config(G):
             items += [repr(arg) for arg in self._args_]
         items += [str(k) + '=' + repr(v) for k, v in self.items()]
         if self._func_ is not None and self._detach_:
-            items += ['detach=' + str(self._detach_)]
+            items += ['detach=' + repr(self._detach_)]
 
-        if items or self._func_ is None:
-            text += '(' + ', '.join(items) + ')'
+        text += '(' + ', '.join(items) + ')'
         return text
 
 
