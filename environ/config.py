@@ -68,13 +68,16 @@ class Config(G):
 
     def __str__(self, indent=0):
         text = ''
+
         if self._func_ is not None:
             text += ' ' * indent + '[func] = ' + str(self._func_)
             if self._detach_:
                 text += '(detach=True)'
             text += '\n'
+
         if self._args_ is not None:
-            text += ' ' * indent + '[args] = ' + str(self._args_) + '\n'
+            for k, arg in enumerate(self._args_):
+                text += ' ' * indent + '[args:{}] = '.format(k) + str(arg) + '\n'
 
         for k, v in self.items():
             text += ' ' * indent + '[' + str(k) + ']'
