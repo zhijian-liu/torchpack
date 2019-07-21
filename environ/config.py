@@ -47,15 +47,13 @@ class Config(G):
             x = queue.popleft()
 
             if not isinstance(x, six.string_types) and isinstance(x, (collections.Sequence, collections.UserList)):
-                children = enumerate(x)
-            elif isinstance(x, Config):
-                children = x.__dict__.items()
+                items = enumerate(x)
             elif isinstance(x, (collections.Mapping, collections.UserDict)):
-                children = x.items()
+                items = x.items()
             else:
-                children = []
+                items = []
 
-            for k, v in children:
+            for k, v in items:
                 if isinstance(v, tuple):
                     v = x[k] = list(v)
                 elif isinstance(v, Config):
@@ -79,10 +77,10 @@ class Config(G):
 
         for k, v in self.items():
             text += ' ' * indent + '[' + str(k) + ']'
-            if not isinstance(v, Config):
-                text += ' = ' + str(v)
-            else:
+            if isinstance(v, Config):
                 text += '\n' + v.__str__(indent + 2)
+            else:
+                text += ' = ' + str(v)
             text += '\n'
 
         while text and text[-1] == '\n':
