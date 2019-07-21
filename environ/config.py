@@ -16,7 +16,6 @@ class Config(G):
             raise TypeError('func "{}" is not a callable function or class'.format(repr(func)))
         if args is not None and not isinstance(args, (collections.Sequence, collections.UserList)):
             raise TypeError('args "{}" is not an iterable tuple or list'.format(repr(args)))
-
         super().__init__(**kwargs)
         self._func_ = func
         self._args_ = args
