@@ -12,13 +12,12 @@ __all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_fr
 
 class Config(G):
     def __init__(self, func=None, args=None, detach=False, **kwargs):
-        super().__init__(**kwargs)
-
         if func is not None and not callable(func):
             raise Exception('func "{}" is not a callable function or class'.format(repr(func)))
         if args is not None and not isinstance(args, (collections.Sequence, collections.UserList)):
             raise Exception('args "{}" is not an iterable tuple or list'.format(repr(args)))
 
+        super().__init__(**kwargs)
         self._func_ = func
         self._args_ = args
         self._detach_ = detach
@@ -145,10 +144,10 @@ def update_configs_from_arguments(args):
         else:
             raise Exception('unrecognized argument "{}"'.format(arg))
 
-        if '=' not in arg:
-            index, keys, val = index + 2, arg.split('.'), args[index + 1]
-        else:
+        if '=' in arg:
             index, keys, val = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
+        else:
+            index, keys, val = index + 2, arg.split('.'), args[index + 1]
 
         config = configs
         for k in keys[:-1]:
