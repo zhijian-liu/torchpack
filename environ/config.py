@@ -68,11 +68,10 @@ class Config(G):
 
     def __str__(self, indent=0):
         text = ''
-
         if self._func_ is not None:
             text += ' ' * indent + '[func] = ' + str(self._func_)
             if self._detach_:
-                text += '(detach=True)'
+                text += '(detach=' + str(self._detach_) + ')'
             text += '\n'
             if self._args_:
                 for k, v in enumerate(self._args_):
@@ -95,15 +94,15 @@ class Config(G):
         if self._func_ is not None:
             text += repr(self._func_)
 
-        args = []
+        items = []
         if self._func_ is not None and self._args_:
-            args += [repr(arg) for arg in self._args_]
-        args += [str(k) + '=' + repr(v) for k, v in self.items()]
+            items += [repr(arg) for arg in self._args_]
+        items += [str(k) + '=' + repr(v) for k, v in self.items()]
         if self._func_ is not None and self._detach_:
-            args += ['detach=True']
+            items += ['detach=' + str(self._detach_)]
 
-        if self._func_ is None or args:
-            text += '(' + ', '.join(args) + ')'
+        if items or self._func_ is None:
+            text += '(' + ', '.join(items) + ')'
         return text
 
 
