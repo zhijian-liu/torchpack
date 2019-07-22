@@ -49,13 +49,13 @@ class MobileBlockV2(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    first_channels, last_channels = 32, 1280
-    blocks = [(1, 16, 1, 1), (6, 24, 2, 2), (6, 32, 3, 2), (6, 64, 4, 2), (6, 96, 3, 1), (6, 160, 3, 2), (6, 320, 1, 1)]
+    blocks = [32, (1, 16, 1, 1), (6, 24, 2, 2), (6, 32, 3, 2), (6, 64, 4, 2),
+              (6, 96, 3, 1), (6, 160, 3, 2), (6, 320, 1, 1), 1280]
 
     def __init__(self, num_classes, width_multiplier=1.0):
         super().__init__()
-        input_channels = round(self.first_channels * width_multiplier)
-        last_channels = round(self.last_channels * max(width_multiplier, 1.0))
+        input_channels = round(self.blocks[0] * width_multiplier)
+        last_channels = round(self.blocks[-1] * max(width_multiplier, 1.0))
 
         layers = [nn.Sequential(
             nn.Conv2d(3, input_channels, 3, stride=2, padding=1, bias=False),
@@ -63,7 +63,7 @@ class MobileNetV2(nn.Module):
             nn.ReLU6(inplace=True)
         )]
 
-        for expand_ratio, output_channels, num_blocks, strides in self.blocks:
+        for expand_ratio, output_channels, num_blocks, strides in self.blocks[1:-1]:
             output_channels = round(output_channels * width_multiplier)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(MobileBlockV2(input_channels, output_channels, 3, stride, expand_ratio))

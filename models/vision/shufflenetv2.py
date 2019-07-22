@@ -59,13 +59,15 @@ class ShuffleBlockV2(nn.Module):
 
 
 class ShuffleNetV2(nn.Module):
-    first_channels, last_channels = 24, 1024
-    blocks = [(116, 4, 2), (232, 8, 2), (464, 4, 2)]
+    blocks = {0.5: [24, (48, 4, 2), (96, 8, 2), (192, 4, 2), 1024],
+              1.0: [24, (116, 4, 2), (232, 8, 2), (464, 4, 2), 1024],
+              1.5: [24, (116, 4, 2), (232, 8, 2), (464, 4, 2), 1024],
+              2.0: [24, (244, 4, 2), (488, 8, 2), (976, 4, 2), 2048]}
 
     def __init__(self, num_classes, width_multiplier=1.0):
         super().__init__()
-        input_channels = round(self.first_channels * width_multiplier)
-        last_channels = round(self.last_channels * max(width_multiplier, 1.0))
+        input_channels = self.blocks[width_multiplier][0]
+        last_channels = self.blocks[width_multiplier][-1]
 
         layers = [nn.Sequential(
             nn.Conv2d(3, input_channels, 3, stride=2, padding=1, bias=False),
@@ -73,8 +75,7 @@ class ShuffleNetV2(nn.Module):
             nn.ReLU(inplace=True)
         )]
 
-        for output_channels, num_blocks, strides in self.blocks:
-            output_channels = round(output_channels * width_multiplier)
+        for output_channels, num_blocks, strides in self.blocks[width_multiplier][1:-1]:
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(ShuffleBlockV2(input_channels, output_channels, 3, stride))
                 input_channels = output_channels
