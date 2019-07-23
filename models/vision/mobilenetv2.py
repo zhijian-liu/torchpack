@@ -43,9 +43,9 @@ class MobileBlockV2(nn.Module):
 
     def forward(self, x):
         if self.input_channels == self.output_channels and self.stride == 1:
-            return x + self.layers.forward(x)
+            return x + self.layers(x)
         else:
-            return self.layers.forward(x)
+            return self.layers(x)
 
 
 class MobileNetV2(nn.Module):

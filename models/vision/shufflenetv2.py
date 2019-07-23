@@ -51,11 +51,15 @@ class ShuffleBlockV2(nn.Module):
         )
 
     def forward(self, x):
-        if self.stride == 1:
-            x1, x2 = x[:, :x.size(1) // 2], self.branch2(x[:, x.size(1) // 2:])
+        if self.stride != 1:
+            x1 = self.branch1(x)
+            x2 = self.branch2(x)
         else:
-            x1, x2 = self.branch1(x), self.branch2(x)
-        return shuffle_channel(torch.cat([x1, x2], dim=1), groups=2)
+            x1, x2 = x.chunk(2, dim=1)
+            x2 = self.branch2(x2)
+        x = torch.cat((x1, x2), dim=1)
+        x = shuffle_channel(x, groups=2)
+        return x
 
 
 class ShuffleNetV2(nn.Module):
