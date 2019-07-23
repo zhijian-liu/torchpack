@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from ..utils import _make_divisible
+from ..utils import make_divisible
 
 __all__ = ['MobileNetV2', 'MobileBlockV2']
 
@@ -56,8 +56,8 @@ class MobileNetV2(nn.Module):
 
     def __init__(self, num_classes, width_multiplier=1.0):
         super().__init__()
-        input_channels = _make_divisible(self.blocks[0] * width_multiplier, 8)
-        last_channels = _make_divisible(self.blocks[-1] * width_multiplier, 8, min_value=1280)
+        input_channels = make_divisible(self.blocks[0] * width_multiplier, 8)
+        last_channels = make_divisible(self.blocks[-1] * width_multiplier, 8, min_value=1280)
 
         layers = [nn.Sequential(
             nn.Conv2d(3, input_channels, 3, stride=2, padding=1, bias=False),
@@ -66,7 +66,7 @@ class MobileNetV2(nn.Module):
         )]
 
         for expand_ratio, output_channels, num_blocks, strides in self.blocks[1:-1]:
-            output_channels = _make_divisible(output_channels * width_multiplier, 8)
+            output_channels = make_divisible(output_channels * width_multiplier, 8)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(MobileBlockV2(input_channels, output_channels, 3, stride, expand_ratio))
                 input_channels = output_channels
