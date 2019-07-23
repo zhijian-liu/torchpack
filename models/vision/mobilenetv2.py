@@ -15,7 +15,7 @@ class MobileBlockV2(nn.Module):
         if expand_ratio == 1:
             self.layers = nn.Sequential(
                 nn.Conv2d(input_channels, input_channels, kernel_size,
-                          stride=stride, padding=(kernel_size - 1) // 2,
+                          stride=stride, padding=kernel_size // 2,
                           groups=input_channels, bias=False),
                 nn.BatchNorm2d(input_channels),
                 nn.ReLU6(inplace=True),
@@ -32,7 +32,7 @@ class MobileBlockV2(nn.Module):
                 nn.ReLU6(inplace=True),
 
                 nn.Conv2d(expand_channels, expand_channels, kernel_size,
-                          stride=stride, padding=(kernel_size - 1) // 2,
+                          stride=stride, padding=kernel_size // 2,
                           groups=expand_channels, bias=False),
                 nn.BatchNorm2d(expand_channels),
                 nn.ReLU6(inplace=True),

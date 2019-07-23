@@ -26,7 +26,7 @@ class ShuffleBlockV2(nn.Module):
         if stride != 1:
             self.branch1 = nn.Sequential(
                 nn.Conv2d(input_channels, input_channels, kernel_size,
-                          stride=stride, padding=(kernel_size - 1) // 2,
+                          stride=stride, padding=kernel_size // 2,
                           groups=input_channels, bias=False),
                 nn.BatchNorm2d(input_channels),
 
@@ -41,7 +41,7 @@ class ShuffleBlockV2(nn.Module):
             nn.ReLU(inplace=True),
 
             nn.Conv2d(output_channels, output_channels, kernel_size,
-                      stride=stride, padding=(kernel_size - 1) // 2,
+                      stride=stride, padding=kernel_size // 2,
                       groups=output_channels, bias=False),
             nn.BatchNorm2d(output_channels),
 

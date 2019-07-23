@@ -12,7 +12,7 @@ class MobileBlockV1(nn.Sequential):
 
         super().__init__(
             nn.Conv2d(input_channels, input_channels, kernel_size,
-                      stride=stride, padding=(kernel_size - 1) // 2,
+                      stride=stride, padding=kernel_size // 2,
                       groups=input_channels, bias=False),
             nn.BatchNorm2d(input_channels),
             nn.ReLU(inplace=True),
