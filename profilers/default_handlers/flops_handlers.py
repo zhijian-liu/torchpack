@@ -21,7 +21,8 @@ default_flops_handlers = [
     ((nn.Conv1d, nn.Conv2d, nn.Conv3d), conv),
     ((nn.ConvTranspose1d, nn.ConvTranspose2d, nn.ConvTranspose3d), conv),
 
-    ((nn.ReLU, nn.ReLU6, nn.Tanh), None),
+    ((nn.Tanh, nn.Hardtanh), None),
+    ((nn.ReLU, nn.ReLU6, nn.LeakyReLU), None),
     ((nn.Dropout, nn.Dropout2d, nn.Dropout3d), None),
     ((nn.MaxPool1d, nn.MaxPool2d, nn.MaxPool3d), None),
     ((nn.AvgPool1d, nn.AvgPool2d, nn.AvgPool3d), None),
