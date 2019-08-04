@@ -1,2 +1,4 @@
-<img src=".assets/torchpack.png" alt="torchpack" width="200"/>
+# TorchPack
 Torchpack is a neural network training interface based on PyTorch.
+
+## Installation
