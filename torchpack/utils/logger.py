@@ -1,6 +1,7 @@
+# from https://github.com/tensorpack/tensorpack/blob/master/tensorpack/utils/logger.py
+
 import logging
 import os
-import os.path
 import shutil
 import sys
 from datetime import datetime
@@ -11,7 +12,7 @@ from termcolor import colored
 __all__ = ['set_logger_dir', 'auto_set_dir', 'get_logger_dir']
 
 
-class _MyFormatter(logging.Formatter):
+class _Formatter(logging.Formatter):
     def format(self, record):
         date = colored('[%(asctime)s @%(filename)s:%(lineno)d]', 'green')
         msg = '%(message)s'
@@ -24,31 +25,25 @@ class _MyFormatter(logging.Formatter):
         else:
             fmt = date + ' ' + msg
         if hasattr(self, '_style'):
-            # Python3 compatibility
             self._style._fmt = fmt
         self._fmt = fmt
-        return super(_MyFormatter, self).format(record)
+        return super(_Formatter, self).format(record)
 
 
-def _getlogger():
-    logger = logging.getLogger('tensorpack')
+def _get_logger():
+    logger = logging.getLogger('torchpack')
     logger.propagate = False
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(_MyFormatter(datefmt='%m%d %H:%M:%S'))
+    handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
     logger.addHandler(handler)
     return logger
 
 
-_logger = _getlogger()
-_LOGGING_METHOD = ['info', 'warning', 'error', 'critical', 'exception', 'debug', 'setLevel', 'addFilter']
-# export logger functions
-for func in _LOGGING_METHOD:
+_logger = _get_logger()
+for func in ['info', 'warning', 'error', 'critical', 'exception', 'debug', 'setLevel', 'addFilter']:
     locals()[func] = getattr(_logger, func)
     __all__.append(func)
-# 'warn' is deprecated in logging module
-warn = _logger.warning
-__all__.append('warn')
 
 
 def _get_time_str():
@@ -68,7 +63,7 @@ def _set_file(path):
         _logger.info("Existing log file '{}' backuped to '{}'".format(path, backup_name))  # noqa: F821
     hdl = logging.FileHandler(
         filename=path, encoding='utf-8', mode='w')
-    hdl.setFormatter(_MyFormatter(datefmt='%m%d %H:%M:%S'))
+    hdl.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
 
     _FILE_HANDLER = hdl
     _logger.addHandler(hdl)
@@ -106,9 +101,9 @@ def set_logger_dir(dirname, action=None):
 
     if dir_nonempty(dirname):
         if not action:
-            _logger.warn("""\
+            _logger.warning("""\
 Log directory {} exists! Use 'd' to delete it. """.format(dirname))
-            _logger.warn("""\
+            _logger.warning("""\
 If you're resuming from a previous run, you can choose to keep it.
 Press any other key to exit. """)
         while not action:
