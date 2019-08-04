@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+import argparse
+import os
+import subprocess
+import sys
+
+from torchpack.utils.device import set_cuda_visible_devices
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--devices', '-d', type=str, default='*')
+    parser.add_argument('cmd', nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+
+    env = os.environ.copy()
+    set_cuda_visible_devices(args.devices, env=env)
+
+    cmd = [sys.executable, '-u'] + args.cmd
+    process = subprocess.Popen(cmd, env=env)
+
+    process.wait()
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(returncode=process.returncode, cmd=cmd)
