@@ -10,10 +10,10 @@ from torchpack.utils.device import set_cuda_visible_devices
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--devices', '-d', type=str, default='*')
-    parser.add_argument('cmd', nargs=argparse.REMAINDER)
+    parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
 
-    cmd = [sys.executable, '-u'] + args.cmd
+    cmd = [sys.executable, '-u'] + args.command
 
     env = os.environ.copy()
     set_cuda_visible_devices(args.devices, env=env)
