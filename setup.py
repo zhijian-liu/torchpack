@@ -7,6 +7,11 @@ setup(
     version=__version__,
     packages=find_packages(),
     url='https://github.com/mit-han-lab/torchpack',
-    install_requires=['torch'],
+    install_requires=[
+        'numpy>=1.14',
+        'six',
+        'termcolor>=1.1',
+        'torch'
+    ],
     scripts=['bin/tprun']
 )

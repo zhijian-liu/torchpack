@@ -24,10 +24,8 @@ class _Formatter(logging.Formatter):
             fmt = date + ' ' + colored('DBG', 'yellow', attrs=['blink']) + ' ' + msg
         else:
             fmt = date + ' ' + msg
-        if hasattr(self, '_style'):
-            self._style._fmt = fmt
-        self._fmt = fmt
-        return super(_Formatter, self).format(record)
+        self._style._fmt = fmt
+        return super().format(record)
 
 
 def _get_logger():
@@ -51,7 +49,7 @@ def _get_time_str():
 
 
 # globals: logger file and directory:
-LOG_DIR = None
+_LOG_DIR = None
 _FILE_HANDLER = None
 
 
@@ -61,12 +59,11 @@ def _set_file(path):
         backup_name = path + '.' + _get_time_str()
         shutil.move(path, backup_name)
         _logger.info("Existing log file '{}' backuped to '{}'".format(path, backup_name))  # noqa: F821
-    hdl = logging.FileHandler(
-        filename=path, encoding='utf-8', mode='w')
-    hdl.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
+    handler = logging.FileHandler(filename=path, encoding='utf-8', mode='w')
+    handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
 
-    _FILE_HANDLER = hdl
-    _logger.addHandler(hdl)
+    _FILE_HANDLER = handler
+    _logger.addHandler(handler)
     _logger.info("Argv: " + ' '.join(sys.argv))
 
 
@@ -89,7 +86,7 @@ def set_logger_dir(dirname, action=None):
                 old states for you. It simply does nothing.
 
     """
-    global LOG_DIR, _FILE_HANDLER
+    global _LOG_DIR, _FILE_HANDLER
     if _FILE_HANDLER:
         # unload and close the old file handler, so that we may safely delete the logger directory
         _logger.removeHandler(_FILE_HANDLER)
@@ -124,7 +121,7 @@ Press any other key to exit. """)
             pass
         else:
             raise OSError("Directory {} exits!".format(dirname))
-    LOG_DIR = dirname
+    _LOG_DIR = dirname
     from .fs import mkdir_p
     mkdir_p(dirname)
     _set_file(os.path.join(dirname, 'log.log'))
@@ -148,4 +145,4 @@ def get_logger_dir():
         The logger directory, or None if not set.
         The directory is used for general logging, tensorboard events, checkpoints, etc.
     """
-    return LOG_DIR
+    return _LOG_DIR
