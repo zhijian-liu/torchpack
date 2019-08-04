@@ -5,24 +5,7 @@ import os
 import subprocess
 import sys
 
-
-def set_cuda_visible_devices(devs):
-    gpus = []
-    for dev in devs.split(','):
-        dev = dev.strip().lower()
-        if dev == 'cpu':
-            continue
-        if dev.startswith('gpu'):
-            dev = dev[3:]
-        if '-' in dev:
-            l, r = map(int, dev.split('-'))
-            gpus.extend(range(l, r + 1))
-        else:
-            gpus.append(int(dev))
-
-    # os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in gpus])
-    return gpus
-
+from torchpack.utils.device import set_cuda_visible_devices
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -31,8 +14,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     env = os.environ.copy()
-    gpus = set_cuda_visible_devices(args.devices)
-    env['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in gpus])
+    set_cuda_visible_devices(args.devices, env=env)
 
     cmd = [sys.executable, '-u'] + args.cmd
     process = subprocess.Popen(cmd, env=env)
