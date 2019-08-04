@@ -13,12 +13,12 @@ if __name__ == '__main__':
     parser.add_argument('cmd', nargs=argparse.REMAINDER)
     args = parser.parse_args()
 
+    cmd = [sys.executable, '-u'] + args.cmd
+
     env = os.environ.copy()
     set_cuda_visible_devices(args.devices, env=env)
 
-    cmd = [sys.executable, '-u'] + args.cmd
     process = subprocess.Popen(cmd, env=env)
-
     process.wait()
     if process.returncode != 0:
         raise subprocess.CalledProcessError(returncode=process.returncode, cmd=cmd)
