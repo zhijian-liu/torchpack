@@ -48,7 +48,6 @@ def _get_time_str():
     return datetime.now().strftime('%m%d-%H%M%S')
 
 
-# globals: logger file and directory:
 _LOG_DIR = None
 _FILE_HANDLER = None
 
