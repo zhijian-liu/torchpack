@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-
 import os
-
-__all__ = ['set_cuda_visible_devices']
+import subprocess
+import sys
 
 
 def set_cuda_visible_devices(devs):
@@ -21,14 +20,23 @@ def set_cuda_visible_devices(devs):
         else:
             gpus.append(int(dev))
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in gpus])
+    # os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in gpus])
     return gpus
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--devices')
+    parser.add_argument('--devices', '-d', type=str, default='*')
+    parser.add_argument('cmd', nargs=argparse.REMAINDER)
+    args = parser.parse_args()
 
-    args = parser.parse_known_args()
+    env = os.environ.copy()
+    gpus = set_cuda_visible_devices(args.devices)
+    env['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in gpus])
 
-    set_cuda_visible_devices(args.devices)
+    cmd = [sys.executable, '-u'] + args.cmd
+    process = subprocess.Popen(cmd, env=env)
+
+    process.wait()
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(returncode=process.returncode, cmd=cmd)
