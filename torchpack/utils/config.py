@@ -7,7 +7,7 @@ import six
 
 from .container import G
 
-__all__ = ['Config', 'configs', 'update_configs_from_module', 'update_configs_from_arguments']
+__all__ = ['Config', 'update_configs_from_module', 'update_configs_from_arguments']
 
 
 class Config(G):
@@ -110,9 +110,6 @@ class Config(G):
 
         text += '(' + ', '.join(items) + ')'
         return text
-
-
-configs = Config()
 
 
 def update_configs_from_module(*mods):
