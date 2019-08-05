@@ -1,1 +1,2 @@
-__version__ = '0.0.0'
+from .cuda import *
+from .version import *
