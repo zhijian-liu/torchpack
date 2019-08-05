@@ -1,8 +1,7 @@
-# from https://github.com/vacancy/Jacinle/blob/master/jacinle/utils/container.py
-
 __all__ = ['G', 'g']
 
 
+# from https://github.com/vacancy/Jacinle/blob/master/jacinle/utils/container.py
 class G(dict):
     def __getattr__(self, k):
         if k not in self:

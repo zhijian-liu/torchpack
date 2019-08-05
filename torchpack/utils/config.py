@@ -7,10 +7,10 @@ import six
 
 from .container import G
 
-__all__ = ['Config', 'update_configs_from_module', 'update_configs_from_arguments']
+__all__ = ['ConfigProto', 'update_configs_from_module', 'update_configs_from_arguments']
 
 
-class Config(G):
+class ConfigProto(G):
     def __init__(self, func=None, args=None, detach=False, **kwargs):
         if func is not None and not callable(func):
             raise TypeError('func "{}" is not a callable function or class'.format(repr(func)))
@@ -65,7 +65,7 @@ class Config(G):
             for k, v in items:
                 if isinstance(v, tuple):
                     v = x[k] = list(v)
-                elif isinstance(v, Config):
+                elif isinstance(v, ConfigProto):
                     if v._detach_:
                         continue
                     v = x[k] = v()
@@ -86,7 +86,7 @@ class Config(G):
 
         for k, v in self.items():
             text += ' ' * indent + '[' + str(k) + ']'
-            if isinstance(v, Config):
+            if isinstance(v, ConfigProto):
                 text += '\n' + v.__str__(indent + 2)
             else:
                 text += ' = ' + str(v)
@@ -153,7 +153,7 @@ def update_configs_from_arguments(args):
         config = configs
         for k in keys[:-1]:
             if k not in config:
-                config[k] = Config()
+                config[k] = ConfigProto()
             config = config[k]
 
         def parse(x):
