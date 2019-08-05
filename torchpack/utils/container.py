@@ -1,4 +1,4 @@
-__all__ = ['G', 'g']
+__all__ = ['G']
 
 
 # from https://github.com/vacancy/Jacinle/blob/master/jacinle/utils/container.py
@@ -13,6 +13,3 @@ class G(dict):
 
     def __delattr__(self, k):
         del self[k]
-
-
-g = G()
