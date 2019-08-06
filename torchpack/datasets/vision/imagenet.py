@@ -3,7 +3,7 @@ import warnings
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
-from ..dataset import Dataset
+from torchpack.datasets.dataset import Dataset
 
 __all__ = ['ImageNet']
 

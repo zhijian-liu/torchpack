@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from ..utils import make_divisible
+from torchpack.models.utils import make_divisible
 
 __all__ = ['MobileNetV1', 'MobileBlockV1']
 

@@ -11,7 +11,8 @@ setup(
         'numpy>=1.14',
         'six',
         'termcolor>=1.1',
-        'torch>=1.0'
+        'torch>=1.0',
+        'torchvision'
     ],
     scripts=['bin/tprun']
 )
