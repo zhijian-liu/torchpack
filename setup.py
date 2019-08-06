@@ -13,5 +13,9 @@ setup(
         'termcolor>=1.1',
         'torch>=1.0',
         'torchvision>=0.3'
+    ],
+    scripts=[
+        'bin/tp-run',
+        'bin/tp-grun'
     ]
 )
