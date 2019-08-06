@@ -9,7 +9,7 @@ from datetime import datetime
 from six.moves import input
 from termcolor import colored
 
-__all__ = ['set_logger_dir', 'auto_set_dir', 'get_logger_dir']
+__all__ = ['logger', 'get_logger', 'set_logger_dir', 'auto_set_dir', 'get_logger_dir']
 
 
 class _Formatter(logging.Formatter):
@@ -28,20 +28,21 @@ class _Formatter(logging.Formatter):
         return super().format(record)
 
 
-def _get_logger():
-    logger = logging.getLogger('torchpack')
+_default_level = logging.INFO
+_loggers = []
+
+
+def get_logger(name=None):
+    logger = logging.getLogger(name)
     logger.propagate = False
-    logger.setLevel(logging.INFO)
+    logger.setLevel(_default_level)
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
     logger.addHandler(handler)
+    del logger.handlers[:]
+    logger.addHandler(handler)
+    _loggers.append(logger)
     return logger
-
-
-_logger = _get_logger()
-for func in ['info', 'warning', 'error', 'critical', 'exception', 'debug', 'setLevel', 'addFilter']:
-    locals()[func] = getattr(_logger, func)
-    __all__.append(func)
 
 
 def _get_time_str():
@@ -57,13 +58,13 @@ def _set_file(path):
     if os.path.isfile(path):
         backup_name = path + '.' + _get_time_str()
         shutil.move(path, backup_name)
-        _logger.info("Existing log file '{}' backuped to '{}'".format(path, backup_name))  # noqa: F821
+        logger.info("Existing log file '{}' backuped to '{}'".format(path, backup_name))  # noqa: F821
     handler = logging.FileHandler(filename=path, encoding='utf-8', mode='w')
     handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
 
     _FILE_HANDLER = handler
-    _logger.addHandler(handler)
-    _logger.info("Argv: " + ' '.join(sys.argv))
+    logger.addHandler(handler)
+    logger.info("Argv: " + ' '.join(sys.argv))
 
 
 def set_logger_dir(dirname, action=None):
@@ -88,7 +89,7 @@ def set_logger_dir(dirname, action=None):
     global _LOG_DIR, _FILE_HANDLER
     if _FILE_HANDLER:
         # unload and close the old file handler, so that we may safely delete the logger directory
-        _logger.removeHandler(_FILE_HANDLER)
+        logger.removeHandler(_FILE_HANDLER)
         del _FILE_HANDLER
 
     def dir_nonempty(dirname):
@@ -97,9 +98,9 @@ def set_logger_dir(dirname, action=None):
 
     if dir_nonempty(dirname):
         if not action:
-            _logger.warning("""\
+            logger.warning("""\
 Log directory {} exists! Use 'd' to delete it. """.format(dirname))
-            _logger.warning("""\
+            logger.warning("""\
 If you're resuming from a previous run, you can choose to keep it.
 Press any other key to exit. """)
         while not action:
@@ -145,3 +146,15 @@ def get_logger_dir():
         The directory is used for general logging, tensorboard events, checkpoints, etc.
     """
     return _LOG_DIR
+
+
+def set_default_level(level):
+    """set default logging level
+    :param level: loggin level given by python :mod:`logging` module"""
+    global _default_level
+    _default_level = level
+    for logger in _loggers:
+        logger.setLevel(level)
+
+
+logger = get_logger('torchpack')
