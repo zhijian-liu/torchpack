@@ -37,7 +37,7 @@ def get_logger(name=None):
     logger.propagate = False
     logger.setLevel(_default_level)
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
+    handler.setFormatter(_Formatter(datefmt='%m/%d %H:%M:%S'))
     logger.addHandler(handler)
     del logger.handlers[:]
     logger.addHandler(handler)
@@ -60,7 +60,7 @@ def _set_file(path):
         shutil.move(path, backup_name)
         logger.info("Existing log file '{}' backuped to '{}'".format(path, backup_name))  # noqa: F821
     handler = logging.FileHandler(filename=path, encoding='utf-8', mode='w')
-    handler.setFormatter(_Formatter(datefmt='%m%d %H:%M:%S'))
+    handler.setFormatter(_Formatter(datefmt='%m/%d %H:%M:%S'))
 
     _FILE_HANDLER = handler
     logger.addHandler(handler)

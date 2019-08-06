@@ -12,14 +12,15 @@ def parse_devices(devs):
     else:
         for dev in devs.split(','):
             dev = dev.strip().lower()
-            if dev != 'cpu':
-                if dev.startswith('gpu'):
-                    dev = dev[3:]
-                if '-' in dev:
-                    a, b = map(int, dev.split('-'))
-                    gpus += range(a, b + 1)
-                else:
-                    gpus += [int(dev)]
+            if dev == 'cpu':
+                continue
+            if dev.startswith('gpu'):
+                dev = dev[3:]
+            if '-' in dev:
+                l, r = dev.split('-')
+                gpus += range(int(l), int(r) + 1)
+            else:
+                gpus += [int(dev)]
     return gpus
 
 
