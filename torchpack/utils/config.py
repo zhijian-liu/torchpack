@@ -1,16 +1,14 @@
 import collections
-import importlib.util
-import os
 from collections import deque
 
 import six
 
 from .container import G
 
-__all__ = ['ConfigProto', 'update_configs_from_module', 'update_configs_from_arguments']
+__all__ = ['Config']
 
 
-class ConfigProto(G):
+class Config(G):
     def __init__(self, func=None, args=None, detach=False, **kwargs):
         if func is not None and not callable(func):
             raise TypeError('func "{}" is not a callable function or class'.format(repr(func)))
@@ -47,15 +45,14 @@ class ConfigProto(G):
 
         # override kwargs
         for k, v in self.items():
-            if k not in kwargs:
-                kwargs[k] = v
+            kwargs.setdefault(k, v)
 
         # recursively call non-detached funcs
         queue = deque([args, kwargs])
         while queue:
             x = queue.popleft()
 
-            if not isinstance(x, six.string_types) and isinstance(x, (collections.Sequence, collections.UserList)):
+            if isinstance(x, (collections.Sequence, collections.UserList)) and not isinstance(x, six.string_types):
                 items = enumerate(x)
             elif isinstance(x, (collections.Mapping, collections.UserDict)):
                 items = x.items()
@@ -65,7 +62,7 @@ class ConfigProto(G):
             for k, v in items:
                 if isinstance(v, tuple):
                     v = x[k] = list(v)
-                elif isinstance(v, ConfigProto):
+                elif isinstance(v, Config):
                     if v._detach_:
                         continue
                     v = x[k] = v()
@@ -86,7 +83,7 @@ class ConfigProto(G):
 
         for k, v in self.items():
             text += ' ' * indent + '[' + str(k) + ']'
-            if isinstance(v, ConfigProto):
+            if isinstance(v, Config):
                 text += '\n' + v.__str__(indent + 2)
             else:
                 text += ' = ' + str(v)
@@ -110,59 +107,3 @@ class ConfigProto(G):
 
         text += '(' + ', '.join(items) + ')'
         return text
-
-
-def update_configs_from_module(*mods):
-    imported_modules = set()
-
-    # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-    def exec_module_once(module):
-        if module in imported_modules:
-            return
-        imported_modules.add(module)
-        spec = importlib.util.spec_from_file_location(os.path.basename(module), module)
-        foo = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(foo)
-
-    for mod in mods:
-        mod = os.path.normpath(mod)
-        for index, char in enumerate(mod):
-            if index == 0 or char == os.sep:
-                submod = os.path.join(mod[:index], '__init__.py')
-                if os.path.exists(submod):
-                    exec_module_once(submod)
-        exec_module_once(mod)
-
-
-def update_configs_from_arguments(args):
-    index = 0
-
-    while index < len(args):
-        arg = args[index]
-
-        if arg.startswith('--configs.'):
-            arg = arg.replace('--configs.', '')
-        else:
-            raise Exception('unrecognized argument "{}"'.format(arg))
-
-        if '=' in arg:
-            index, keys, val = index + 1, arg[:arg.index('=')].split('.'), arg[arg.index('=') + 1:]
-        else:
-            index, keys, val = index + 2, arg.split('.'), args[index + 1]
-
-        config = configs
-        for k in keys[:-1]:
-            if k not in config:
-                config[k] = ConfigProto()
-            config = config[k]
-
-        def parse(x):
-            if (x[0] == '\'' and x[-1] == '\'') or (x[0] == '\"' and x[-1] == '\"'):
-                return x[1:-1]
-            try:
-                x = eval(x)
-            except:
-                pass
-            return x
-
-        config[keys[-1]] = parse(val)
