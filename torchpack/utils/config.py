@@ -10,12 +10,13 @@ __all__ = ['Config']
 
 class Config(G):
     def __init__(self, func=None, args=None, detach=False, **kwargs):
+        super().__init__(**kwargs)
+
         if func is not None and not callable(func):
             raise TypeError('func "{}" is not a callable function or class'.format(repr(func)))
         if args is not None and not isinstance(args, (collections.Sequence, collections.UserList)):
             raise TypeError('args "{}" is not an iterable tuple or list'.format(repr(args)))
 
-        super().__init__(**kwargs)
         self._func_ = func
         self._args_ = args
         self._detach_ = detach
