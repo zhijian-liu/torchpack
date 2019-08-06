@@ -12,7 +12,7 @@ setup(
         'six',
         'termcolor>=1.1',
         'torch>=1.0',
-        'torchvision'
+        'torchvision>=0.3'
     ],
     scripts=['bin/tprun']
 )
