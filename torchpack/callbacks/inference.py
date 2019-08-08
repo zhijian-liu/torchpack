@@ -41,7 +41,7 @@ class Inferencer(Callback):
                 logger.warn("{} returns a non-scalar statistics!".format(type(self).__name__))
                 continue
             else:
-                self.trainer.monitors.put_scalar(k, v)
+                self.trainer.monitors.add_scalar(k, v)
 
     def _after_inference(self):
         """

@@ -11,14 +11,12 @@ import numpy as np
 import six
 import tensorflow as tf
 from tensorpack.tfutils.summary import create_image_summary, create_scalar_summary
-from tensorpack.utils import logger
 from tensorpack.utils.develop import HIDE_DOC
 
-from .callback import Callback
+from torchpack.callbacks import Callback
+from torchpack.utils.logging import logger
 
-__all__ = ['MonitorBase', 'Monitors',
-           'TFEventWriter', 'JSONWriter',
-           'ScalarPrinter']
+__all__ = ['Monitor', 'Monitors', 'TFEventWriter', 'JSONWriter', 'ScalarPrinter']
 
 
 def image_to_nhwc(arr):
@@ -36,7 +34,7 @@ def image_to_nhwc(arr):
     return arr
 
 
-class MonitorBase(Callback):
+class Monitor(Callback):
     """
     Base class for monitors which monitor a training progress, by processing different types of
     summary/statistics from trainer.
@@ -88,10 +86,9 @@ class MonitorBase(Callback):
                 It could include Summary, RunMetadata, LogMessage, and more.
         """
         pass
-    # TODO process other types
 
 
-class NoOpMonitor(MonitorBase):
+class NoOpMonitor(Monitor):
     def __init__(self, name=None):
         self._name = name
 
@@ -116,7 +113,7 @@ class Monitors(Callback):
         self._scalar_history = ScalarHistory()
         self._monitors = monitors + [self._scalar_history]
         for m in self._monitors:
-            assert isinstance(m, MonitorBase), m
+            assert isinstance(m, Monitor), m
 
     def _setup_trainer(self):
         # scalar_history's other methods were not called.
@@ -127,7 +124,7 @@ class Monitors(Callback):
         for m in self._monitors:
             func(m)
 
-    def put_summary(self, summary):
+    def add_summary(self, summary):
         """
         Put a `tf.Summary`.
         """
@@ -150,7 +147,7 @@ class Monitors(Callback):
 
         self._dispatch(lambda m: m.process_summary(summary))
 
-    def put_scalar(self, name, val):
+    def add_scalar(self, name, val):
         """
         Put a scalar.
         """
@@ -162,7 +159,7 @@ class Monitors(Callback):
         s = create_scalar_summary(name, val)
         self._dispatch(lambda m: m.process_summary(s))
 
-    def put_image(self, name, val):
+    def add_image(self, name, val):
         """
         Put an image.
         Args:
@@ -176,7 +173,7 @@ class Monitors(Callback):
         s = create_image_summary(name, arr)
         self._dispatch(lambda m: m.process_summary(s))
 
-    def put_event(self, evt):
+    def add_event(self, evt):
         """
         Put an :class:`tf.Event`.
         `step` and `wall_time` fields of :class:`tf.Event` will be filled automatically.
@@ -208,7 +205,7 @@ class Monitors(Callback):
         return self._scalar_history.get_history(name)
 
 
-class TFEventWriter(MonitorBase):
+class TFEventWriter(Monitor):
     """
     Write summaries to TensorFlow event file.
     """
@@ -262,7 +259,7 @@ class TFEventWriter(MonitorBase):
         self._writer.close()
 
 
-class JSONWriter(MonitorBase):
+class JSONWriter(Monitor):
     """
     Write all scalar data to a json file under ``logger.get_logger_dir()``, grouped by their global step.
     If found an earlier json history file, will append to it.
@@ -380,7 +377,7 @@ class JSONWriter(MonitorBase):
             logger.exception("Exception in JSONWriter._write_stat()!")
 
 
-class ScalarPrinter(MonitorBase):
+class ScalarPrinter(Monitor):
     """
     Print scalar data into terminal.
     """
@@ -451,24 +448,24 @@ class ScalarPrinter(MonitorBase):
         self._dic = {}
 
 
-class ScalarHistory(MonitorBase):
+class ScalarHistory(Monitor):
     """
     Only internally used by monitors.
     """
 
     def __init__(self):
-        self._dic = defaultdict(list)
+        self._hist = defaultdict(list)
 
     @HIDE_DOC
     def process_scalar(self, name, val):
-        self._dic[name].append((self.trainer.global_step, float(val)))
+        self._hist[name].append((self.trainer.global_step, float(val)))
 
     def get_latest(self, name):
-        hist = self._dic[name]
+        hist = self._hist[name]
         if len(hist) == 0:
             raise KeyError("No available data for the key: {}".format(name))
         else:
             return hist[-1]
 
     def get_history(self, name):
-        return self._dic[name]
+        return self._hist[name]

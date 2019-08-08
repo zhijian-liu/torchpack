@@ -6,7 +6,7 @@ from six.moves import range
 from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.train.callbacks import Callback, Callbacks, MonitorBase, Monitors, MaintainStepCounter
+from torchpack.callbacks import Callback, Callbacks, Monitor, Monitors, MaintainStepCounter
 from torchpack.utils.logging import logger
 
 __all__ = ['StopTraining', 'Trainer']
@@ -151,7 +151,7 @@ class Trainer(object):
         for cb in callbacks:
             self.register_callback(cb)
         for cb in self._callbacks:
-            assert not isinstance(cb, MonitorBase), 'Monitor cannot be pre-registered for now!'
+            assert not isinstance(cb, Monitor), 'Monitor cannot be pre-registered for now!'
         registered_monitors = []
         for m in monitors:
             if self.register_callback(m):
