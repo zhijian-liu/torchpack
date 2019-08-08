@@ -2,7 +2,7 @@ from abc import ABCMeta
 
 import six
 
-__all__ = ['Callback']
+__all__ = ['Callback', 'LambdaCallback']
 
 
 @six.add_metaclass(ABCMeta)
@@ -22,7 +22,6 @@ class Callback(object):
     .. automethod:: _after_epoch
     .. automethod:: _trigger_step
     .. automethod:: _trigger_epoch
-    .. automethod:: _trigger
     """
 
     _chief_only = True
@@ -70,21 +69,19 @@ class Callback(object):
         """
         pass
 
-    def before_step(self, ctx):
-        fetches = self._before_step(ctx)
-        if fetches is None:
-            return None
+    def before_step(self, fd):
+        self._before_step(fd)
 
-    def _before_step(self, ctx):
+    def _before_step(self, fd):
         """
         It is called before every step, and it registers some extra op/tensors to run in the next call.
         """
-        return None
+        pass
 
-    def after_step(self, run_context, run_values):
-        self._after_step(run_context, run_values)
+    def after_step(self, fd, od):
+        self._after_step(fd, od)
 
-    def _after_step(self, run_context, run_values):
+    def _after_step(self, fd, od):
         """
         It is called after every step, and it processes the values requested by the corresponding :meth:`before_run`.
         """
@@ -132,11 +129,6 @@ class Callback(object):
 
     @property
     def chief_only(self):
-        """
-        Only run this callback on chief training process.
-
-        Returns: bool
-        """
         return self._chief_only
 
     @chief_only.setter
@@ -152,3 +144,36 @@ class Callback(object):
 
     def __str__(self):
         return type(self).__name__
+
+
+class LambdaCallback(Callback):
+    """
+    Create a callback with some lambdas.
+    """
+
+    def __init__(self, setup_trainer=None, before_train=None, after_train=None, before_epoch=None, trigger=None):
+        self.__setup_graph = setup_trainer
+        self.__before_train = before_train
+        self._cb_before_epoch = before_epoch
+        self._cb_trigger = trigger
+        self._cb_after_train = after_train
+
+    def _setup_trainer(self):
+        if self.__setup_graph:
+            self.__setup_graph(self)
+
+    def _before_train(self):
+        if self.__before_train:
+            self.__before_train(self)
+
+    def _before_epoch(self):
+        if self._cb_before_epoch:
+            self._cb_before_epoch(self)
+
+    def _trigger(self):
+        if self._cb_trigger:
+            self._cb_trigger(self)
+
+    def _after_train(self):
+        if self._cb_after_train:
+            self._cb_after_train(self)

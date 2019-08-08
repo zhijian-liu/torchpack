@@ -179,11 +179,9 @@ class Trainer(object):
                 self._callbacks.before_epoch()
                 start_time = time.time()
 
-                # for self.loop._local_step in range(self.loop.steps_per_epoch):
-
-                self.scheduler.step()
                 self.model.train()
 
+                # for self.loop._local_step in range(self.loop.steps_per_epoch):
                 for self.loop._local_step, (inputs, targets) in enumerate(self.loader):
                     inputs = inputs.to('cuda', non_blocking=True)
                     targets = targets.to('cuda', non_blocking=True)
@@ -193,6 +191,7 @@ class Trainer(object):
 
                     self._callbacks.trigger_step()
                 self._callbacks.after_epoch()
+
                 logger.info("Epoch {} (global_step {}) finished, time:{}.".format(
                     self.loop.epoch_num, self.loop.global_step, humanize_time_delta(time.time() - start_time)))
 
@@ -208,7 +207,7 @@ class Trainer(object):
             self._callbacks.after_train()
 
     def train(self,
-              loader, model, criterion, optimizer, scheduler,
+              loader, model, criterion, optimizer,
               callbacks=None, monitors=None,
               steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
         """
@@ -225,7 +224,6 @@ class Trainer(object):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
-        self.scheduler = scheduler
         steps_per_epoch = len(self.loader)
         self.setup_callbacks(callbacks, monitors)
         self.main_loop(steps_per_epoch, starting_epoch, max_epoch)

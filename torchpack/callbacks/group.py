@@ -1,20 +1,12 @@
-# -*- coding: utf-8 -*-
-# File: group.py
-
-
 import traceback
 from contextlib import contextmanager
-from time import time as timer
+from time import perf_counter as timer
 
-import six
 from tensorpack import CallbackToHook
 from tensorpack.utils import logger
 from tensorpack.utils.utils import humanize_time_delta
 
 from .callback import Callback
-
-if six.PY3:
-    from time import perf_counter as timer  # noqa
 
 __all__ = ['Callbacks']
 

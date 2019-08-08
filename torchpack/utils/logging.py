@@ -32,19 +32,6 @@ _default_level = logging.INFO
 _loggers = []
 
 
-def get_logger(name=None):
-    logger = logging.getLogger(name)
-    logger.propagate = False
-    logger.setLevel(_default_level)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(_Formatter(datefmt='%m/%d %H:%M:%S'))
-    logger.addHandler(handler)
-    del logger.handlers[:]
-    logger.addHandler(handler)
-    _loggers.append(logger)
-    return logger
-
-
 def _get_time_str():
     return datetime.now().strftime('%m%d-%H%M%S')
 
@@ -65,6 +52,37 @@ def _set_file(path):
     _FILE_HANDLER = handler
     logger.addHandler(handler)
     logger.info("Argv: " + ' '.join(sys.argv))
+
+
+# def auto_set_dir(action=None, name=None):
+#     """
+#     Use :func:`logger.set_logger_dir` to set log directory to
+#     "./train_log/{scriptname}:{name}". "scriptname" is the name of the main python file currently running"""
+#     mod = sys.modules['__main__']
+#     basename = os.path.basename(mod.__file__)
+#     auto_dirname = os.path.join('train_log', basename[:basename.rfind('.')])
+#     if name:
+#         auto_dirname += '_%s' % name if os.name == 'nt' else ':%s' % name
+#     set_logger_dir(auto_dirname, action=action)
+def get_logger(name=None):
+    logger = logging.getLogger(name)
+    logger.propagate = False
+    logger.setLevel(_default_level)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(_Formatter(datefmt='%m/%d %H:%M:%S'))
+    logger.addHandler(handler)
+    del logger.handlers[:]
+    logger.addHandler(handler)
+    _loggers.append(logger)
+    return logger
+
+
+def get_logger_dir():
+    """
+    Returns:
+        The logger directory, or None if not set.
+    """
+    return _LOG_DIR
 
 
 def set_logger_dir(dirname, action=None):
@@ -92,60 +110,40 @@ def set_logger_dir(dirname, action=None):
         logger.removeHandler(_FILE_HANDLER)
         del _FILE_HANDLER
 
-    def dir_nonempty(dirname):
-        # If directory exists and nonempty (ignore hidden files), prompt for action
-        return os.path.isdir(dirname) and len([x for x in os.listdir(dirname) if x[0] != '.'])
+#     def dir_nonempty(dirname):
+#         # If directory exists and nonempty (ignore hidden files), prompt for action
+#         return os.path.isdir(dirname) and len([x for x in os.listdir(dirname) if x[0] != '.'])
+#
+#     if dir_nonempty(dirname):
+#         if not action:
+#             logger.warning("""\
+# Log directory {} exists! Use 'd' to delete it. """.format(dirname))
+#             logger.warning("""\
+# If you're resuming from a previous run, you can choose to keep it.
+# Press any other key to exit. """)
+#         while not action:
+#             action = input("Select Action: k (keep) / d (delete) / q (quit):").lower().strip()
+#         act = action
+#         if act == 'b':
+#             backup_name = dirname + _get_time_str()
+#             shutil.move(dirname, backup_name)
+#             info("Directory '{}' backuped to '{}'".format(dirname, backup_name))  # noqa: F821
+#         elif act == 'd':
+#             shutil.rmtree(dirname, ignore_errors=True)
+#             if dir_nonempty(dirname):
+#                 shutil.rmtree(dirname, ignore_errors=False)
+#         elif act == 'n':
+#             dirname = dirname + _get_time_str()
+#             info("Use a new log directory {}".format(dirname))  # noqa: F821
+#         elif act == 'k':
+#             pass
+#         else:
+#             raise OSError("Directory {} exits!".format(dirname))
 
-    if dir_nonempty(dirname):
-        if not action:
-            logger.warning("""\
-Log directory {} exists! Use 'd' to delete it. """.format(dirname))
-            logger.warning("""\
-If you're resuming from a previous run, you can choose to keep it.
-Press any other key to exit. """)
-        while not action:
-            action = input("Select Action: k (keep) / d (delete) / q (quit):").lower().strip()
-        act = action
-        if act == 'b':
-            backup_name = dirname + _get_time_str()
-            shutil.move(dirname, backup_name)
-            info("Directory '{}' backuped to '{}'".format(dirname, backup_name))  # noqa: F821
-        elif act == 'd':
-            shutil.rmtree(dirname, ignore_errors=True)
-            if dir_nonempty(dirname):
-                shutil.rmtree(dirname, ignore_errors=False)
-        elif act == 'n':
-            dirname = dirname + _get_time_str()
-            info("Use a new log directory {}".format(dirname))  # noqa: F821
-        elif act == 'k':
-            pass
-        else:
-            raise OSError("Directory {} exits!".format(dirname))
     _LOG_DIR = dirname
-    from .fs import mkdir_p
-    mkdir_p(dirname)
-    _set_file(os.path.join(dirname, 'log.log'))
-
-
-def auto_set_dir(action=None, name=None):
-    """
-    Use :func:`logger.set_logger_dir` to set log directory to
-    "./train_log/{scriptname}:{name}". "scriptname" is the name of the main python file currently running"""
-    mod = sys.modules['__main__']
-    basename = os.path.basename(mod.__file__)
-    auto_dirname = os.path.join('train_log', basename[:basename.rfind('.')])
-    if name:
-        auto_dirname += '_%s' % name if os.name == 'nt' else ':%s' % name
-    set_logger_dir(auto_dirname, action=action)
-
-
-def get_logger_dir():
-    """
-    Returns:
-        The logger directory, or None if not set.
-        The directory is used for general logging, tensorboard events, checkpoints, etc.
-    """
-    return _LOG_DIR
+    # from .fs import mkdir_p
+    os.makedirs(dirname, exist_ok=True)
+    # _set_file(os.path.join(dirname, 'log.log'))
 
 
 def set_default_level(level):

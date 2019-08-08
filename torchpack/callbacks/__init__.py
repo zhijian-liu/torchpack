@@ -2,8 +2,8 @@ from .callback import *
 from .group import *
 from .inference import *
 from .inference_runner import *
-from .misc import *
 from .monitors import *
 from .pbar import *
 from .saver import *
 from .step import *
+from .timer import *

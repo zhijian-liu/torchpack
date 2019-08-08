@@ -20,7 +20,7 @@ def main():
     cudnn.benchmark = True
 
     logger.info('Loading the dataset.')
-    dataset = ImageNet(root='/dataset/imagenet/', num_classes=1000, image_size=224)
+    dataset = ImageNet(root='/dataset/imagenet/', num_classes=100, image_size=224)
     loaders = {}
     for split in dataset:
         loaders[split] = torch.utils.data.DataLoader(
@@ -40,20 +40,23 @@ def main():
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=150)
 
     trainer = Trainer()
-    trainer.train(loader=loaders['train'], model=model, criterion=criterion, optimizer=optimizer, scheduler=scheduler,
-                  callbacks=[
-                      InferenceRunner(loaders['test'], infs=[
-                          ClassificationError(k=1, summary_name='acc/test_top1'),
-                          ClassificationError(k=5, summary_name='acc/test_top5')
-                      ]),
-                      ProgressBar(),
-                      EstimatedTimeLeft()
-                  ],
-                  monitors=[
-                      TFEventWriter(),
-                      ScalarPrinter()
-                  ],
-                  max_epoch=150)
+    trainer.train(
+        loader=loaders['train'], model=model, criterion=criterion, optimizer=optimizer,
+        callbacks=[
+            LambdaCallback(before_epoch=lambda _: scheduler.step()),
+            InferenceRunner(loaders['test'], callbacks=[
+                ClassificationError(k=1, summary_name='acc/test-top1'),
+                ClassificationError(k=5, summary_name='acc/test-top5')
+            ]),
+            ProgressBar(),
+            EstimatedTimeLeft()
+        ],
+        monitors=[
+            # TFEventWriter(),
+            ScalarPrinter()
+        ],
+        max_epoch=150
+    )
 
 
 if __name__ == '__main__':

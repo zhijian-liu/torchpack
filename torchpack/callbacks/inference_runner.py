@@ -46,17 +46,17 @@ class InferenceRunnerBase(Callback):
         2. Only works with instances of `TowerTrainer`.
     """
 
-    def __init__(self, input, infs):
+    def __init__(self, input, callbacks):
         """
         Args:
             input (InputSource): the input to use. Must have an accurate ``size()``.
-            infs (list[Inferencer]): list of :class:`Inferencer` to run.
+            callbacks (list[Inferencer]): list of :class:`Inferencer` to run.
         """
         self._input_source = input
-        if not isinstance(infs, list):
-            self.infs = [infs]
+        if not isinstance(callbacks, list):
+            self.infs = [callbacks]
         else:
-            self.infs = infs
+            self.infs = callbacks
         for v in self.infs:
             assert isinstance(v, Inferencer), v
 
@@ -85,12 +85,12 @@ class InferenceRunner(InferenceRunnerBase):
     A callback that runs a list of :class:`Inferencer` on some :class:`InputSource`.
     """
 
-    def __init__(self, input, infs, device=0):
+    def __init__(self, input, callbacks, device=0):
         """
         Args:
             input (InputSource or DataFlow): The :class:`InputSource` to run
                 inference on.  If given a DataFlow, will use :class:`FeedInput`.
-            infs (list): a list of :class:`Inferencer` instances.
+            callbacks (list): a list of :class:`Inferencer` instances.
             device (int): the device to use
         """
         # if isinstance(input, DataFlow):
@@ -101,7 +101,7 @@ class InferenceRunner(InferenceRunnerBase):
         # assert not isinstance(input, StagingInput), input
         # self._device_id = device
         # self._device = _device_from_int(device)
-        super(InferenceRunner, self).__init__(input, infs)
+        super(InferenceRunner, self).__init__(input, callbacks)
 
     # def _build_hook(self, inf):
     #     out_names = inf.get_fetches()
