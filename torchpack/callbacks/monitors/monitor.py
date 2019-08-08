@@ -79,10 +79,10 @@ class Monitor(Callback):
         """
         pass
 
-    def process_event(self, evt):
+    def process_event(self, event):
         """
         Args:
-            evt (tf.Event): the most basic format acceptable by tensorboard.
+            event (tf.Event): the most basic format acceptable by tensorboard.
                 It could include Summary, RunMetadata, LogMessage, and more.
         """
         pass
@@ -161,7 +161,7 @@ class Monitors(Callback):
 
     def add_image(self, name, val):
         """
-        Put an image.
+        Add an image.
         Args:
             name (str):
             val (np.ndarray): 2D, 3D (HWC) or 4D (NHWC) numpy array of images
@@ -173,16 +173,16 @@ class Monitors(Callback):
         s = create_image_summary(name, arr)
         self._dispatch(lambda m: m.process_summary(s))
 
-    def add_event(self, evt):
+    def add_event(self, event):
         """
-        Put an :class:`tf.Event`.
+        Add an :class:`tf.Event`.
         `step` and `wall_time` fields of :class:`tf.Event` will be filled automatically.
         Args:
-            evt (tf.Event):
+            event (tf.Event):
         """
-        evt.step = self.global_step
-        evt.wall_time = time.time()
-        self._dispatch(lambda m: m.process_event(evt))
+        event.step = self.global_step
+        event.wall_time = time.time()
+        self._dispatch(lambda m: m.process_event(event))
 
     def get_latest(self, name):
         """
@@ -246,8 +246,8 @@ class TFEventWriter(Monitor):
         self._writer.add_summary(summary, self.global_step)
 
     @HIDE_DOC
-    def process_event(self, evt):
-        self._writer.add_event(evt)
+    def process_event(self, event):
+        self._writer.add_event(event)
 
     def _trigger(self):  # flush every epoch
         self._writer.flush()
