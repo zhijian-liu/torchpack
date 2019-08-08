@@ -151,29 +151,64 @@ class LambdaCallback(Callback):
     Create a callback with some lambdas.
     """
 
-    def __init__(self, setup_trainer=None, before_train=None, after_train=None, before_epoch=None, trigger=None):
-        self.__setup_graph = setup_trainer
-        self.__before_train = before_train
-        self._cb_before_epoch = before_epoch
-        self._cb_trigger = trigger
-        self._cb_after_train = after_train
+    def __init__(self,
+                 setup_trainer=None,
+                 before_train=None,
+                 after_train=None,
+                 before_step=None,
+                 after_step=None,
+                 before_epoch=None,
+                 after_epoch=None,
+                 trigger_step=None,
+                 trigger_epoch=None,
+                 trigger=None):
+        self._setup_trainer_ = setup_trainer
+        self._before_train_ = before_train
+        self._after_train_ = after_train
+        self._before_step_ = before_step
+        self._after_step_ = after_step
+        self._before_epoch_ = before_epoch
+        self._after_epoch_ = after_epoch
+        self._trigger_step_ = trigger_step
+        self._trigger_epoch_ = trigger_epoch
+        self._trigger_ = trigger
 
     def _setup_trainer(self):
-        if self.__setup_graph:
-            self.__setup_graph(self)
+        if self._setup_trainer_:
+            self._setup_trainer_(self)
 
     def _before_train(self):
-        if self.__before_train:
-            self.__before_train(self)
-
-    def _before_epoch(self):
-        if self._cb_before_epoch:
-            self._cb_before_epoch(self)
-
-    def _trigger(self):
-        if self._cb_trigger:
-            self._cb_trigger(self)
+        if self._before_train_:
+            self._before_train_(self)
 
     def _after_train(self):
-        if self._cb_after_train:
-            self._cb_after_train(self)
+        if self._after_train_:
+            self._after_train_(self)
+
+    def _before_step(self, fd):
+        if self._before_step_:
+            self._before_step_(self, fd)
+
+    def _after_step(self, fd, od):
+        if self._after_step_:
+            self._after_step_(self, fd)
+
+    def _before_epoch(self):
+        if self._before_epoch_:
+            self._before_epoch_(self)
+
+    def _after_epoch(self):
+        if self._after_epoch_:
+            self._after_epoch_(self)
+
+    def _trigger_step(self):
+        if self._trigger_step_:
+            self._trigger_step_(self)
+
+    def _trigger_epoch(self):
+        if self._trigger_epoch_:
+            self._trigger_epoch_(self)
+
+    def _trigger(self):
+        if self._trigger_:
+            self._trigger_(self)
