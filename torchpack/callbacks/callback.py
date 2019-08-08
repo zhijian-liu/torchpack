@@ -22,6 +22,7 @@ class Callback(object):
     .. automethod:: _after_epoch
     .. automethod:: _trigger_step
     .. automethod:: _trigger_epoch
+    .. automethod:: _trigger
     """
 
     _chief_only = True
@@ -101,9 +102,9 @@ class Callback(object):
 
     def _trigger_epoch(self):
         """
-        Called after the completion of every epoch. Defaults to call ``self.trigger()``
+        Called after the completion of every epoch.
         """
-        self.trigger()
+        pass
 
     def trigger(self):
         self._trigger()
@@ -113,8 +114,6 @@ class Callback(object):
         Override this method to define a general trigger behavior, to be used with trigger schedulers.
         Note that the schedulers (e.g. :class:`PeriodicTrigger`) might call this
         method both inside an epoch and after an epoch.
-
-        When used without the scheduler, this method by default will be called by `trigger_epoch()`.
         """
         pass
 
