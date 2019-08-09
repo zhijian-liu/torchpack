@@ -73,18 +73,18 @@ class EnableCallbackIf(ProxyCallback):
                 The callback is disabled unless this predicate returns True.
         """
         super().__init__(callback)
-        self._predicate = predicate
+        self.predicate = predicate
 
     def before_epoch(self):
-        if self._predicate(self):
+        if self.predicate(self):
             super().before_epoch()
 
     def after_epoch(self):
-        if self._predicate(self):
+        if self.predicate(self):
             super().after_epoch()
 
     def before_step(self, *args, **kwargs):
-        if self._predicate(self):
+        if self.predicate(self):
             self._enabled = True
             super().before_step(*args, **kwargs)
         else:
@@ -95,11 +95,11 @@ class EnableCallbackIf(ProxyCallback):
             super().after_step(*args, **kwargs)
 
     def trigger_epoch(self):
-        if self._predicate(self):
+        if self.predicate(self):
             super().trigger_epoch()
 
     def trigger_step(self):
-        if self._predicate(self):
+        if self.predicate(self):
             super().trigger_step()
 
     def __str__(self):
@@ -129,16 +129,16 @@ class PeriodicCallback(EnableCallbackIf):
         assert isinstance(callback, Callback), type(callback)
         assert (every_k_epochs is not None) or (every_k_steps is not None), \
             'every_k_steps and every_k_epochs cannot both be None!'
-        self._every_k_steps = every_k_steps
-        self._every_k_epochs = every_k_epochs
+        self.every_k_steps = every_k_steps
+        self.every_k_epochs = every_k_epochs
         super().__init__(callback, PeriodicCallback.predicate)
 
     def predicate(self):
-        if self._every_k_steps is not None and self.trainer.global_step % self._every_k_steps == 0:
+        if self.every_k_steps is not None and self.trainer.global_step % self.every_k_steps == 0:
             return True
-        if self._every_k_epochs is not None and self.trainer.epoch_num % self._every_k_epochs == 0:
+        if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
             return True
-        if self._every_k_epochs is not None:
+        if self.every_k_epochs is not None:
             if self.trainer.local_step == self.trainer.steps_per_epoch - 1 and \
                     self.trainer.epoch_num == self.trainer.max_epoch:
                 return True

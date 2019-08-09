@@ -13,8 +13,6 @@ class MaintainStepCounter(Callback):
 
     chief_only = False
 
-    # def _setup_graph(self):
-
     def before_train(self):
         if self.trainer.global_step != 0:
             logger.info("Start training with global_step={}".format(self.trainer.global_step))

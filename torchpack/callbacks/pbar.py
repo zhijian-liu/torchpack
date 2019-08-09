@@ -3,13 +3,15 @@ from tensorpack.utils.utils import get_tqdm_kwargs
 
 from .callback import Callback
 
+__all__ = ['ProgressBar']
+
 
 class ProgressBar(Callback):
     """ A progress bar based on tqdm.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
-    def __init__(self, names=[]):
+    def __init__(self, names=None):
         """
         Args:
             names(list): list of string, the names of the tensors to monitor
@@ -18,46 +20,34 @@ class ProgressBar(Callback):
         super().__init__()
         # self._names = [get_op_tensor_name(n)[1] for n in names]
         # self._tags = [get_op_tensor_name(n)[0].split("/")[-1] for n in names]
-        self._bar = None
+        self.pbar = None
 
     def before_train(self):
-        self._last_updated = self.trainer.local_step
+        self.last_updated = self.trainer.local_step
 
-        self._total = self.trainer.steps_per_epoch
-        self._tqdm_args = get_tqdm_kwargs(leave=True)
-
-        # self._fetches = self.get_tensors_maybe_in_tower(self._names) or None
-        # if self._fetches:
-        #     for t in self._fetches:
-        #         assert t.shape.ndims == 0, "ProgressBar can only print scalars, not {}".format(t)
-        #     self._fetches = tf.train.SessionRunArgs(self._fetches)
+        self.total = self.trainer.steps_per_epoch
+        self.tqdm_args = get_tqdm_kwargs(leave=True)
         # self._tqdm_args['bar_format'] = self._tqdm_args['bar_format'] + "{postfix} "
 
     def before_epoch(self):
-        self._bar = tqdm.trange(self._total, **self._tqdm_args)
+        self.pbar = tqdm.trange(self.total, **self.tqdm_args)
 
     def after_epoch(self):
-        self._bar.close()
+        self.pbar.close()
 
-    def before_step(self, _):
+    def before_step(self, *args, **kwargs):
         # update progress bar when local step changed (one step is finished)
-        if self.trainer.local_step != self._last_updated:
-            self._last_updated = self.trainer.local_step
-            return None
-            # return self._fetches
-        else:
-            return None
+        if self.last_updated != self.trainer.local_step:
+            self.last_updated = self.trainer.local_step
 
-    def after_step(self, _, run_values):
-        # res = run_values.results
-        # if res:
+    def after_step(self, *args, **kwargs):
         # self._bar.set_postfix(dict(loss=1))
         pass
 
     def trigger_step(self):
-        self._bar.update()
+        self.pbar.update()
 
     def after_train(self):
         # training may get killed before the first step
-        if self._bar:
-            self._bar.close()
+        if self.pbar:
+            self.pbar.close()

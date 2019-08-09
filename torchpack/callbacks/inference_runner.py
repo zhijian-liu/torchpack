@@ -96,6 +96,7 @@ class InferenceRunner(InferenceRunnerBase):
         super().__init__(dataflow, callbacks)
 
     def set_trainer(self, trainer):
+        self.trainer = trainer
         for callback in self.callbacks:
             callback.set_trainer(trainer)
 
@@ -118,7 +119,7 @@ class InferenceRunner(InferenceRunnerBase):
                     od = dict(outputs=outputs)
 
                     for callback in self.callbacks:
-                        callback.on_fetches(fd, od)
+                        callback.after_step(fd, od)
 
                     pbar.update()
 

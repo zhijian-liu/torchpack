@@ -87,10 +87,9 @@ class CallbackGroup(Callback):
 
     def trigger_epoch(self):
         tm = CallbackTimeLogger()
-
         for callback in self.callbacks:
-            display_name = str(callback)
-            with tm.timed_callback(display_name):
+            name = str(callback)
+            with tm.timed_callback(name):
                 callback.trigger_epoch()
         tm.log()
 

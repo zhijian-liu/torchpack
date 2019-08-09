@@ -38,8 +38,6 @@ class Monitor(Callback):
     """
     Base class for monitors which monitor a training progress, by processing different types of
     summary/statistics from trainer.
-    .. document private functions
-    .. automethod:: _setup_graph
     """
 
     chief_only = False
@@ -56,7 +54,7 @@ class Monitor(Callback):
         """
         pass
 
-    def process_scalar(self, name, val):
+    def add_scalar(self, name, val):
         """
         Args:
             val: a scalar
@@ -135,7 +133,7 @@ class Monitors(Callback):
                 if val.tag.endswith(suffix):
                     val.tag = val.tag[:-len(suffix)]
 
-                self._dispatch(lambda m: m.process_scalar(val.tag, val.simple_value))
+                self._dispatch(lambda m: m.add_scalar(val.tag, val.simple_value))
 
         self._dispatch(lambda m: m.add_summary(summary))
 
@@ -147,7 +145,7 @@ class Monitors(Callback):
             val = float(val)
         if isinstance(val, np.integer):
             val = int(val)
-        self._dispatch(lambda m: m.process_scalar(name, val))
+        self._dispatch(lambda m: m.add_scalar(name, val))
         s = create_scalar_summary(name, val)
         self._dispatch(lambda m: m.add_summary(s))
 
@@ -229,24 +227,24 @@ class TFEventWriter(Monitor):
             return NoOpMonitor("TFEventWriter")
 
     def before_train(self):
-        self._writer = tf.summary.FileWriter(
+        self.writer = tf.summary.FileWriter(
             self._logdir, graph=tf.get_default_graph(),
             max_queue=self._max_queue, flush_secs=self._flush_secs)
 
     def add_summary(self, summary):
-        self._writer.add_summary(summary, self.trainer.global_step)
+        self.writer.add_summary(summary, self.trainer.global_step)
 
     def add_event(self, event):
-        self._writer.add_event(event)
+        self.writer.add_event(event)
 
     def trigger(self):  # flush every epoch
-        self._writer.flush()
+        self.writer.flush()
         if self._split_files:
-            self._writer.close()
-            self._writer.reopen()  # open new file
+            self.writer.close()
+            self.writer.reopen()  # open new file
 
     def after_train(self):
-        self._writer.close()
+        self.writer.close()
 
 
 class JSONWriter(Monitor):
@@ -300,7 +298,6 @@ class JSONWriter(Monitor):
         self._stat_now = {}
         self._last_gs = -1
 
-    def before_train(self):
         stats = JSONWriter.load_existing_json()
         self._fname = os.path.join(logger.get_logger_dir(), JSONWriter.FILENAME)
         if stats is not None:
@@ -330,7 +327,7 @@ class JSONWriter(Monitor):
                 shutil.move(self._fname, backup_fname)
 
         # in case we have something to log here.
-        self._trigger()
+        self.trigger()
 
     def trigger_step(self):
         # will do this in trigger_epoch
@@ -341,7 +338,7 @@ class JSONWriter(Monitor):
         self.trigger()
 
     @HIDE_DOC
-    def process_scalar(self, name, val):
+    def add_scalar(self, name, val):
         self._stat_now[name] = val
 
     def trigger(self):
@@ -401,8 +398,8 @@ class ScalarPrinter(Monitor):
         self._dic = {}
 
     # in case we have something to log here.
-    def _before_train(self):
-        self._trigger()
+    def before_train(self):
+        self.trigger()
 
     def trigger_step(self):
         if self._enable_step:
@@ -414,12 +411,12 @@ class ScalarPrinter(Monitor):
                     self.trigger()
                 # otherwise, will print them together
 
-    def _trigger_epoch(self):
+    def trigger_epoch(self):
         if self._enable_epoch:
-            self._trigger()
+            self.trigger()
 
     @HIDE_DOC
-    def process_scalar(self, name, val):
+    def add_scalar(self, name, val):
         self._dic[name] = float(val)
 
     def trigger(self):
@@ -447,7 +444,7 @@ class ScalarHistory(Monitor):
         self._hist = defaultdict(list)
 
     @HIDE_DOC
-    def process_scalar(self, name, val):
+    def add_scalar(self, name, val):
         self._hist[name].append((self.trainer.global_step, float(val)))
 
     def get_latest(self, name):

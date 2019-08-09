@@ -31,7 +31,6 @@ def main():
             pin_memory=True
         )
 
-    logger.info('Building the model.')
     model = MobileNetV2(num_classes=100).cuda()
     model = nn.DataParallel(model)
 
@@ -41,7 +40,7 @@ def main():
 
     trainer = Trainer()
     trainer.train(
-        loader=loaders['train'], model=model, criterion=criterion,
+        loader=loaders['train'], model=model, criterion=criterion, max_epoch=150,
         callbacks=[
             LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
                            after_step=lambda *_: optimizer.step()),
@@ -59,8 +58,7 @@ def main():
         monitors=[
             TFEventWriter(logdir='runs/'),
             ScalarPrinter()
-        ],
-        max_epoch=150
+        ]
     )
 
 

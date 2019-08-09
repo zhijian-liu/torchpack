@@ -31,7 +31,7 @@ class InferenceCallback(Callback):
         pass
 
     def trigger_epoch(self):
-        ret = self._after_inference()
+        ret = self.after_inference()
         if ret is None:
             return
         for k, v in six.iteritems(ret):
@@ -50,11 +50,6 @@ class InferenceCallback(Callback):
         """
         pass
 
-    def on_fetches(self, input_dict, output_dict):
-        """
-        Called after each new datapoint finished the forward inference.
-        """
-        raise NotImplementedError()
 
 
 class ClassificationError(InferenceCallback):
@@ -87,7 +82,7 @@ class ClassificationError(InferenceCallback):
         self.num_examples = 0
         self.num_correct = 0
 
-    def on_fetches(self, input_dict, output_dict):
+    def after_step(self, input_dict, output_dict):
         outputs = output_dict[self.logit_tensor_name]
         targets = input_dict[self.label_tensor_name]
 
