@@ -2,6 +2,7 @@ import os
 
 from tensorpack.compat import tfv1 as tf
 from tensorpack.utils import logger
+import time
 
 from .base import Callback
 
@@ -60,6 +61,7 @@ class MinSaver(Callback):
         if self.best is None or (curr_val > self.best[1] if self.reverse else curr_val < self.best[1]):
             self.best = (curr_step, curr_val)
             print(self.best, 'best-checkpoint')
+            time.sleep(1)
             # self._save()
 
     def _save(self):

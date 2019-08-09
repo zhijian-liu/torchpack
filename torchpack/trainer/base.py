@@ -1,83 +1,35 @@
 import time
 import weakref
 
-import six
-from six.moves import range
 from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Callback, CallbackGroup, Monitor, Monitors, MaintainStepCounter, TimedCallbackGroup
+from torchpack.callbacks import Callback, CallbackGroup, Monitor, Monitors, TimedCallbackGroup
+from torchpack.trainer.exception import StopTraining
 from torchpack.utils.logging import logger
 
-__all__ = ['StopTraining', 'Trainer']
+__all__ = ['Trainer']
+
+"""
+The number of the currently ongoing epoch.
+
+An epoch is defined to cover the moment before calling `before_epoch` until after calling `trigger_epoch`.
+i.e., in the `trigger_epoch` of epoch 3, `self.epoch_num` is 3.
+If you need use `self.trainer.epoch_num` in your callback, you'll need to know this.
+"""
+# return self.epoch_num
+
+"""
+The tensorflow global_step, i.e. how many times ``hooked_sess.run`` has been called.
+"""
+# return self.global_step
+
+"""
+The number of steps that have finished in the current epoch.
+"""
 
 
-class StopTraining(Exception):
-    """
-    An exception thrown to stop training.
-    """
-    pass
-
-
-class TrainLoop(object):
-    """
-    Manage the double for loop.
-    """
-
-    def __init__(self):
-        self._epoch_num = 0
-        self._global_step = 0
-        self._local_step = -1
-
-    def config(self, steps_per_epoch, starting_epoch, max_epoch):
-        """
-        Configure the loop given the settings.
-        """
-        self.starting_epoch = int(starting_epoch)
-        self.max_epoch = int(max_epoch)
-        self.steps_per_epoch = int(steps_per_epoch)
-        # Allow empty epoch (no steps), if we want to run the callbacks only.
-        assert self.steps_per_epoch >= 0 and self.max_epoch >= 0
-
-        self._epoch_num = starting_epoch - 1
-
-    def update_global_step(self):
-        """
-        Update the Python-side global_step from TF.
-        This must be called under initialized default session.
-        """
-        # self._global_step = get_global_step_value()
-        self._global_step = 0
-
-    @property
-    def epoch_num(self):
-        """
-        The number of the currently ongoing epoch.
-
-        An epoch is defined to cover the moment before calling `before_epoch` until after calling `trigger_epoch`.
-        i.e., in the `trigger_epoch` of epoch 3, `self.epoch_num` is 3.
-        If you need use `self.epoch_num` in your callback, you'll need to know this.
-        """
-        return self._epoch_num
-
-    @property
-    def global_step(self):
-        """
-        The tensorflow global_step, i.e. how many times ``hooked_sess.run`` has been called.
-
-        Note:
-            1. global_step is incremented **after** each ``hooked_sess.run`` returns from TF runtime.
-            2. If you make zero or more than one calls to ``hooked_sess.run`` in one
-               :meth:`run_step`, local_step and global_step may increment at different speed.
-        """
-        return self._global_step
-
-    @property
-    def local_step(self):
-        """
-        The number of steps that have finished in the current epoch.
-        """
-        return self._local_step
+# return self.local_step
 
 
 class Trainer(object):
@@ -90,11 +42,15 @@ class Trainer(object):
     Certain callbacks will only be run by chief worker.
     """
 
-    def __init__(self):
-        self._callbacks = []
-        self.loop = TrainLoop()
+    def __init__(self, device='cuda'):
+        self.device = device
+        self.callbacks = None
+        # self.loop = TrainLoop()
+        self.epoch_num = 0
+        self.global_step = 0
+        self.local_step = -1
 
-    def _register_callback(self, callback):
+    def register_callback(self, callback):
         """
         Register callbacks to the trainer.
         It can only be called before :meth:`Trainer.train()`.
@@ -107,19 +63,17 @@ class Trainer(object):
         """
         if isinstance(callback, (list, tuple)):
             for x in callback:
-                self._register_callback(x)
+                self.register_callback(x)
             return
         assert isinstance(callback, Callback), callback
-        assert not isinstance(self._callbacks, CallbackGroup), \
-            "Cannot register more callbacks after trainer was setup!"
+        assert not isinstance(self.callbacks, CallbackGroup), \
+            'Cannot register more callbacks after trainer was setup!'
         if not self.is_chief and callback.chief_only:
-            logger.warn("Callback {} is chief-only, skipped.".format(str(callback)))
+            logger.warn('Callback {} is chief-only, skipped.'.format(str(callback)))
             return False
         else:
-            self._callbacks.append(callback)
+            self.callbacks.append(callback)
             return True
-
-    register_callback = _register_callback
 
     def run_step(self, feed_dict):
         """
@@ -145,10 +99,10 @@ class Trainer(object):
         assert isinstance(callbacks, list), callbacks
         assert isinstance(monitors, list), monitors
 
-        self.register_callback(MaintainStepCounter())
+        self.callbacks = []
         for callback in callbacks:
             self.register_callback(callback)
-        for callback in self._callbacks:
+        for callback in self.callbacks:
             assert not isinstance(callback, Monitor), 'Monitor cannot be pre-registered for now!'
         registered_monitors = []
         for m in monitors:
@@ -158,8 +112,8 @@ class Trainer(object):
         self.register_callback(self.monitors)  # monitors is also a callback
 
         # some final operations that might modify the graph
-        self._callbacks = TimedCallbackGroup(self._callbacks)
-        self._callbacks.set_trainer(weakref.proxy(self))
+        self.callbacks = TimedCallbackGroup(self.callbacks)
+        self.callbacks.set_trainer(weakref.proxy(self))
 
     @call_only_once
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
@@ -169,42 +123,50 @@ class Trainer(object):
         Args:
             steps_per_epoch, starting_epoch, max_epoch (int):
         """
-        self.loop.config(steps_per_epoch, starting_epoch, max_epoch)
+
+        self.starting_epoch = int(starting_epoch)
+        self.max_epoch = int(max_epoch)
+        self.steps_per_epoch = int(steps_per_epoch)
+        # Allow empty epoch (no steps), if we want to run the callbacks only.
+        assert self.steps_per_epoch >= 0 and self.max_epoch >= 0
+
+        self.epoch_num = starting_epoch - 1
+        self.global_step = self.epoch_num * self.steps_per_epoch
+
         try:
-            self._callbacks.before_train()
-            for self.loop._epoch_num in range(self.loop.starting_epoch, self.loop.max_epoch + 1):
-                logger.info("Starting the training epoch {}/{}.".format(self.loop.epoch_num, self.loop.max_epoch))
-                self._callbacks.before_epoch()
+            self.callbacks.before_train()
+            for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
+                logger.info('Starting the training epoch {}/{}.'.format(self.epoch_num, self.max_epoch))
+                self.callbacks.before_epoch()
                 start_time = time.time()
 
                 self.model.train()
+                # for self.loop._local_step in range(self.steps_per_epoch):
+                for self.local_step, (inputs, targets) in enumerate(self.loader):
+                    # fixme
+                    inputs = inputs.to(self.device, non_blocking=True)
+                    targets = targets.to(self.device, non_blocking=True)
+                    fd = dict(inputs=inputs, targets=targets)
 
-                # for self.loop._local_step in range(self.loop.steps_per_epoch):
-                for self.loop._local_step, (inputs, targets) in enumerate(self.loader):
-                    inputs = inputs.to('cuda', non_blocking=True)
-                    targets = targets.to('cuda', non_blocking=True)
-                    feed_dict = dict(inputs=inputs, targets=targets)
+                    self.callbacks.before_step()
+                    self.run_step(fd)
+                    self.callbacks.after_step()
 
-                    self._callbacks.before_step(None)
-                    self.run_step(feed_dict)
-                    self._callbacks.after_step(None, None)
+                    self.callbacks.trigger_step()
+                    self.global_step += 1
 
-                    self._callbacks.trigger_step()
-                self._callbacks.after_epoch()
-
-                logger.info("Epoch {} (global_step {}) finished, time:{}.".format(
-                    self.loop.epoch_num, self.loop.global_step, humanize_time_delta(time.time() - start_time)))
-
-                # trigger epoch outside the timing region.
-                self._callbacks.trigger_epoch()
-            logger.info("Training has finished!")
+                self.callbacks.after_epoch()
+                logger.info('Epoch {} finished in {} at global step {}.'.format(
+                    self.epoch_num, humanize_time_delta(time.time() - start_time), self.global_step))
+                self.callbacks.trigger_epoch()
+            logger.info('Training has finished!')
         except StopTraining as e:
-            logger.info("Training was stopped by exception {}.".format(str(e)))
+            logger.info('Training was stopped by exception {}.'.format(str(e)))
         except KeyboardInterrupt:
-            logger.info("Detected Ctrl-C and exiting main loop.")
+            logger.info('Detected Ctrl-C and exiting main loop.')
             raise
         finally:
-            self._callbacks.after_train()
+            self.callbacks.after_train()
 
     def train(self,
               loader, model, criterion,
@@ -252,22 +214,3 @@ class Trainer(object):
 
     def __new__(cls, *args, **kwargs):
         return super(Trainer, cls).__new__(cls)
-
-
-def _get_property(name):
-    """
-    Delegate property to self.loop
-    """
-    ret = property(
-        lambda self: getattr(self.loop, name))
-    if six.PY3:  # __doc__ is readonly in Py2
-        try:
-            ret.__doc__ = getattr(TrainLoop, name).__doc__
-        except AttributeError:
-            pass
-    return ret
-
-
-for name in ['global_step', 'local_step', 'steps_per_epoch',
-             'epoch_num', 'starting_epoch', 'max_epoch']:
-    setattr(Trainer, name, _get_property(name))

@@ -42,8 +42,8 @@ def main():
     trainer.train(
         loader=loaders['train'], model=model, criterion=criterion, max_epoch=150,
         callbacks=[
-            LambdaCallback(before_step=lambda _, fd: optimizer.zero_grad(),
-                           after_step=lambda _, fd, od: optimizer.step()),
+            LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
+                           after_step=lambda *_: optimizer.step()),
             LambdaCallback(before_epoch=lambda _: scheduler.step()),
             PeriodicCallback(
                 InferenceRunner(loaders['test'], callbacks=[
@@ -52,9 +52,9 @@ def main():
                 ]),
                 every_k_epochs=1
             ),
+            MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/'),
             ProgressBar(),
-            EstimatedTimeLeft(),
-            MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/')
+            EstimatedTimeLeft()
         ],
         monitors=[
             TFEventWriter(logdir='runs/'),

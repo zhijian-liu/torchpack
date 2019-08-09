@@ -2,7 +2,7 @@ from abc import ABCMeta
 
 import six
 
-__all__ = ['Callback', 'ProxyCallback', 'LambdaCallback']
+__all__ = ['Callback', 'ProxyCallback', 'LambdaCallback', 'CallbackGroup']
 
 
 @six.add_metaclass(ABCMeta)
@@ -180,3 +180,54 @@ class LambdaCallback(Callback):
     def trigger(self):
         if self.trigger_fn:
             self.trigger_fn(self)
+
+
+class CallbackGroup(Callback):
+    """ A container to hold all callbacks, and trigger them iteratively.
+    """
+
+    def __init__(self, callbacks):
+        for callback in callbacks:
+            assert isinstance(callback, Callback), callback.__class__
+        self.callbacks = callbacks
+
+    def set_trainer(self, trainer):
+        self.trainer = trainer
+        for callback in self.callbacks:
+            callback.set_trainer(trainer)
+
+    def before_train(self):
+        for callback in self.callbacks:
+            callback.before_train()
+
+    def after_train(self):
+        for callback in self.callbacks:
+            callback.after_train()
+
+    def before_epoch(self):
+        for callback in self.callbacks:
+            callback.before_epoch()
+
+    def after_epoch(self):
+        for callback in self.callbacks:
+            callback.after_epoch()
+
+    def before_step(self, *args, **kwargs):
+        for callback in self.callbacks:
+            callback.before_step(*args, **kwargs)
+
+    def after_step(self, *args, **kwargs):
+        for callback in self.callbacks:
+            callback.after_step(*args, **kwargs)
+
+    def trigger_epoch(self):
+        for callback in self.callbacks:
+            callback.trigger_step()
+
+    def trigger_step(self):
+        for callback in self.callbacks:
+            callback.trigger_step()
+
+    def trigger(self):
+        for callback in self.callbacks:
+            callback.trigger()
