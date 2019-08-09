@@ -1,17 +1,48 @@
 import os
-
-from tensorpack.compat import tfv1 as tf
-from tensorpack.utils import logger
 import time
 
+import torch
+from tensorpack.compat import tfv1 as tf
+
+from torchpack.utils.logging import logger
 from .base import Callback
 
-__all__ = ['MinSaver', 'MaxSaver']
+__all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
+
+
+class ModelSaver(Callback):
+    """ Save the model once triggered.
+    """
+
+    def __init__(self, max_to_keep=10, checkpoint_dir=None):
+        """
+        Args:
+            max_to_keep (int): the same as in ``tf.train.Saver``.
+            checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
+        """
+        self.max_to_keep = max_to_keep
+
+        if checkpoint_dir is None:
+            checkpoint_dir = logger.get_logger_dir()
+
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        self.checkpoint_dir = os.path.normpath(checkpoint_dir)
+
+    def trigger_epoch(self):
+        self.trigger()
+
+    def trigger(self):
+        state_dict = self.trainer.state_dict()
+        checkpoint_path = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
+        try:
+            torch.save(state_dict, checkpoint_path)
+            logger.info('Checkpoint saved to {}.'.format(checkpoint_path))
+        except (OSError, IOError) as e:
+            logger.exception('Exception in ModelSaver!')
 
 
 class MinSaver(Callback):
-    """
-    Separately save the model with minimum value of some statistics.
+    """ Separately save the model with minimum value of some statistics.
     """
 
     def __init__(self, monitor_stat, reverse=False, filename=None, checkpoint_dir=None):

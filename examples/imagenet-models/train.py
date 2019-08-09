@@ -12,6 +12,18 @@ from torchpack.utils.logging import get_logger
 logger = get_logger(__file__)
 
 
+class ClassificationTrainer(Trainer):
+    def run_step(self, fd):
+        inputs, targets = fd['inputs'], fd['targets']
+
+        outputs = self.model(inputs)
+        loss = self.criterion(outputs, targets)
+        loss.backward()
+
+        od = dict(outputs=outputs, loss=loss)
+        return od
+
+
 def main():
     parser = ArgumentParser()
     parser.add_argument('--devices', action='set_devices', default='*', help='list of device(s) to use.')
@@ -38,20 +50,18 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=4e-5)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=150)
 
-    trainer = Trainer()
+    trainer = ClassificationTrainer()
     trainer.train(
         loader=loaders['train'], model=model, criterion=criterion, max_epoch=150,
         callbacks=[
             LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
                            after_step=lambda *_: optimizer.step()),
-            LambdaCallback(before_epoch=lambda _: scheduler.step()),
-            PeriodicCallback(
-                InferenceRunner(loaders['test'], callbacks=[
-                    ClassificationError(k=1, summary_name='acc/test-top1'),
-                    ClassificationError(k=5, summary_name='acc/test-top5')
-                ]),
-                every_k_epochs=1
-            ),
+            LambdaCallback(before_epoch=lambda *_: scheduler.step()),
+            InferenceRunner(loaders['test'], callbacks=[
+                ClassificationError(k=1, summary_name='acc/test-top1'),
+                ClassificationError(k=5, summary_name='acc/test-top5')
+            ]),
+            ModelSaver(checkpoint_dir='runs/'),
             MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/'),
             ProgressBar(),
             EstimatedTimeLeft()

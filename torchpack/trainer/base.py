@@ -4,7 +4,7 @@ import weakref
 from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Callback, CallbackGroup, Monitor, Monitors, TimedCallbackGroup
+from torchpack.callbacks import Callback, Monitor, Monitors, TimedCallbackGroup
 from torchpack.trainer.exception import StopTraining
 from torchpack.utils.logging import logger
 
@@ -66,7 +66,7 @@ class Trainer(object):
                 self.register_callback(x)
             return
         assert isinstance(callback, Callback), callback
-        assert not isinstance(self.callbacks, CallbackGroup), \
+        assert not isinstance(self.callbacks, TimedCallbackGroup), \
             'Cannot register more callbacks after trainer was setup!'
         if not self.is_chief and callback.chief_only:
             logger.warn('Callback {} is chief-only, skipped.'.format(str(callback)))
@@ -75,17 +75,11 @@ class Trainer(object):
             self.callbacks.append(callback)
             return True
 
-    def run_step(self, feed_dict):
+    def run_step(self, *args, **kwargs):
         """
-        Defines what to do in one iteration. The default is:
-        ``self.hooked_sess.run(self.train_op)``.
-
-        The behavior of each iteration can be changed by either setting ``trainer.train_op``,
-        or overriding this method.
+        Defines what to do in one iteration.
         """
-        feed_dict['outputs'] = self.model(feed_dict['inputs'])
-        feed_dict['loss'] = self.criterion(feed_dict['outputs'], feed_dict['targets'])
-        feed_dict['loss'].backward()
+        raise NotImplementedError
 
     @call_only_once
     def setup_callbacks(self, callbacks, monitors):
@@ -115,6 +109,12 @@ class Trainer(object):
         self.callbacks = TimedCallbackGroup(self.callbacks)
         self.callbacks.set_trainer(weakref.proxy(self))
 
+    def state_dict(self):
+        return dict(model=self.model.state_dict())
+
+    def load_state_dict(self, state_dict):
+        return
+
     @call_only_once
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
         """
@@ -127,6 +127,7 @@ class Trainer(object):
         self.starting_epoch = int(starting_epoch)
         self.max_epoch = int(max_epoch)
         self.steps_per_epoch = int(steps_per_epoch)
+
         # Allow empty epoch (no steps), if we want to run the callbacks only.
         assert self.steps_per_epoch >= 0 and self.max_epoch >= 0
 
@@ -136,12 +137,12 @@ class Trainer(object):
         try:
             self.callbacks.before_train()
             for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
-                logger.info('Starting the training epoch {}/{}.'.format(self.epoch_num, self.max_epoch))
+                logger.info('Training epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
                 self.callbacks.before_epoch()
                 start_time = time.time()
 
                 self.model.train()
-                # for self.loop._local_step in range(self.steps_per_epoch):
+                # for self.local_step in range(self.steps_per_epoch):
                 for self.local_step, (inputs, targets) in enumerate(self.loader):
                     # fixme
                     inputs = inputs.to(self.device, non_blocking=True)
@@ -156,8 +157,8 @@ class Trainer(object):
                     self.global_step += 1
 
                 self.callbacks.after_epoch()
-                logger.info('Epoch {} finished in {} at global step {}.'.format(
-                    self.epoch_num, humanize_time_delta(time.time() - start_time), self.global_step))
+                logger.info('Epoch {} finished in {}.'.format(
+                    self.epoch_num, humanize_time_delta(time.time() - start_time)))
                 self.callbacks.trigger_epoch()
             logger.info('Training has finished!')
         except StopTraining as e:
