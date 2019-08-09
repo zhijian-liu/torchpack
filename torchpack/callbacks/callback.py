@@ -16,12 +16,12 @@ class Callback(object):
     .. automethod:: _setup_trainer
     .. automethod:: _before_train
     .. automethod:: _after_train
-    .. automethod:: _before_step
-    .. automethod:: _after_step
     .. automethod:: _before_epoch
     .. automethod:: _after_epoch
-    .. automethod:: _trigger_step
+    .. automethod:: _before_step
+    .. automethod:: _after_step
     .. automethod:: _trigger_epoch
+    .. automethod:: _trigger_step
     .. automethod:: _trigger
     """
 
@@ -88,21 +88,21 @@ class Callback(object):
         """
         pass
 
-    def trigger_step(self):
-        self._trigger_step()
-
-    def _trigger_step(self):
-        """
-        Called after each step completes.
-        """
-        pass
-
     def trigger_epoch(self):
         self._trigger_epoch()
 
     def _trigger_epoch(self):
         """
         Called after the completion of every epoch.
+        """
+        self._trigger()
+
+    def trigger_step(self):
+        self._trigger_step()
+
+    def _trigger_step(self):
+        """
+        Called after each step completes.
         """
         pass
 
@@ -154,60 +154,80 @@ class LambdaCallback(Callback):
                  setup_trainer=None,
                  before_train=None,
                  after_train=None,
-                 before_step=None,
-                 after_step=None,
                  before_epoch=None,
                  after_epoch=None,
-                 trigger_step=None,
+                 before_step=None,
+                 after_step=None,
                  trigger_epoch=None,
+                 trigger_step=None,
                  trigger=None):
         self._setup_trainer_ = setup_trainer
         self._before_train_ = before_train
         self._after_train_ = after_train
-        self._before_step_ = before_step
-        self._after_step_ = after_step
         self._before_epoch_ = before_epoch
         self._after_epoch_ = after_epoch
-        self._trigger_step_ = trigger_step
+        self._before_step_ = before_step
+        self._after_step_ = after_step
         self._trigger_epoch_ = trigger_epoch
+        self._trigger_step_ = trigger_step
         self._trigger_ = trigger
 
     def _setup_trainer(self):
         if self._setup_trainer_:
             self._setup_trainer_(self)
+        else:
+            super()._setup_trainer()
 
     def _before_train(self):
         if self._before_train_:
             self._before_train_(self)
+        else:
+            super()._before_train()
 
     def _after_train(self):
         if self._after_train_:
             self._after_train_(self)
-
-    def _before_step(self, fd):
-        if self._before_step_:
-            self._before_step_(self, fd)
-
-    def _after_step(self, fd, od):
-        if self._after_step_:
-            self._after_step_(self, fd)
+        else:
+            super()._after_train()
 
     def _before_epoch(self):
         if self._before_epoch_:
             self._before_epoch_(self)
+        else:
+            super()._before_epoch()
 
     def _after_epoch(self):
         if self._after_epoch_:
             self._after_epoch_(self)
+        else:
+            super()._after_epoch()
 
-    def _trigger_step(self):
-        if self._trigger_step_:
-            self._trigger_step_(self)
+    def _before_step(self, fd):
+        if self._before_step_:
+            self._before_step_(self, fd)
+        else:
+            super()._before_step(fd)
+
+    def _after_step(self, fd, od):
+        if self._after_step_:
+            self._after_step_(self, fd, od)
+        else:
+            super()._after_step(fd, od)
 
     def _trigger_epoch(self):
         if self._trigger_epoch_:
             self._trigger_epoch_(self)
+        else:
+            super()._trigger_epoch()
+
+    def _trigger_step(self):
+        if self._trigger_step_:
+            self._trigger_step_(self)
+        else:
+            super()._trigger_step()
 
     def _trigger(self):
         if self._trigger_:
             self._trigger_(self)
+        else:
+            super()._trigger()
