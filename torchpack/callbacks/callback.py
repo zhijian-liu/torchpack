@@ -2,7 +2,7 @@ from abc import ABCMeta
 
 import six
 
-__all__ = ['Callback', 'LambdaCallback']
+__all__ = ['Callback', 'LambdaCallback', 'ProxyCallback']
 
 
 @six.add_metaclass(ABCMeta)
@@ -202,17 +202,17 @@ class LambdaCallback(Callback):
         else:
             super()._after_epoch()
 
-    def _before_step(self, fd):
+    def _before_step(self, *args, **kwargs):
         if self._before_step_:
-            self._before_step_(self, fd)
+            self._before_step_(self, *args, **kwargs)
         else:
-            super()._before_step(fd)
+            super()._before_step(*args, **kwargs)
 
-    def _after_step(self, fd, od):
+    def _after_step(self, *args, **kwargs):
         if self._after_step_:
-            self._after_step_(self, fd, od)
+            self._after_step_(self, *args, **kwargs)
         else:
-            super()._after_step(fd, od)
+            super()._after_step(*args, **kwargs)
 
     def _trigger_epoch(self):
         if self._trigger_epoch_:
@@ -231,3 +231,51 @@ class LambdaCallback(Callback):
             self._trigger_(self)
         else:
             super()._trigger()
+
+
+class ProxyCallback(Callback):
+    """ A callback which proxy all methods to another callback.
+        It's useful as a base class of callbacks which decorate other callbacks.
+    """
+
+    def __init__(self, callback):
+        """
+        Args:
+            callback(Callback): the underlying callback
+        """
+        assert isinstance(callback, Callback), type(callback)
+        self.chief_only = callback.chief_only
+        self.callback = callback
+
+    def _setup_trainer(self):
+        self.callback.setup_trainer(self.trainer)
+
+    def _before_train(self):
+        self.callback.before_train()
+
+    def _after_train(self):
+        self.callback.after_train()
+
+    def _before_epoch(self):
+        self.callback.before_epoch()
+
+    def _after_epoch(self):
+        self.callback.after_epoch()
+
+    def _before_step(self, *args, **kwargs):
+        self.callback.before_step(*args, **kwargs)
+
+    def _after_step(self, *args, **kwargs):
+        self.callback.after_step(*args, **kwargs)
+
+    def _trigger_epoch(self):
+        self.callback.trigger_epoch()
+
+    def _trigger_step(self):
+        self.callback.trigger_step()
+
+    def _trigger(self):
+        self.callback.trigger()
+
+    def __str__(self):
+        return 'Proxy-' + str(self.callback)

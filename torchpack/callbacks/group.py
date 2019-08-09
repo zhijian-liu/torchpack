@@ -2,9 +2,9 @@ import traceback
 from contextlib import contextmanager
 from time import perf_counter as timer
 
-from tensorpack.utils import logger
 from tensorpack.utils.utils import humanize_time_delta
 
+from torchpack.utils.logging import logger
 from .callback import Callback
 
 __all__ = ['Callbacks']
@@ -26,8 +26,6 @@ class CallbackTimeLogger(object):
         self.add(name, timer() - s)
 
     def log(self):
-
-        """ log the time of some heavy callbacks """
         if self.tot < 3:
             return
         msgs = []
@@ -89,13 +87,6 @@ class Callbacks(Callback):
         for cb in self.callbacks:
             cb.after_step(fd, od)
 
-    # def get_hooks(self):
-    #     return [CallbackToHook(cb) for cb in self.callbacks]
-
-    def trigger_step(self):
-        for cb in self.callbacks:
-            cb.trigger_step()
-
     def _trigger_epoch(self):
         tm = CallbackTimeLogger()
 
@@ -104,6 +95,10 @@ class Callbacks(Callback):
             with tm.timed_callback(display_name):
                 cb.trigger_epoch()
         tm.log()
+
+    def trigger_step(self):
+        for cb in self.callbacks:
+            cb.trigger_step()
 
     def _trigger(self):
         for cb in self.callbacks:
