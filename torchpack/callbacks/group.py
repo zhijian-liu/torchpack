@@ -5,7 +5,7 @@ from time import perf_counter as timer
 from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.utils.logging import logger
-from .callback import Callback
+from .base import Callback
 
 __all__ = ['CallbackGroup']
 

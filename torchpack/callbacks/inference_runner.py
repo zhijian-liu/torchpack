@@ -5,26 +5,10 @@ import tqdm
 from tensorpack.utils import logger
 from tensorpack.utils.utils import get_tqdm_kwargs
 
-from .callback import Callback
+from .base import Callback
 from .inference import InferenceCallback
 
 __all__ = ['InferenceRunnerBase', 'InferenceRunner']
-
-
-# def _device_from_int(dev):
-#     return '/gpu:{}'.format(dev) if dev >= 0 else '/cpu:0'
-
-
-# class InferencerToHook(tfv1.train.SessionRunHook):
-#     def __init__(self, inf, fetches):
-#         self._inf = inf
-#         self._fetches = fetches
-#
-#     def before_run(self, _):
-#         return tf.train.SessionRunArgs(fetches=self._fetches)
-#
-#     def after_run(self, _, run_values):
-#         self._inf.on_fetches(run_values.results)
 
 
 @contextmanager
@@ -32,7 +16,7 @@ def _inference_context():
     msg = "You might need to check your input implementation."
     try:
         yield
-    except (StopIteration):
+    except StopIteration:
         logger.error("[InferenceRunner] input stopped before reaching its __len__()! " + msg)
         raise
 
@@ -61,23 +45,11 @@ class InferenceRunnerBase(Callback):
             assert isinstance(v, InferenceCallback), v
 
         try:
-            # self._size = input.size()
             self._size = len(dataflow)
         except NotImplementedError:
             self._size = 0
 
         self._hooks = []
-
-    # def register_hook(self, hook):
-    #     """
-    #     Args:
-    #         hook (tf.train.SessionRunHook):
-    #     """
-    #     self._hooks.append(hook)
-
-    def after_train(self):
-        pass
-        # self._input_callbacks.after_train()
 
 
 class InferenceRunner(InferenceRunnerBase):

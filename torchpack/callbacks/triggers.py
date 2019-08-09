@@ -1,4 +1,4 @@
-from .callback import Callback, ProxyCallback
+from .base import Callback, ProxyCallback
 
 __all__ = ['PeriodicTrigger', 'PeriodicCallback', 'EnableCallbackIf']
 
@@ -20,7 +20,6 @@ class PeriodicTrigger(ProxyCallback):
             every_k_steps (int): trigger when ``global_step % k == 0``.
             every_k_epochs (int): trigger when ``epoch_num % k == 0``.
             before_train (bool): trigger in the :meth:`before_train` method.
-        every_k_steps and every_k_epochs can be both set, but cannot be both None unless before_train is True.
         """
         assert isinstance(callback, Callback), type(callback)
         super().__init__(callback)
@@ -28,18 +27,18 @@ class PeriodicTrigger(ProxyCallback):
             assert (every_k_epochs is not None) or (every_k_steps is not None), \
                 "Arguments to PeriodicTrigger have disabled the triggerable!"
         self.every_k_steps = every_k_steps
-        self._every_k_epochs = every_k_epochs
-        self._do_before_train = before_train
+        self.every_k_epochs = every_k_epochs
+        self.trigger_before_train = before_train
 
     def before_train(self):
         self.callback.before_train()
-        if self._do_before_train:
+        if self.trigger_before_train:
             self.callback.trigger()
 
     def trigger_epoch(self):
-        if self._every_k_epochs is None:
+        if self.every_k_epochs is None:
             return
-        if self.trainer.epoch_num % self._every_k_epochs == 0:
+        if self.trainer.epoch_num % self.every_k_epochs == 0:
             self.callback.trigger()
 
     def trigger_step(self):

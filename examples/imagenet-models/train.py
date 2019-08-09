@@ -42,18 +42,19 @@ def main():
     trainer.train(
         loader=loaders['train'], model=model, criterion=criterion, max_epoch=150,
         callbacks=[
-            LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
-                           after_step=lambda *_: optimizer.step()),
+            LambdaCallback(before_step=lambda _, fd: optimizer.zero_grad(),
+                           after_step=lambda _, fd, od: optimizer.step()),
             LambdaCallback(before_epoch=lambda _: scheduler.step()),
             PeriodicCallback(
                 InferenceRunner(loaders['test'], callbacks=[
                     ClassificationError(k=1, summary_name='acc/test-top1'),
                     ClassificationError(k=5, summary_name='acc/test-top5')
                 ]),
-                every_k_epochs=2
+                every_k_epochs=1
             ),
             ProgressBar(),
-            EstimatedTimeLeft()
+            EstimatedTimeLeft(),
+            MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/')
         ],
         monitors=[
             TFEventWriter(logdir='runs/'),

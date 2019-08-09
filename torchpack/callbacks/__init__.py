@@ -1,4 +1,4 @@
-from .callback import *
+from .base import *
 from .group import *
 from .inference import *
 from .inference_runner import *

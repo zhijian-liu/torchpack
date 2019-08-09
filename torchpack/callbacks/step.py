@@ -1,6 +1,6 @@
 from torchpack.utils.logging import logger
 
-from .callback import Callback
+from .base import Callback
 
 __all__ = ['MaintainStepCounter']
 
