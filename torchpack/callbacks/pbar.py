@@ -9,8 +9,6 @@ class ProgressBar(Callback):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
-    _chief_only = False
-
     def __init__(self, names=[]):
         """
         Args:
@@ -22,7 +20,7 @@ class ProgressBar(Callback):
         # self._tags = [get_op_tensor_name(n)[0].split("/")[-1] for n in names]
         self._bar = None
 
-    def _before_train(self):
+    def before_train(self):
         self._last_updated = self.trainer.local_step
 
         self._total = self.trainer.steps_per_epoch
@@ -33,15 +31,15 @@ class ProgressBar(Callback):
         #     for t in self._fetches:
         #         assert t.shape.ndims == 0, "ProgressBar can only print scalars, not {}".format(t)
         #     self._fetches = tf.train.SessionRunArgs(self._fetches)
-        #     self._tqdm_args['bar_format'] = self._tqdm_args['bar_format'] + "{postfix} "
+        # self._tqdm_args['bar_format'] = self._tqdm_args['bar_format'] + "{postfix} "
 
-    def _before_epoch(self):
+    def before_epoch(self):
         self._bar = tqdm.trange(self._total, **self._tqdm_args)
 
-    def _after_epoch(self):
+    def after_epoch(self):
         self._bar.close()
 
-    def _before_step(self, _):
+    def before_step(self, _):
         # update progress bar when local step changed (one step is finished)
         if self.trainer.local_step != self._last_updated:
             self._last_updated = self.trainer.local_step
@@ -50,16 +48,16 @@ class ProgressBar(Callback):
         else:
             return None
 
-    def _after_step(self, _, run_values):
+    def after_step(self, _, run_values):
         # res = run_values.results
         # if res:
-        #     self._bar.set_postfix(zip(self._tags, res))
+        # self._bar.set_postfix(dict(loss=1))
         pass
 
-    def _trigger_step(self):
+    def trigger_step(self):
         self._bar.update()
 
-    def _after_train(self):
+    def after_train(self):
         # training may get killed before the first step
         if self._bar:
             self._bar.close()

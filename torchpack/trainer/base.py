@@ -159,7 +159,7 @@ class Trainer(object):
 
         # some final operations that might modify the graph
         self._callbacks = CallbackGroup(self._callbacks)
-        self._callbacks.setup_trainer(weakref.proxy(self))
+        self._callbacks.set_trainer(weakref.proxy(self))
 
     @call_only_once
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):

@@ -42,17 +42,9 @@ class Monitor(Callback):
     .. automethod:: _setup_graph
     """
 
-    _chief_only = False
+    chief_only = False
 
-    def setup_trainer(self, trainer):
-        self.trainer = trainer
-        self._setup_trainer()
-
-    def _setup_trainer(self):
-        """ Override this method to setup the monitor."""
-        pass
-
-    def process_summary(self, summary):
+    def add_summary(self, summary):
         """
         Process a tf.Summary.
         """
@@ -79,7 +71,7 @@ class Monitor(Callback):
         """
         pass
 
-    def process_event(self, event):
+    def add_event(self, event):
         """
         Args:
             event (tf.Event): the most basic format acceptable by tensorboard.
@@ -115,10 +107,10 @@ class Monitors(Callback):
         for m in self._monitors:
             assert isinstance(m, Monitor), m
 
-    def _setup_trainer(self):
+    def set_trainer(self, trainer):
         # scalar_history's other methods were not called.
         # but they are not useful for now
-        self._scalar_history.setup_trainer(self.trainer)
+        self._scalar_history.set_trainer(trainer)
 
     def _dispatch(self, func):
         for m in self._monitors:
@@ -145,11 +137,11 @@ class Monitors(Callback):
 
                 self._dispatch(lambda m: m.process_scalar(val.tag, val.simple_value))
 
-        self._dispatch(lambda m: m.process_summary(summary))
+        self._dispatch(lambda m: m.add_summary(summary))
 
     def add_scalar(self, name, val):
         """
-        Put a scalar.
+        Add a scalar.
         """
         if isinstance(val, np.floating):
             val = float(val)
@@ -157,7 +149,7 @@ class Monitors(Callback):
             val = int(val)
         self._dispatch(lambda m: m.process_scalar(name, val))
         s = create_scalar_summary(name, val)
-        self._dispatch(lambda m: m.process_summary(s))
+        self._dispatch(lambda m: m.add_summary(s))
 
     def add_image(self, name, val):
         """
@@ -171,7 +163,7 @@ class Monitors(Callback):
         arr = image_to_nhwc(val)
         self._dispatch(lambda m: m.process_image(name, arr))
         s = create_image_summary(name, arr)
-        self._dispatch(lambda m: m.process_summary(s))
+        self._dispatch(lambda m: m.add_summary(s))
 
     def add_event(self, event):
         """
@@ -182,7 +174,7 @@ class Monitors(Callback):
         """
         event.step = self.global_step
         event.wall_time = time.time()
-        self._dispatch(lambda m: m.process_event(event))
+        self._dispatch(lambda m: m.add_event(event))
 
     def get_latest(self, name):
         """
@@ -236,26 +228,24 @@ class TFEventWriter(Monitor):
             logger.warn("logger directory was not set. Ignore TFEventWriter.")
             return NoOpMonitor("TFEventWriter")
 
-    def _setup_trainer(self):
+    def before_train(self):
         self._writer = tf.summary.FileWriter(
             self._logdir, graph=tf.get_default_graph(),
             max_queue=self._max_queue, flush_secs=self._flush_secs)
 
-    @HIDE_DOC
-    def process_summary(self, summary):
-        self._writer.add_summary(summary, self.global_step)
+    def add_summary(self, summary):
+        self._writer.add_summary(summary, self.trainer.global_step)
 
-    @HIDE_DOC
-    def process_event(self, event):
+    def add_event(self, event):
         self._writer.add_event(event)
 
-    def _trigger(self):  # flush every epoch
+    def trigger(self):  # flush every epoch
         self._writer.flush()
         if self._split_files:
             self._writer.close()
             self._writer.reopen()  # open new file
 
-    def _after_train(self):
+    def after_train(self):
         self._writer.close()
 
 
@@ -305,12 +295,12 @@ class JSONWriter(Monitor):
             return None
 
     # initialize the stats here, because before_train from other callbacks may use it
-    def _setup_trainer(self):
+    def before_train(self):
         self._stats = []
         self._stat_now = {}
         self._last_gs = -1
 
-    def _before_train(self):
+    def before_train(self):
         stats = JSONWriter.load_existing_json()
         self._fname = os.path.join(logger.get_logger_dir(), JSONWriter.FILENAME)
         if stats is not None:
@@ -342,19 +332,19 @@ class JSONWriter(Monitor):
         # in case we have something to log here.
         self._trigger()
 
-    def _trigger_step(self):
+    def trigger_step(self):
         # will do this in trigger_epoch
         if self.local_step != self.trainer.steps_per_epoch - 1:
-            self._trigger()
+            self.trigger()
 
-    def _trigger_epoch(self):
-        self._trigger()
+    def trigger_epoch(self):
+        self.trigger()
 
     @HIDE_DOC
     def process_scalar(self, name, val):
         self._stat_now[name] = val
 
-    def _trigger(self):
+    def trigger(self):
         """
         Add stats to json and dump to disk.
         Note that this method is idempotent.
@@ -414,14 +404,14 @@ class ScalarPrinter(Monitor):
     def _before_train(self):
         self._trigger()
 
-    def _trigger_step(self):
+    def trigger_step(self):
         if self._enable_step:
             if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
                 # not the last step
-                self._trigger()
+                self.trigger()
             else:
                 if not self._enable_epoch:
-                    self._trigger()
+                    self.trigger()
                 # otherwise, will print them together
 
     def _trigger_epoch(self):
@@ -432,7 +422,7 @@ class ScalarPrinter(Monitor):
     def process_scalar(self, name, val):
         self._dic[name] = float(val)
 
-    def _trigger(self):
+    def trigger(self):
         # Print stats here
         def match_regex_list(regexs, name):
             for r in regexs:

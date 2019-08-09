@@ -50,53 +50,54 @@ class CallbackGroup(Callback):
         # check type
         for callback in callbacks:
             assert isinstance(callback, Callback), callback.__class__
-        self._callbacks = callbacks
+        self.callbacks = callbacks
 
-    def _setup_trainer(self):
-        for callback in self._callbacks:
-            callback.setup_trainer(self.trainer)
+    def set_trainer(self, trainer):
+        self.trainer = trainer
+        for callback in self.callbacks:
+            callback.set_trainer(trainer)
 
-    def _before_train(self):
-        for callback in self._callbacks:
+    def before_train(self):
+        for callback in self.callbacks:
             callback.before_train()
 
-    def _after_train(self):
+    def after_train(self):
         # make sure callbacks are properly finalized
-        for callback in self._callbacks:
+        for callback in self.callbacks:
             try:
                 callback.after_train()
             except Exception:
                 traceback.print_exc()
 
-    def _before_epoch(self):
-        for callback in self._callbacks:
+    def before_epoch(self):
+        for callback in self.callbacks:
             callback.before_epoch()
 
-    def _after_epoch(self):
-        for callback in self._callbacks:
+    def after_epoch(self):
+        for callback in self.callbacks:
             callback.after_epoch()
 
-    def _before_step(self, *args, **kwargs):
-        for callback in self._callbacks:
+    def before_step(self, *args, **kwargs):
+        for callback in self.callbacks:
             callback.before_step(*args, **kwargs)
 
-    def _after_step(self, *args, **kwargs):
-        for callback in self._callbacks:
+    def after_step(self, *args, **kwargs):
+        for callback in self.callbacks:
             callback.after_step(*args, **kwargs)
 
-    def _trigger_epoch(self):
+    def trigger_epoch(self):
         tm = CallbackTimeLogger()
 
-        for cb in self._callbacks:
-            display_name = str(cb)
+        for callback in self.callbacks:
+            display_name = str(callback)
             with tm.timed_callback(display_name):
-                cb.trigger_epoch()
+                callback.trigger_epoch()
         tm.log()
 
     def trigger_step(self):
-        for callback in self._callbacks:
+        for callback in self.callbacks:
             callback.trigger_step()
 
-    def _trigger(self):
-        for callback in self._callbacks:
+    def trigger(self):
+        for callback in self.callbacks:
             callback.trigger()

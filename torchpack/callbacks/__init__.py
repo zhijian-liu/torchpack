@@ -2,9 +2,9 @@ from .callback import *
 from .group import *
 from .inference import *
 from .inference_runner import *
-from .monitors import *
+from .monitor import *
 from .pbar import *
 from .saver import *
 from .step import *
 from .timer import *
-from .trigger import *
+from .triggers import *

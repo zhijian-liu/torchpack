@@ -11,20 +11,13 @@ class MaintainStepCounter(Callback):
     This callback is used internally by the trainer, you don't need to worry about it.
     """
 
-    _chief_only = False
+    chief_only = False
 
     # def _setup_graph(self):
-    #     # ensure it exists
-    #     gs_var = get_global_step_var()
-    #     with tf.name_scope(None):
-    #         self.gs_incr_op = tf.assign_add(
-    #             gs_var, 1,
-    #             name=GLOBAL_STEP_INCR_OP_NAME).op
-    #     self._fetches = tf.train.SessionRunArgs(self.gs_incr_op)
 
-    def _before_train(self):
+    def before_train(self):
         if self.trainer.global_step != 0:
             logger.info("Start training with global_step={}".format(self.trainer.global_step))
 
-    def _trigger_step(self):
+    def trigger_step(self):
         self.trainer.loop._global_step += 1

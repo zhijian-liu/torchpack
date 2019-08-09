@@ -27,26 +27,26 @@ class PeriodicTrigger(ProxyCallback):
         if before_train is False:
             assert (every_k_epochs is not None) or (every_k_steps is not None), \
                 "Arguments to PeriodicTrigger have disabled the triggerable!"
-        self._every_k_steps = every_k_steps
+        self.every_k_steps = every_k_steps
         self._every_k_epochs = every_k_epochs
         self._do_before_train = before_train
 
-    def _before_train(self):
+    def before_train(self):
         self.callback.before_train()
         if self._do_before_train:
             self.callback.trigger()
 
-    def _trigger_epoch(self):
+    def trigger_epoch(self):
         if self._every_k_epochs is None:
             return
         if self.trainer.epoch_num % self._every_k_epochs == 0:
             self.callback.trigger()
 
-    def _trigger_step(self):
+    def trigger_step(self):
         self.callback.trigger_step()
-        if self._every_k_steps is None:
+        if self.every_k_steps is None:
             return
-        if self.trainer.global_step % self._every_k_steps == 0:
+        if self.trainer.global_step % self.every_k_steps == 0:
             self.callback.trigger()
 
     def __str__(self):
@@ -75,32 +75,32 @@ class EnableCallbackIf(ProxyCallback):
         super().__init__(callback)
         self._predicate = predicate
 
-    def _before_epoch(self):
+    def before_epoch(self):
         if self._predicate(self):
-            super()._before_epoch()
+            super().before_epoch()
 
-    def _after_epoch(self):
+    def after_epoch(self):
         if self._predicate(self):
-            super()._after_epoch()
+            super().after_epoch()
 
-    def _before_step(self, *args, **kwargs):
+    def before_step(self, *args, **kwargs):
         if self._predicate(self):
             self._enabled = True
-            super()._before_step(*args, **kwargs)
+            super().before_step(*args, **kwargs)
         else:
             self._enabled = False
 
-    def _after_step(self, *args, **kwargs):
+    def after_step(self, *args, **kwargs):
         if self._enabled:
-            super()._after_step(*args, **kwargs)
+            super().after_step(*args, **kwargs)
 
-    def _trigger_epoch(self):
+    def trigger_epoch(self):
         if self._predicate(self):
-            super()._trigger_epoch()
+            super().trigger_epoch()
 
-    def _trigger_step(self):
+    def trigger_step(self):
         if self._predicate(self):
-            super()._trigger_step()
+            super().trigger_step()
 
     def __str__(self):
         return 'EnableCallbackIf-' + str(self.callback)

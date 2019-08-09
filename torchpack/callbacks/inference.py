@@ -5,12 +5,12 @@ from tensorpack.utils import logger
 
 from .callback import Callback
 
-__all__ = ['Inferencer', 'ClassificationError']
+__all__ = ['InferenceCallback', 'ClassificationError']
 
 
 @six.add_metaclass(ABCMeta)
-class Inferencer(Callback):
-    """ Base class of Inferencer.
+class InferenceCallback(Callback):
+    """ Base class of InferenceCallback.
     Inferencer is a special kind of callback that should be called by :class:`InferenceRunner`.
     It has the methods ``_get_fetches`` and ``_on_fetches`` which are like
     :class:`SessionRunHooks`, except that they will be used only by :class:`InferenceRunner`.
@@ -21,16 +21,16 @@ class Inferencer(Callback):
     .. automethod:: _on_fetches
     """
 
-    def _before_epoch(self):
-        self._before_inference()
+    def before_epoch(self):
+        self.before_inference()
 
-    def _before_inference(self):
+    def before_inference(self):
         """
         Called before a new round of inference starts.
         """
         pass
 
-    def _trigger_epoch(self):
+    def trigger_epoch(self):
         ret = self._after_inference()
         if ret is None:
             return
@@ -43,7 +43,7 @@ class Inferencer(Callback):
             else:
                 self.trainer.monitors.add_scalar(k, v)
 
-    def _after_inference(self):
+    def after_inference(self):
         """
         Called after a round of inference ends.
         Returns a dict of scalar statistics which will be logged to monitors.
@@ -54,16 +54,10 @@ class Inferencer(Callback):
         """
         Called after each new datapoint finished the forward inference.
         """
-        self._on_fetches(input_dict, output_dict)
-
-    def _on_fetches(self, input_dict, output_dict):
-        """
-        To be implemented by subclasses
-        """
         raise NotImplementedError()
 
 
-class ClassificationError(Inferencer):
+class ClassificationError(InferenceCallback):
     """
     Compute **true** classification error in batch mode, from a ``wrong`` tensor.
     The ``wrong`` tensor is supposed to be an binary vector containing
@@ -89,11 +83,11 @@ class ClassificationError(Inferencer):
         self.label_tensor_name = label_tensor_name
         self.summary_name = summary_name
 
-    def _before_inference(self):
+    def before_inference(self):
         self.num_examples = 0
         self.num_correct = 0
 
-    def _on_fetches(self, input_dict, output_dict):
+    def on_fetches(self, input_dict, output_dict):
         outputs = output_dict[self.logit_tensor_name]
         targets = input_dict[self.label_tensor_name]
 
@@ -105,5 +99,5 @@ class ClassificationError(Inferencer):
         self.num_examples += targets.size(0)
         self.num_correct += masks[:self.k].view(-1).float().sum(0)
 
-    def _after_inference(self):
+    def after_inference(self):
         return {self.summary_name: self.num_correct / max(self.num_examples, 1) * 100.}

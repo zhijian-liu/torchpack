@@ -6,7 +6,7 @@ from tensorpack.utils import logger
 from tensorpack.utils.utils import get_tqdm_kwargs
 
 from .callback import Callback
-from .inference import Inferencer
+from .inference import InferenceCallback
 
 __all__ = ['InferenceRunnerBase', 'InferenceRunner']
 
@@ -46,23 +46,23 @@ class InferenceRunnerBase(Callback):
         2. Only works with instances of `TowerTrainer`.
     """
 
-    def __init__(self, input, callbacks):
+    def __init__(self, dataflow, callbacks):
         """
         Args:
-            input (InputSource): the input to use. Must have an accurate ``size()``.
-            callbacks (list[Inferencer]): list of :class:`Inferencer` to run.
+            dataflow (InputSource): the input to use. Must have an accurate ``size()``.
+            callbacks (list[InferenceCallback]): list of :class:`Inferencer` to run.
         """
-        self._input_source = input
+        self._input_source = dataflow
         if not isinstance(callbacks, list):
             self.callbacks = [callbacks]
         else:
             self.callbacks = callbacks
         for v in self.callbacks:
-            assert isinstance(v, Inferencer), v
+            assert isinstance(v, InferenceCallback), v
 
         try:
             # self._size = input.size()
-            self._size = len(input)
+            self._size = len(dataflow)
         except NotImplementedError:
             self._size = 0
 
@@ -75,7 +75,7 @@ class InferenceRunnerBase(Callback):
     #     """
     #     self._hooks.append(hook)
 
-    def _after_train(self):
+    def after_train(self):
         pass
         # self._input_callbacks.after_train()
 
@@ -85,58 +85,21 @@ class InferenceRunner(InferenceRunnerBase):
     A callback that runs a list of :class:`Inferencer` on some :class:`InputSource`.
     """
 
-    def __init__(self, input, callbacks, device=0):
+    def __init__(self, dataflow, callbacks, device=0):
         """
         Args:
-            input (InputSource or DataFlow): The :class:`InputSource` to run
+            dataflow (InputSource or DataFlow): The :class:`InputSource` to run
                 inference on.  If given a DataFlow, will use :class:`FeedInput`.
             callbacks (list): a list of :class:`Inferencer` instances.
             device (int): the device to use
         """
-        # if isinstance(input, DataFlow):
-        #     # use infinite=False so that a dataflow without size will stop normally
-        #     # TODO a better way to handle inference size
-        #     input = FeedInput(input, infinite=False)
-        # assert isinstance(input, InputSource), input
-        # assert not isinstance(input, StagingInput), input
-        # self._device_id = device
-        # self._device = _device_from_int(device)
-        super(InferenceRunner, self).__init__(input, callbacks)
+        super().__init__(dataflow, callbacks)
 
-    # def _build_hook(self, inf):
-    #     out_names = inf.get_fetches()
-    #     fetches = self._tower_handle.get_tensors(out_names)
-    #     return InferencerToHook(inf, fetches)
-
-    def _setup_trainer(self):
-        # if self._tower_func is None:
-        #     assert self.trainer.tower_func is not None, "You must set tower_func of the trainer to use InferenceRunner!"
-        #     self._tower_func = self.trainer.tower_func
-        # input_callbacks = self._input_source.setup(self._tower_func.inputs_desc)
-
-        # vs_name = self.trainer._vs_name_for_predictor(self._device_id)
-        # logger.info("[InferenceRunner] Building tower '{}' on device {} {}...".format(
-        #     self._tower_name, self._device,
-        #     "with variable scope '{}'".format(vs_name) if vs_name else ''))
-        # with tf.variable_scope(tf.get_variable_scope(), reuse=True), \
-        #      tf.device(self._device), \
-        #      PredictTowerContext(self._tower_name, vs_name=vs_name):
-        #     self._tower_func(*self._input_source.get_input_tensors())
-        #     self._tower_handle = self._tower_func.towers[-1]
-
-        # for h in [self._build_hook(inf) for inf in self.infs]:
-        #     self.register_hook(h)
-        # trigger_{step,epoch}, {before,after}_epoch is ignored.
-        # We assume that InputSource callbacks won't use these methods
-        # self._input_callbacks = Callbacks(input_callbacks)
-        # for h in self._input_callbacks.get_hooks():
-        #     self.register_hook(h)
-
+    def set_trainer(self, trainer):
         for callback in self.callbacks:
-            callback.setup_trainer(self.trainer)
-        # self._input_callbacks.setup_graph(self.trainer)
+            callback.set_trainer(trainer)
 
-    def _trigger(self):
+    def trigger(self):
         for callback in self.callbacks:
             callback.before_epoch()
 
@@ -150,12 +113,12 @@ class InferenceRunner(InferenceRunnerBase):
                     inputs = inputs.to('cuda', non_blocking=True)
                     targets = targets.to('cuda', non_blocking=True)
 
-                    input_dict = dict(inputs=inputs, targets=targets)
-                    outputs = self.trainer.model(input_dict['inputs'])
-                    output_dict = dict(outputs=outputs)
+                    fd = dict(inputs=inputs, targets=targets)
+                    outputs = self.trainer.model(fd['inputs'])
+                    od = dict(outputs=outputs)
 
                     for callback in self.callbacks:
-                        callback.on_fetches(input_dict, output_dict)
+                        callback.on_fetches(fd, od)
 
                     pbar.update()
 

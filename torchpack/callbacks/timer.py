@@ -24,10 +24,10 @@ class EstimatedTimeLeft(Callback):
         self._times = deque(maxlen=last_k_epochs)
         self._median = median
 
-    def _before_train(self):
+    def before_train(self):
         self._last_time = time.time()
 
-    def _trigger_epoch(self):
+    def trigger_epoch(self):
         duration = time.time() - self._last_time
         self._last_time = time.time()
         self._times.append(duration)
@@ -35,4 +35,4 @@ class EstimatedTimeLeft(Callback):
         epoch_time = np.median(self._times) if self._median else np.mean(self._times)
         time_left = (self.trainer.max_epoch - self.trainer.epoch_num) * epoch_time
         if time_left > 0:
-            logger.info('Estimated Time Left: {}.'.format(humanize_time_delta(time_left)))
+            logger.info('Estimated time left is {}.'.format(humanize_time_delta(time_left)))
