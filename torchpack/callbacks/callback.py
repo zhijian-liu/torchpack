@@ -17,19 +17,19 @@ class Callback(object):
 
     def before_train(self):
         """
-        Called right before training.
+        Called before training.
         """
         pass
 
     def after_train(self):
         """
-        Called right after training.
+        Called after training.
         """
         pass
 
     def before_epoch(self):
         """
-        Called right before each epoch.
+        Called before every epoch.
         Usually you should use the :meth:`trigger` callback to run something between epochs.
         Use this method only when something really needs to be run **immediately** before each epoch.
         """
@@ -37,7 +37,7 @@ class Callback(object):
 
     def after_epoch(self):
         """
-        Called right after each epoch.
+        Called after every epoch.
         Usually you should use the :meth:`trigger` callback to run something between epochs.
         Use this method only when something really needs to be run **immediately** after each epoch.
         """
@@ -57,13 +57,13 @@ class Callback(object):
 
     def trigger_epoch(self):
         """
-        Called after each epoch completes.
+        Called after after epoch.
         """
         self.trigger()
 
     def trigger_step(self):
         """
-        Called after each step completes.
+        Called after after step.
         """
         pass
 
