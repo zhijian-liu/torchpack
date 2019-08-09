@@ -1,8 +1,6 @@
 import os
-import time
 
 import torch
-from tensorpack.compat import tfv1 as tf
 
 from torchpack.utils.logging import logger
 from .base import Callback
@@ -17,14 +15,12 @@ class ModelSaver(Callback):
     def __init__(self, max_to_keep=10, checkpoint_dir=None):
         """
         Args:
-            max_to_keep (int): the same as in ``tf.train.Saver``.
+            max_to_keep (int): Maximum number of recent checkpoint files to keep.
             checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
         """
         self.max_to_keep = max_to_keep
-
         if checkpoint_dir is None:
             checkpoint_dir = logger.get_logger_dir()
-
         os.makedirs(checkpoint_dir, exist_ok=True)
         self.checkpoint_dir = os.path.normpath(checkpoint_dir)
 
@@ -74,51 +70,49 @@ class MinSaver(Callback):
         if self.checkpoint_dir is None:
             self.checkpoint_dir = logger.get_logger_dir()
 
-    def _get_stat(self):
-        try:
-            v = self.trainer.monitors.get_history(self.monitor_stat)[-1]
-        except (KeyError, IndexError):
-            v = None, None
-        return v
+    def before_train(self):
+        # todo: fetch best values from current checkpoint (resume)
+        pass
 
     def trigger_epoch(self):
         self.trigger()
 
     def trigger(self):
-        curr_step, curr_val = self._get_stat()
-        if curr_step is None:
+        try:
+            curr_step, curr_val = self.trainer.monitors.get_history(self.monitor_stat)[-1]
+        except (KeyError, IndexError):
             return
 
         if self.best is None or (curr_val > self.best[1] if self.reverse else curr_val < self.best[1]):
             self.best = (curr_step, curr_val)
-            print(self.best, 'best-checkpoint')
-            time.sleep(1)
-            # self._save()
 
-    def _save(self):
-        ckpt = tf.train.get_checkpoint_state(self.checkpoint_dir)
-        if ckpt is None:
-            raise RuntimeError(
-                "[MinSaver] Cannot find a checkpoint state. Do you forget to use ModelSaver?")
-        path = ckpt.model_checkpoint_path
+            extreme_name = 'maximum' if self.reverse else 'minimum'
 
-        extreme_name = 'maximum' if self.reverse else 'minimum'
-        if not path.endswith(str(self.best[0])):
-            logger.warn("[MinSaver] New {} '{}' found at global_step={}, but the latest checkpoint is {}.".format(
-                extreme_name, self.monitor_stat, self.best[0], path
-            ))
-            logger.warn("MinSaver will do nothing this time. "
-                        "The callbacks may have inconsistent frequency or wrong order.")
-            return
+            if curr_step != self.trainer.global_step:
+                logger.warning("[MinSaver] New {} '{}' found at global_step={}, but the latest checkpoint is {}.".format(
+                    extreme_name, self.monitor_stat, curr_step, self.trainer.global_step
+                ))
+                logger.warning("MinSaver will do nothing this time. "
+                               "The callbacks may have inconsistent frequency or wrong order.")
+                return
 
-        newname = os.path.join(self.checkpoint_dir,
-                               self.filename or
-                               ('max-' + self.monitor_stat if self.reverse else 'min-' + self.monitor_stat))
-        files_to_copy = tf.gfile.Glob(path + '*')
-        for file_to_copy in files_to_copy:
-            tf.gfile.Copy(file_to_copy, file_to_copy.replace(path, newname), overwrite=True)
-        logger.info("Model at global_step={} with {} {}={:.5g} saved.".format(
-            self.best[0], extreme_name, self.monitor_stat, self.best[1]))
+            def _escape(name):
+                return name.replace('/', '-')
+
+            state_dict = self.trainer.state_dict()
+            checkpoint_path = os.path.join(self.checkpoint_dir,
+                                           self.filename or
+                                           ('max-' if self.reverse else 'min-') + _escape(self.monitor_stat)
+                                           + '.pth')
+            try:
+                torch.save(state_dict, checkpoint_path)
+                logger.info('Checkpoint at [global step: {}] with {} {}={:.5g} saved.'.format(
+                    self.best[0], extreme_name, self.monitor_stat, self.best[1]))
+            except (OSError, IOError) as e:
+                logger.exception('Exception in ModelSaver!')
+
+        # fixme: use min/max instead of best
+        self.trainer.monitors.add_scalar(self.monitor_stat + '/best', self.best[1])
 
 
 class MaxSaver(MinSaver):

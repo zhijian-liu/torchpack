@@ -45,7 +45,6 @@ class Trainer(object):
     def __init__(self, device='cuda'):
         self.device = device
         self.callbacks = None
-        # self.loop = TrainLoop()
         self.epoch_num = 0
         self.global_step = 0
         self.local_step = -1
@@ -157,7 +156,7 @@ class Trainer(object):
                     self.global_step += 1
 
                 self.callbacks.after_epoch()
-                logger.info('Epoch {} finished in {}.'.format(
+                logger.info('Training epoch {} finished in {}.'.format(
                     self.epoch_num, humanize_time_delta(time.time() - start_time)))
                 self.callbacks.trigger_epoch()
             logger.info('Training has finished!')
@@ -169,12 +168,11 @@ class Trainer(object):
         finally:
             self.callbacks.after_train()
 
-    def train(self,
-              loader, model, criterion,
+    def train(self, loader, model, criterion,
               callbacks=None, monitors=None,
               steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
         """
-        Implemented by three lines:
+        Implemented by two lines:
 
         .. code-block:: python
 
