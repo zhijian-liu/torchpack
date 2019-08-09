@@ -6,7 +6,7 @@ from six.moves import range
 from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Callback, Callbacks, Monitor, Monitors, MaintainStepCounter
+from torchpack.callbacks import Callback, CallbackGroup, Monitor, Monitors, MaintainStepCounter
 from torchpack.utils.logging import logger
 
 __all__ = ['StopTraining', 'Trainer']
@@ -110,7 +110,7 @@ class Trainer(object):
                 self._register_callback(x)
             return
         assert isinstance(callback, Callback), callback
-        assert not isinstance(self._callbacks, Callbacks), \
+        assert not isinstance(self._callbacks, CallbackGroup), \
             "Cannot register more callbacks after trainer was setup!"
         if not self.is_chief and callback.chief_only:
             logger.warn("Callback {} is chief-only, skipped.".format(str(callback)))
@@ -146,10 +146,10 @@ class Trainer(object):
         assert isinstance(monitors, list), monitors
 
         self.register_callback(MaintainStepCounter())
-        for cb in callbacks:
-            self.register_callback(cb)
-        for cb in self._callbacks:
-            assert not isinstance(cb, Monitor), 'Monitor cannot be pre-registered for now!'
+        for callback in callbacks:
+            self.register_callback(callback)
+        for callback in self._callbacks:
+            assert not isinstance(callback, Monitor), 'Monitor cannot be pre-registered for now!'
         registered_monitors = []
         for m in monitors:
             if self.register_callback(m):
@@ -158,7 +158,7 @@ class Trainer(object):
         self.register_callback(self.monitors)  # monitors is also a callback
 
         # some final operations that might modify the graph
-        self._callbacks = Callbacks(self._callbacks)
+        self._callbacks = CallbackGroup(self._callbacks)
         self._callbacks.setup_trainer(weakref.proxy(self))
 
     @call_only_once

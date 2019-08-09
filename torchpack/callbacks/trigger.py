@@ -27,8 +27,8 @@ class PeriodicTrigger(ProxyCallback):
         if before_train is False:
             assert (every_k_epochs is not None) or (every_k_steps is not None), \
                 "Arguments to PeriodicTrigger have disabled the triggerable!"
-        self._step_k = every_k_steps
-        self._epoch_k = every_k_epochs
+        self._every_k_steps = every_k_steps
+        self._every_k_epochs = every_k_epochs
         self._do_before_train = before_train
 
     def _before_train(self):
@@ -37,16 +37,16 @@ class PeriodicTrigger(ProxyCallback):
             self.callback.trigger()
 
     def _trigger_epoch(self):
-        if self._epoch_k is None:
+        if self._every_k_epochs is None:
             return
-        if self.trainer.epoch_num % self._epoch_k == 0:
+        if self.trainer.epoch_num % self._every_k_epochs == 0:
             self.callback.trigger()
 
     def _trigger_step(self):
         self.callback.trigger_step()
-        if self._step_k is None:
+        if self._every_k_steps is None:
             return
-        if self.trainer.global_step % self._step_k == 0:
+        if self.trainer.global_step % self._every_k_steps == 0:
             self.callback.trigger()
 
     def __str__(self):
@@ -55,7 +55,7 @@ class PeriodicTrigger(ProxyCallback):
 
 class EnableCallbackIf(ProxyCallback):
     """
-    Disable the ``{before,after}_epoch``, ``{before,after}_run``,
+    Disable the ``{before,after}_epoch``, ``{before,after}_step``,
     ``trigger_{epoch,step}``
     methods of a callback, unless some condition satisfies.
     The other methods are unaffected.
@@ -75,17 +75,6 @@ class EnableCallbackIf(ProxyCallback):
         super().__init__(callback)
         self._predicate = predicate
 
-    def _before_step(self, *args, **kwargs):
-        if self._predicate(self):
-            self._enabled = True
-            return super()._before_step(*args, **kwargs)
-        else:
-            self._enabled = False
-
-    def _after_step(self, ctx, rv):
-        if self._enabled:
-            super()._after_step(ctx, rv)
-
     def _before_epoch(self):
         if self._predicate(self):
             super()._before_epoch()
@@ -93,6 +82,17 @@ class EnableCallbackIf(ProxyCallback):
     def _after_epoch(self):
         if self._predicate(self):
             super()._after_epoch()
+
+    def _before_step(self, *args, **kwargs):
+        if self._predicate(self):
+            self._enabled = True
+            super()._before_step(*args, **kwargs)
+        else:
+            self._enabled = False
+
+    def _after_step(self, *args, **kwargs):
+        if self._enabled:
+            super()._after_step(*args, **kwargs)
 
     def _trigger_epoch(self):
         if self._predicate(self):
@@ -103,7 +103,7 @@ class EnableCallbackIf(ProxyCallback):
             super()._trigger_step()
 
     def __str__(self):
-        return "EnableCallbackIf-" + str(self.callback)
+        return 'EnableCallbackIf-' + str(self.callback)
 
 
 class PeriodicCallback(EnableCallbackIf):
@@ -131,7 +131,7 @@ class PeriodicCallback(EnableCallbackIf):
             'every_k_steps and every_k_epochs cannot both be None!'
         self._every_k_steps = every_k_steps
         self._every_k_epochs = every_k_epochs
-        super(PeriodicCallback, self).__init__(callback, PeriodicCallback.predicate)
+        super().__init__(callback, PeriodicCallback.predicate)
 
     def predicate(self):
         if self._every_k_steps is not None and self.trainer.global_step % self._every_k_steps == 0:

@@ -7,7 +7,7 @@ from tensorpack.utils.utils import humanize_time_delta
 from torchpack.utils.logging import logger
 from .callback import Callback
 
-__all__ = ['Callbacks']
+__all__ = ['CallbackGroup']
 
 
 class CallbackTimeLogger(object):
@@ -37,12 +37,9 @@ class CallbackTimeLogger(object):
                 self.tot, '; '.join(msgs)))
 
 
-class Callbacks(Callback):
+class CallbackGroup(Callback):
     """
     A container to hold all callbacks, and trigger them iteratively.
-
-    This is only used by the base trainer to trigger all callbacks.
-    Users do not need to use this class.
     """
 
     def __init__(self, callbacks):
@@ -51,55 +48,55 @@ class Callbacks(Callback):
             callbacks(list): a list of :class:`Callback` instances.
         """
         # check type
-        for cb in callbacks:
-            assert isinstance(cb, Callback), cb.__class__
-        self.callbacks = callbacks
+        for callback in callbacks:
+            assert isinstance(callback, Callback), callback.__class__
+        self._callbacks = callbacks
 
     def _setup_trainer(self):
-        for cb in self.callbacks:
-            cb.setup_trainer(self.trainer)
+        for callback in self._callbacks:
+            callback.setup_trainer(self.trainer)
 
     def _before_train(self):
-        for cb in self.callbacks:
-            cb.before_train()
+        for callback in self._callbacks:
+            callback.before_train()
 
     def _after_train(self):
-        for cb in self.callbacks:
-            # make sure callbacks are properly finalized
+        # make sure callbacks are properly finalized
+        for callback in self._callbacks:
             try:
-                cb.after_train()
+                callback.after_train()
             except Exception:
                 traceback.print_exc()
 
     def _before_epoch(self):
-        for cb in self.callbacks:
-            cb.before_epoch()
+        for callback in self._callbacks:
+            callback.before_epoch()
 
     def _after_epoch(self):
-        for cb in self.callbacks:
-            cb.after_epoch()
+        for callback in self._callbacks:
+            callback.after_epoch()
 
-    def _before_step(self, fd):
-        for cb in self.callbacks:
-            cb.before_step(fd)
+    def _before_step(self, *args, **kwargs):
+        for callback in self._callbacks:
+            callback.before_step(*args, **kwargs)
 
-    def _after_step(self, fd, od):
-        for cb in self.callbacks:
-            cb.after_step(fd, od)
+    def _after_step(self, *args, **kwargs):
+        for callback in self._callbacks:
+            callback.after_step(*args, **kwargs)
 
     def _trigger_epoch(self):
         tm = CallbackTimeLogger()
 
-        for cb in self.callbacks:
+        for cb in self._callbacks:
             display_name = str(cb)
             with tm.timed_callback(display_name):
                 cb.trigger_epoch()
         tm.log()
 
     def trigger_step(self):
-        for cb in self.callbacks:
-            cb.trigger_step()
+        for callback in self._callbacks:
+            callback.trigger_step()
 
     def _trigger(self):
-        for cb in self.callbacks:
-            cb.trigger()
+        for callback in self._callbacks:
+            callback.trigger()

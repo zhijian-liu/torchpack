@@ -70,19 +70,19 @@ class Callback(object):
         """
         pass
 
-    def before_step(self, fd):
-        self._before_step(fd)
+    def before_step(self, *args, **kwargs):
+        self._before_step(*args, **kwargs)
 
-    def _before_step(self, fd):
+    def _before_step(self, *args, **kwargs):
         """
         It is called before every step, and it registers some extra op/tensors to run in the next call.
         """
         pass
 
-    def after_step(self, fd, od):
-        self._after_step(fd, od)
+    def after_step(self, *args, **kwargs):
+        self._after_step(*args, **kwargs)
 
-    def _after_step(self, fd, od):
+    def _after_step(self, *args, **kwargs):
         """
         It is called after every step, and it processes the values requested by the corresponding :meth:`before_run`.
         """

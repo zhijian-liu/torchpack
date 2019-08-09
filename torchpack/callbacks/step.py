@@ -7,7 +7,7 @@ __all__ = ['MaintainStepCounter']
 
 class MaintainStepCounter(Callback):
     """
-    It maintains the global step in the trainer, making sure it's increased by one at every `hooked_sess.run`.
+    It maintains the global step in the trainer, making sure it's increased by one at every step.
     This callback is used internally by the trainer, you don't need to worry about it.
     """
 

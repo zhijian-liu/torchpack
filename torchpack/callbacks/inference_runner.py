@@ -54,10 +54,10 @@ class InferenceRunnerBase(Callback):
         """
         self._input_source = input
         if not isinstance(callbacks, list):
-            self.infs = [callbacks]
+            self.callbacks = [callbacks]
         else:
-            self.infs = callbacks
-        for v in self.infs:
+            self.callbacks = callbacks
+        for v in self.callbacks:
             assert isinstance(v, Inferencer), v
 
         try:
@@ -132,16 +132,14 @@ class InferenceRunner(InferenceRunnerBase):
         # for h in self._input_callbacks.get_hooks():
         #     self.register_hook(h)
 
-        for inf in self.infs:
-            inf.setup_trainer(self.trainer)
+        for callback in self.callbacks:
+            callback.setup_trainer(self.trainer)
         # self._input_callbacks.setup_graph(self.trainer)
 
     def _trigger(self):
-        for inf in self.infs:
-            inf.before_epoch()
+        for callback in self.callbacks:
+            callback.before_epoch()
 
-        # self._input_source.reset_state()
-        # iterate over the data, and run the hooked session
         with _inference_context(), tqdm.tqdm(total=self._size, **get_tqdm_kwargs()) as pbar:
             # num_itr = self._size if self._size > 0 else sys.maxsize
             # for _ in range(num_itr):
@@ -156,10 +154,10 @@ class InferenceRunner(InferenceRunnerBase):
                     outputs = self.trainer.model(input_dict['inputs'])
                     output_dict = dict(outputs=outputs)
 
-                    for inf in self.infs:
-                        inf.on_fetches(input_dict, output_dict)
+                    for callback in self.callbacks:
+                        callback.on_fetches(input_dict, output_dict)
 
                     pbar.update()
 
-        for inf in self.infs:
-            inf.trigger_epoch()
+        for callback in self.callbacks:
+            callback.trigger_epoch()
