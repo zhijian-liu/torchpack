@@ -41,8 +41,10 @@ def main():
 
     trainer = Trainer()
     trainer.train(
-        loader=loaders['train'], model=model, criterion=criterion, optimizer=optimizer,
+        loader=loaders['train'], model=model, criterion=criterion,
         callbacks=[
+            LambdaCallback(before_step=lambda _, fd: optimizer.zero_grad(),
+                           after_step=lambda _, fd, od: optimizer.step()),
             LambdaCallback(before_epoch=lambda _: scheduler.step()),
             InferenceRunner(loaders['test'], callbacks=[
                 ClassificationError(k=1, summary_name='acc/test-top1'),

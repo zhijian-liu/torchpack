@@ -129,11 +129,9 @@ class Trainer(object):
         The behavior of each iteration can be changed by either setting ``trainer.train_op``,
         or overriding this method.
         """
-        self.optimizer.zero_grad()
         feed_dict['outputs'] = self.model(feed_dict['inputs'])
         feed_dict['loss'] = self.criterion(feed_dict['outputs'], feed_dict['targets'])
         feed_dict['loss'].backward()
-        self.optimizer.step()
 
     @call_only_once
     def setup_callbacks(self, callbacks, monitors):
@@ -187,7 +185,9 @@ class Trainer(object):
                     targets = targets.to('cuda', non_blocking=True)
                     feed_dict = dict(inputs=inputs, targets=targets)
 
+                    self._callbacks.before_step(None)
                     self.run_step(feed_dict)
+                    self._callbacks.after_step(None, None)
 
                     self._callbacks.trigger_step()
                 self._callbacks.after_epoch()
@@ -207,7 +207,7 @@ class Trainer(object):
             self._callbacks.after_train()
 
     def train(self,
-              loader, model, criterion, optimizer,
+              loader, model, criterion,
               callbacks=None, monitors=None,
               steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
         """
@@ -223,7 +223,6 @@ class Trainer(object):
         self.loader = loader
         self.model = model
         self.criterion = criterion
-        self.optimizer = optimizer
         steps_per_epoch = len(self.loader)
         self.setup_callbacks(callbacks, monitors)
         self.main_loop(steps_per_epoch, starting_epoch, max_epoch)

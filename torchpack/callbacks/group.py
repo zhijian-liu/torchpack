@@ -2,7 +2,6 @@ import traceback
 from contextlib import contextmanager
 from time import perf_counter as timer
 
-from tensorpack import CallbackToHook
 from tensorpack.utils import logger
 from tensorpack.utils.utils import humanize_time_delta
 
@@ -54,8 +53,8 @@ class Callbacks(Callback):
             callbacks(list): a list of :class:`Callback` instances.
         """
         # check type
-        for callback in callbacks:
-            assert isinstance(callback, Callback), callback.__class__
+        for cb in callbacks:
+            assert isinstance(cb, Callback), cb.__class__
         self.callbacks = callbacks
 
     def _setup_trainer(self):
@@ -74,8 +73,24 @@ class Callbacks(Callback):
             except Exception:
                 traceback.print_exc()
 
-    def get_hooks(self):
-        return [CallbackToHook(cb) for cb in self.callbacks]
+    def _before_epoch(self):
+        for cb in self.callbacks:
+            cb.before_epoch()
+
+    def _after_epoch(self):
+        for cb in self.callbacks:
+            cb.after_epoch()
+
+    def _before_step(self, fd):
+        for cb in self.callbacks:
+            cb.before_step(fd)
+
+    def _after_step(self, fd, od):
+        for cb in self.callbacks:
+            cb.after_step(fd, od)
+
+    # def get_hooks(self):
+    #     return [CallbackToHook(cb) for cb in self.callbacks]
 
     def trigger_step(self):
         for cb in self.callbacks:
@@ -90,10 +105,6 @@ class Callbacks(Callback):
                 cb.trigger_epoch()
         tm.log()
 
-    def _before_epoch(self):
+    def _trigger(self):
         for cb in self.callbacks:
-            cb.before_epoch()
-
-    def _after_epoch(self):
-        for cb in self.callbacks:
-            cb.after_epoch()
+            cb.trigger()
