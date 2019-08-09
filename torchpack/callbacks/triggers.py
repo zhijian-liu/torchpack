@@ -42,7 +42,6 @@ class PeriodicTrigger(ProxyCallback):
             self.callback.trigger()
 
     def trigger_step(self):
-        self.callback.trigger_step()
         if self.every_k_steps is None:
             return
         if self.trainer.global_step % self.every_k_steps == 0:
@@ -54,14 +53,8 @@ class PeriodicTrigger(ProxyCallback):
 
 class EnableCallbackIf(ProxyCallback):
     """
-    Disable the ``{before,after}_epoch``, ``{before,after}_step``,
-    ``trigger_{epoch,step}``
+    Disable the ``{before,after}_epoch``, ``{before,after}_step``, ``trigger_{epoch,step}``
     methods of a callback, unless some condition satisfies.
-    The other methods are unaffected.
-    A more accurate name for this callback should be "DisableCallbackUnless", but that's too ugly.
-    Note:
-        If you use ``{before,after}_run``,
-        ``pred`` will be evaluated only in ``before_run``.
     """
 
     def __init__(self, callback, predicate):
@@ -75,30 +68,29 @@ class EnableCallbackIf(ProxyCallback):
         self.predicate = predicate
 
     def before_epoch(self):
-        if self.predicate(self):
+        self.enabled_epoch = self.predicate(self)
+        if self.enabled_epoch:
             super().before_epoch()
 
     def after_epoch(self):
-        if self.predicate(self):
+        if self.enabled_epoch:
             super().after_epoch()
 
     def before_step(self, *args, **kwargs):
-        if self.predicate(self):
-            self._enabled = True
+        self.enabled_step = self.predicate(self)
+        if self.enabled_step:
             super().before_step(*args, **kwargs)
-        else:
-            self._enabled = False
 
     def after_step(self, *args, **kwargs):
-        if self._enabled:
+        if self.enabled_step:
             super().after_step(*args, **kwargs)
 
     def trigger_epoch(self):
-        if self.predicate(self):
+        if self.enabled_epoch:
             super().trigger_epoch()
 
     def trigger_step(self):
-        if self.predicate(self):
+        if self.enabled_step:
             super().trigger_step()
 
     def __str__(self):

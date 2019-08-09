@@ -30,7 +30,11 @@ class InferenceCallback(Callback):
         """
         pass
 
+    # fixme
     def trigger_epoch(self):
+        self.trigger()
+
+    def trigger(self):
         ret = self.after_inference()
         if ret is None:
             return
@@ -51,7 +55,6 @@ class InferenceCallback(Callback):
         pass
 
 
-
 class ClassificationError(InferenceCallback):
     """
     Compute **true** classification error in batch mode, from a ``wrong`` tensor.
@@ -68,11 +71,6 @@ class ClassificationError(InferenceCallback):
     """
 
     def __init__(self, k, logit_tensor_name='outputs', label_tensor_name='targets', summary_name='validation_error'):
-        """
-        Args:
-            wrong_tensor_name(str): name of the ``wrong`` binary vector tensor.
-            summary_name(str): the name to log the error with.
-        """
         self.k = k
         self.logit_tensor_name = logit_tensor_name
         self.label_tensor_name = label_tensor_name

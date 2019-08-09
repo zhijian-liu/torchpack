@@ -1,5 +1,4 @@
 import traceback
-from contextlib import contextmanager
 from time import perf_counter as timer
 
 from tensorpack.utils.utils import humanize_time_delta
@@ -7,47 +6,14 @@ from tensorpack.utils.utils import humanize_time_delta
 from torchpack.utils.logging import logger
 from .base import Callback
 
-__all__ = ['CallbackGroup']
-
-
-class CallbackTimeLogger(object):
-    def __init__(self):
-        self.times = []
-        self.tot = 0
-
-    def add(self, name, time):
-        self.tot += time
-        self.times.append((name, time))
-
-    @contextmanager
-    def timed_callback(self, name):
-        s = timer()
-        yield
-        self.add(name, timer() - s)
-
-    def log(self):
-        if self.tot < 3:
-            return
-        msgs = []
-        for name, t in self.times:
-            if t / self.tot > 0.3 and t > 1:
-                msgs.append(name + ": " + humanize_time_delta(t))
-        logger.info(
-            "Callbacks took {:.3f} sec in total. {}".format(
-                self.tot, '; '.join(msgs)))
+__all__ = ['CallbackGroup', 'TimedCallbackGroup']
 
 
 class CallbackGroup(Callback):
-    """
-    A container to hold all callbacks, and trigger them iteratively.
+    """ A container to hold all callbacks, and trigger them iteratively.
     """
 
     def __init__(self, callbacks):
-        """
-        Args:
-            callbacks(list): a list of :class:`Callback` instances.
-        """
-        # check type
         for callback in callbacks:
             assert isinstance(callback, Callback), callback.__class__
         self.callbacks = callbacks
@@ -62,7 +28,7 @@ class CallbackGroup(Callback):
             callback.before_train()
 
     def after_train(self):
-        # make sure callbacks are properly finalized
+        # make sure all callbacks are properly finalized
         for callback in self.callbacks:
             try:
                 callback.after_train()
@@ -86,12 +52,8 @@ class CallbackGroup(Callback):
             callback.after_step(*args, **kwargs)
 
     def trigger_epoch(self):
-        tm = CallbackTimeLogger()
         for callback in self.callbacks:
-            name = str(callback)
-            with tm.timed_callback(name):
-                callback.trigger_epoch()
-        tm.log()
+            callback.trigger_step()
 
     def trigger_step(self):
         for callback in self.callbacks:
@@ -100,3 +62,26 @@ class CallbackGroup(Callback):
     def trigger(self):
         for callback in self.callbacks:
             callback.trigger()
+
+
+class TimedCallbackGroup(CallbackGroup):
+    def trigger_epoch(self):
+        self.trigger()
+
+    def trigger(self):
+        tot = 0
+        timers = []
+
+        for callback in self.callbacks:
+            s = timer()
+            callback.trigger_epoch()
+            duration = timer() - s
+            tot += duration
+            timers.append((str(callback), duration))
+
+        if tot >= 1:
+            texts = ['[{}] took {} in total.'.format(str(self), humanize_time_delta(tot))]
+            for name, t in timers:
+                if t >= 1:
+                    texts.append('[{}] took {}.'.format(name, humanize_time_delta(t)))
+            logger.info('\n+ '.join(texts))

@@ -6,7 +6,7 @@ from six.moves import range
 from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Callback, CallbackGroup, Monitor, Monitors, MaintainStepCounter
+from torchpack.callbacks import Callback, CallbackGroup, Monitor, Monitors, MaintainStepCounter, TimedCallbackGroup
 from torchpack.utils.logging import logger
 
 __all__ = ['StopTraining', 'Trainer']
@@ -158,7 +158,7 @@ class Trainer(object):
         self.register_callback(self.monitors)  # monitors is also a callback
 
         # some final operations that might modify the graph
-        self._callbacks = CallbackGroup(self._callbacks)
+        self._callbacks = TimedCallbackGroup(self._callbacks)
         self._callbacks.set_trainer(weakref.proxy(self))
 
     @call_only_once
@@ -173,7 +173,7 @@ class Trainer(object):
         try:
             self._callbacks.before_train()
             for self.loop._epoch_num in range(self.loop.starting_epoch, self.loop.max_epoch + 1):
-                logger.info("Start Epoch {} ...".format(self.loop.epoch_num))
+                logger.info("Starting the training epoch {}/{}.".format(self.loop.epoch_num, self.loop.max_epoch))
                 self._callbacks.before_epoch()
                 start_time = time.time()
 

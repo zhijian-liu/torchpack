@@ -22,6 +22,9 @@ class EstimatedTimeLeft(Callback):
     def before_train(self):
         self.last_time = time.time()
 
+    def trigger_epoch(self):
+        self.trigger()
+
     def trigger(self):
         if self.trainer.epoch_num == self.trainer.epoch_num:
             return

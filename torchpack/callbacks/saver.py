@@ -1,16 +1,18 @@
 import os
-from datetime import datetime
 
 from tensorpack.compat import tfv1 as tf
 from tensorpack.utils import logger
+
 from .base import Callback
 
-__all__ = [ 'MinSaver', 'MaxSaver']
+__all__ = ['MinSaver', 'MaxSaver']
+
 
 class MinSaver(Callback):
     """
     Separately save the model with minimum value of some statistics.
     """
+
     def __init__(self, monitor_stat, reverse=False, filename=None, checkpoint_dir=None):
         """
         Args:
@@ -46,6 +48,9 @@ class MinSaver(Callback):
         except (KeyError, IndexError):
             v = None, None
         return v
+
+    def trigger_epoch(self):
+        self.trigger()
 
     def trigger(self):
         curr_step, curr_val = self._get_stat()
@@ -88,6 +93,7 @@ class MaxSaver(MinSaver):
     Separately save the model with maximum value of some statistics.
     See docs of :class:`MinSaver` for details.
     """
+
     def __init__(self, monitor_stat, filename=None, checkpoint_dir=None):
         """
         Args:

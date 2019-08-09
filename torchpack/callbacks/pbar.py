@@ -47,6 +47,9 @@ class ProgressBar(Callback):
         pass
 
     def trigger_step(self):
+        self.trigger()
+
+    def trigger(self):
         self.pbar.update()
 
     def after_train(self):

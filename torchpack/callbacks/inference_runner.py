@@ -2,9 +2,9 @@ from contextlib import contextmanager
 
 import torch
 import tqdm
-from tensorpack.utils import logger
 from tensorpack.utils.utils import get_tqdm_kwargs
 
+from torchpack.utils.logging import logger
 from .base import Callback
 from .inference import InferenceCallback
 
@@ -72,10 +72,14 @@ class InferenceRunner(InferenceRunnerBase):
         for callback in self.callbacks:
             callback.set_trainer(trainer)
 
+    def trigger_epoch(self):
+        self.trigger()
+
     def trigger(self):
         for callback in self.callbacks:
-            callback.before_epoch()
+            callback.before_inference()
 
+        logger.info('Starting the inference.')
         with _inference_context(), tqdm.tqdm(total=self._size, **get_tqdm_kwargs()) as pbar:
             # num_itr = self._size if self._size > 0 else sys.maxsize
             # for _ in range(num_itr):
@@ -95,5 +99,7 @@ class InferenceRunner(InferenceRunnerBase):
 
                     pbar.update()
 
+        # fixme
         for callback in self.callbacks:
-            callback.trigger_epoch()
+            callback.after_inference()
+            callback.trigger()

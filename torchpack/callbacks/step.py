@@ -18,4 +18,7 @@ class MaintainStepCounter(Callback):
             logger.info("Start training with global_step={}".format(self.trainer.global_step))
 
     def trigger_step(self):
+        self.trigger()
+
+    def trigger(self):
         self.trainer.loop._global_step += 1

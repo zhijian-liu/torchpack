@@ -237,6 +237,9 @@ class TFEventWriter(Monitor):
     def add_event(self, event):
         self.writer.add_event(event)
 
+    def trigger_step(self):
+        self.trigger()
+
     def trigger(self):  # flush every epoch
         self.writer.flush()
         if self._split_files:
@@ -427,11 +430,15 @@ class ScalarPrinter(Monitor):
                     return True
             return False
 
+        texts = []
         for k, v in sorted(self._dic.items(), key=operator.itemgetter(0)):
-            if self._whitelist is None or \
-                    match_regex_list(self._whitelist, k):
+            if self._whitelist is None or match_regex_list(self._whitelist, k):
                 if not match_regex_list(self._blacklist, k):
-                    logger.info('{}: {:.5g}'.format(k, v))
+                    texts.append('[{}] = {:.5g}'.format(k, v))
+
+        if texts:
+            logger.info('\n+ '.join([''] + texts))
+
         self._dic = {}
 
 

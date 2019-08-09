@@ -59,7 +59,7 @@ class Callback(object):
         """
         Called after after epoch.
         """
-        self.trigger()
+        pass
 
     def trigger_step(self):
         """
@@ -125,8 +125,7 @@ class ProxyCallback(Callback):
 
 
 class LambdaCallback(Callback):
-    """
-    Create a callback with some lambdas.
+    """ Create a callback with some lambdas.
     """
 
     def __init__(self,
@@ -173,8 +172,6 @@ class LambdaCallback(Callback):
     def trigger_epoch(self):
         if self.trigger_epoch_fn:
             self.trigger_epoch_fn(self)
-        else:
-            self.trigger()
 
     def trigger_step(self):
         if self.trigger_step_fn:
