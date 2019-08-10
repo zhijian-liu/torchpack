@@ -1,4 +1,5 @@
 import os
+from collections import deque
 
 import torch
 
@@ -23,6 +24,18 @@ class ModelSaver(Callback):
             checkpoint_dir = logger.get_logger_dir()
         self.checkpoint_dir = os.path.normpath(checkpoint_dir)
         os.makedirs(self.checkpoint_dir, exist_ok=True)
+        self.checkpoints = deque()
+
+    def before_train(self):
+        files = []
+        for filename in os.listdir(self.checkpoint_dir):
+            filename = filename.lower()
+            if filename.startswith('step-') and filename.endswith('.pth'):
+                filename = os.path.join(self.checkpoint_dir, filename)
+                print(filename, os.path.getmtime(filename))
+                files.append(filename)
+                self.checkpoints.append(filename)
+        self._keep_most_recent()
 
     def trigger_epoch(self):
         self.trigger()
@@ -35,6 +48,15 @@ class ModelSaver(Callback):
             logger.info('Checkpoint saved to {}.'.format(checkpoint_path))
         except (OSError, IOError):
             logger.exception('Exception in ModelSaver!')
+
+        self.checkpoints.append(checkpoint_path)
+        self._keep_most_recent()
+
+    def _keep_most_recent(self):
+        while len(self.checkpoints) > self.max_to_keep:
+            ckpt = self.checkpoints.popleft()
+            print('removed', ckpt)
+            os.remove(ckpt)
 
 
 class MinSaver(Callback):
