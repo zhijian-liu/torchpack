@@ -10,7 +10,7 @@ from .default_handlers import default_flops_handlers, default_params_handlers
 __all__ = ['profile', 'profile_flops', 'profile_params']
 
 
-def profile(model, *inputs, handlers):
+def profile(model, handlers, *args, **kwargs):
     stats = {}
 
     def hook_stats(module, inputs, outputs, handler, name):
@@ -33,7 +33,7 @@ def profile(model, *inputs, handlers):
                 warnings.warn('missing handler for {}'.format(type(module)), UserWarning)
 
     with torch.no_grad():
-        model(*inputs)
+        model(*args, **kwargs)
 
     for hook in hooks:
         hook.remove()
@@ -42,21 +42,21 @@ def profile(model, *inputs, handlers):
     return {k: v for k, v in stats.items() if v is not None}
 
 
-def profile_flops(model, *inputs, handlers=None):
+def profile_flops(model, handlers=None, *args, **kwargs):
     if handlers is None:
         handlers = default_flops_handlers
     else:
         handlers += default_flops_handlers
 
-    stats = profile(model, *inputs, handlers=handlers)
+    stats = profile(model, handlers=handlers, *args, **kwargs)
     return np.sum(list(stats.values())), stats
 
 
-def profile_params(model, *inputs, handlers=None):
+def profile_params(model, handlers=None, *args, **kwargs):
     if handlers is None:
         handlers = default_params_handlers
     else:
         handlers += default_params_handlers
 
-    stats = profile(model, *inputs, handlers=handlers)
+    stats = profile(model, handlers=handlers, *args, **kwargs)
     return np.sum(list(stats.values())), stats
