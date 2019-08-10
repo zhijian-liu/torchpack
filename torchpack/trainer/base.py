@@ -10,27 +10,6 @@ from torchpack.utils.logging import logger
 
 __all__ = ['Trainer']
 
-"""
-The number of the currently ongoing epoch.
-
-An epoch is defined to cover the moment before calling `before_epoch` until after calling `trigger_epoch`.
-i.e., in the `trigger_epoch` of epoch 3, `self.epoch_num` is 3.
-If you need use `self.trainer.epoch_num` in your callback, you'll need to know this.
-"""
-# return self.epoch_num
-
-"""
-The tensorflow global_step, i.e. how many times ``hooked_sess.run`` has been called.
-"""
-# return self.global_step
-
-"""
-The number of steps that have finished in the current epoch.
-"""
-
-
-# return self.local_step
-
 
 class Trainer(object):
     """ Base class for a trainer.
@@ -42,37 +21,13 @@ class Trainer(object):
     Certain callbacks will only be run by chief worker.
     """
 
+    # fixme: too ugly
     def __init__(self, device='cuda'):
         self.device = device
         self.callbacks = None
         self.epoch_num = 0
         self.global_step = 0
         self.local_step = -1
-
-    def register_callback(self, callback):
-        """
-        Register callbacks to the trainer.
-        It can only be called before :meth:`Trainer.train()`.
-
-        Args:
-            callback (Callback or [Callback]): a callback or a list of callbacks
-
-        Returns:
-            succeed or not
-        """
-        if isinstance(callback, (list, tuple)):
-            for x in callback:
-                self.register_callback(x)
-            return
-        assert isinstance(callback, Callback), callback
-        assert not isinstance(self.callbacks, TimedCallbackGroup), \
-            'Cannot register more callbacks after trainer was setup!'
-        if not self.is_chief and callback.chief_only:
-            logger.warn('Callback {} is chief-only, skipped.'.format(str(callback)))
-            return False
-        else:
-            self.callbacks.append(callback)
-            return True
 
     def run_step(self, *args, **kwargs):
         """
@@ -87,25 +42,28 @@ class Trainer(object):
 
         Args:
             callbacks ([Callback]):
-            monitors ([MonitorBase]):
+            monitors ([Monitor]):
         """
         assert isinstance(callbacks, list), callbacks
         assert isinstance(monitors, list), monitors
 
         self.callbacks = []
         for callback in callbacks:
-            self.register_callback(callback)
-        for callback in self.callbacks:
-            assert not isinstance(callback, Monitor), 'Monitor cannot be pre-registered for now!'
-        registered_monitors = []
-        for m in monitors:
-            if self.register_callback(m):
-                registered_monitors.append(m)
-        self.monitors = MonitorGroup(registered_monitors)
-        self.register_callback(self.monitors)  # monitors is also a callback
+            assert isinstance(callback, Callback), callback
+            if not self.is_chief and callback.chief_only:
+                logger.warning('Callback {} is chief-only, skipped.'.format(callback))
+                continue
+            self.callbacks.append(callback)
 
-        # some final operations that might modify the graph
-        self.callbacks = TimedCallbackGroup(self.callbacks)
+        self.monitors = []
+        for monitor in monitors:
+            assert isinstance(monitor, Monitor), monitor
+            self.monitors.append(monitor)
+
+        self.monitors = MonitorGroup(self.monitors)
+        self.callbacks = TimedCallbackGroup(self.callbacks + [self.monitors])
+
+        self.monitors.set_trainer(weakref.proxy(self))
         self.callbacks.set_trainer(weakref.proxy(self))
 
     @call_only_once
