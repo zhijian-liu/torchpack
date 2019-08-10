@@ -1,4 +1,4 @@
-from .callback import Callback, ProxyCallback
+from torchpack.callbacks.callback import Callback, ProxyCallback
 
 __all__ = ['PeriodicTrigger', 'PeriodicCallback', 'EnableCallbackIf']
 
@@ -130,8 +130,8 @@ class PeriodicCallback(EnableCallbackIf):
         if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
             return True
         if self.every_k_epochs is not None:
-            if self.trainer.local_step == self.trainer.steps_per_epoch - 1 and \
-                    self.trainer.epoch_num == self.trainer.max_epoch:
+            if self.trainer.epoch_num == self.trainer.max_epoch and \
+                    self.trainer.local_step == self.trainer.steps_per_epoch - 1:
                 return True
         return False
 

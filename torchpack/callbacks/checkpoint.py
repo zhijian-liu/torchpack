@@ -3,8 +3,8 @@ from collections import deque
 
 import torch
 
+from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger
-from .callback import Callback
 
 __all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
 
@@ -13,17 +13,18 @@ class ModelSaver(Callback):
     """ Save the model once triggered.
     """
 
-    def __init__(self, max_to_keep=10, checkpoint_dir=None):
+    def __init__(self, checkpoint_dir=None, max_to_keep=10):
         """
         Args:
-            max_to_keep (int): Maximum number of recent checkpoint files to keep.
             checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
+            max_to_keep (int): Maximum number of recent checkpoint files to keep.
         """
-        self.max_to_keep = max_to_keep
         if checkpoint_dir is None:
             checkpoint_dir = logger.get_logger_dir()
         self.checkpoint_dir = os.path.normpath(checkpoint_dir)
         os.makedirs(self.checkpoint_dir, exist_ok=True)
+
+        self.max_to_keep = max_to_keep
         self.checkpoints = deque()
 
     def before_train(self):
@@ -32,27 +33,26 @@ class ModelSaver(Callback):
             filename = filename.lower()
             if filename.startswith('step-') and filename.endswith('.pth'):
                 filename = os.path.join(self.checkpoint_dir, filename)
-                print(filename, os.path.getmtime(filename))
-                files.append(filename)
+                files.append((os.path.getmtime(filename), filename))
                 self.checkpoints.append(filename)
-        self._keep_most_recent()
+        self._remove_least_recent()
 
     def trigger_epoch(self):
         self.trigger()
 
     def trigger(self):
-        state_dict = self.trainer.state_dict()
         checkpoint_path = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
+
         try:
-            torch.save(state_dict, checkpoint_path)
+            torch.save(self.trainer.state_dict(), checkpoint_path)
             logger.info('Checkpoint saved to {}.'.format(checkpoint_path))
         except (OSError, IOError):
             logger.exception('Exception in ModelSaver!')
 
         self.checkpoints.append(checkpoint_path)
-        self._keep_most_recent()
+        self._remove_least_recent()
 
-    def _keep_most_recent(self):
+    def _remove_least_recent(self):
         while len(self.checkpoints) > self.max_to_keep:
             ckpt = self.checkpoints.popleft()
             print('removed', ckpt)
@@ -101,24 +101,27 @@ class MinSaver(Callback):
 
     def trigger(self):
         try:
-            curr_step, curr_val = self.trainer.monitors.get_history(self.monitor_stat)[-1]
+            step, value = self.trainer.monitors.get_history(self.monitor_stat)[-1]
         except (KeyError, IndexError):
             return
 
-        if self.best is None or (curr_val > self.best[1] if self.reverse else curr_val < self.best[1]):
-            self.best = (curr_step, curr_val)
+        if step != self.trainer.global_step:
+            # todo: add warning that saver is skipped.
+            return
+
+        if self.best is None or (value > self.best[1] if self.reverse else value < self.best[1]):
+            self.best = (step, value)
 
             extreme_name = 'maximum' if self.reverse else 'minimum'
 
             def _escape_name(name):
                 return name.replace('/', '-')
 
-            state_dict = self.trainer.state_dict()
             filename = self.filename or ('max-' if self.reverse else 'min-') + _escape_name(self.monitor_stat) + '.pth'
             checkpoint_path = os.path.join(self.checkpoint_dir, filename)
 
             try:
-                torch.save(state_dict, checkpoint_path)
+                torch.save(self.trainer.state_dict(), checkpoint_path)
                 logger.info('Checkpoint with {} {}={:.5g} saved.'.format(extreme_name, self.monitor_stat, self.best[1]))
             except (OSError, IOError):
                 logger.exception('Exception in ModelSaver!')

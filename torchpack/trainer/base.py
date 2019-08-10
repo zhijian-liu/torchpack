@@ -4,7 +4,7 @@ import weakref
 from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Callback, Monitor, Monitors, TimedCallbackGroup
+from torchpack.callbacks import Callback, Monitor, MonitorGroup, TimedCallbackGroup
 from torchpack.trainer.exception import StopTraining
 from torchpack.utils.logging import logger
 
@@ -101,7 +101,7 @@ class Trainer(object):
         for m in monitors:
             if self.register_callback(m):
                 registered_monitors.append(m)
-        self.monitors = Monitors(registered_monitors)
+        self.monitors = MonitorGroup(registered_monitors)
         self.register_callback(self.monitors)  # monitors is also a callback
 
         # some final operations that might modify the graph

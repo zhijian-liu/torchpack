@@ -6,8 +6,8 @@ import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs
 from tensorpack.utils.utils import humanize_time_delta
 
+from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger
-from .callback import Callback
 
 __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 

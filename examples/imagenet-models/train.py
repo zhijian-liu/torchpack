@@ -57,10 +57,13 @@ def main():
             LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
                            after_step=lambda *_: optimizer.step()),
             LambdaCallback(before_epoch=lambda *_: scheduler.step()),
-            InferenceRunner(loaders['test'], callbacks=[
-                ClassificationError(k=1, summary_name='acc/test-top1'),
-                ClassificationError(k=5, summary_name='acc/test-top5')
-            ]),
+            PeriodicTrigger(
+                InferenceRunner(loaders['test'], callbacks=[
+                    ClassificationError(k=1, summary_name='acc/test-top1'),
+                    ClassificationError(k=5, summary_name='acc/test-top5')
+                ]),
+                every_k_epochs=2
+            ),
             ModelSaver(checkpoint_dir='runs/'),
             MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/'),
             ProgressBar(),
