@@ -7,7 +7,6 @@ from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from tensorpack.utils.develop import HIDE_DOC
 
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger
@@ -16,23 +15,13 @@ __all__ = ['Monitor', 'TFEventWriter', 'JSONWriter', 'ScalarPrinter']
 
 
 class Monitor(Callback):
-    """
-    Base class for monitors which monitor a training progress, by processing different types of
-    summary/statistics from trainer.
+    """ Base class for monitors which monitor a training progress,
+    by processing different types of summary/statistics from trainer.
     """
 
     chief_only = False
 
-    def add_summary(self, summary):
-        """
-        Process a tf.Summary.
-        """
-        pass
-
-    def process(self, name, val):
-        """
-        Process a key-value pair.
-        """
+    def add(self, name, val):
         pass
 
     def add_scalar(self, name, val):
@@ -42,11 +31,17 @@ class Monitor(Callback):
         """
         pass
 
-    def process_image(self, name, val):
+    def add_image(self, name, val):
         """
         Args:
             val (np.ndarray): 4D (NHWC) numpy array of images in range [0,255].
                 If channel is 3, assumed to be RGB.
+        """
+        pass
+
+    def add_summary(self, summary):
+        """
+        Process a tf.Summary.
         """
         pass
 
@@ -59,19 +54,8 @@ class Monitor(Callback):
         pass
 
 
-class NoOpMonitor(Monitor):
-    def __init__(self, name=None):
-        self.name = name
-
-    def __str__(self):
-        if self.name is None:
-            return 'NoOpMonitor'
-        return 'NoOpMonitor({})'.format(self.name)
-
-
 class TFEventWriter(Monitor):
-    """
-    Write summaries to TensorFlow event file.
+    """ Write summaries to TensorFlow event file.
     """
 
     def __init__(self, logdir=None, max_queue=10, flush_secs=120, split_files=False):
@@ -97,31 +81,31 @@ class TFEventWriter(Monitor):
         if logdir is not None:
             return super(TFEventWriter, cls).__new__(cls)
         else:
-            logger.warn("logger directory was not set. Ignore TFEventWriter.")
-            return NoOpMonitor("TFEventWriter")
+            logger.warn('logger directory was not set. Ignore TFEventWriter.')
+            return Monitor()
 
     def before_train(self):
         self.writer = tf.summary.FileWriter(
             self._logdir, graph=tf.get_default_graph(),
             max_queue=self._max_queue, flush_secs=self._flush_secs)
 
+    def trigger_epoch(self):
+        self.trigger()
+
+    def trigger(self):
+        self.writer.flush()
+        if self._split_files:
+            self.writer.close()
+            self.writer.reopen()
+
+    def after_train(self):
+        self.writer.close()
+
     def add_summary(self, summary):
         self.writer.add_summary(summary, self.trainer.global_step)
 
     def add_event(self, event):
         self.writer.add_event(event)
-
-    def trigger_step(self):
-        self.trigger()
-
-    def trigger(self):  # flush every epoch
-        self.writer.flush()
-        if self._split_files:
-            self.writer.close()
-            self.writer.reopen()  # open new file
-
-    def after_train(self):
-        self.writer.close()
 
 
 class JSONWriter(Monitor):
@@ -140,7 +124,7 @@ class JSONWriter(Monitor):
             return super(JSONWriter, cls).__new__(cls)
         else:
             logger.warn("logger directory was not set. Ignore JSONWriter.")
-            return NoOpMonitor("JSONWriter")
+            return Monitor()
 
     @staticmethod
     def load_existing_json():
@@ -214,10 +198,6 @@ class JSONWriter(Monitor):
     def trigger_epoch(self):
         self.trigger()
 
-    @HIDE_DOC
-    def add_scalar(self, name, val):
-        self._stat_now[name] = val
-
     def trigger(self):
         """
         Add stats to json and dump to disk.
@@ -240,10 +220,12 @@ class JSONWriter(Monitor):
         except IOError:  # disk error sometimes..
             logger.exception("Exception in JSONWriter._write_stat()!")
 
+    def add_scalar(self, name, val):
+        self._stat_now[name] = val
+
 
 class ScalarPrinter(Monitor):
-    """
-    Print scalar data into terminal.
+    """ Print scalar data into terminal.
     """
 
     def __init__(self, enable_step=False, enable_epoch=True,
@@ -274,7 +256,6 @@ class ScalarPrinter(Monitor):
         self._enable_epoch = enable_epoch
         self._dic = {}
 
-    # in case we have something to log here.
     def before_train(self):
         self.trigger()
 
@@ -291,10 +272,6 @@ class ScalarPrinter(Monitor):
     def trigger_epoch(self):
         if self._enable_epoch:
             self.trigger()
-
-    @HIDE_DOC
-    def add_scalar(self, name, val):
-        self._dic[name] = float(val)
 
     def trigger(self):
         # Print stats here
@@ -314,3 +291,6 @@ class ScalarPrinter(Monitor):
             logger.info('\n+ '.join([''] + texts))
 
         self._dic = {}
+
+    def add_scalar(self, name, val):
+        self._dic[name] = float(val)

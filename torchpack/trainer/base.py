@@ -37,13 +37,6 @@ class Trainer(object):
 
     @call_only_once
     def setup_callbacks(self, callbacks, monitors):
-        """
-        Setup callbacks and monitors. Must be called after the main graph is built.
-
-        Args:
-            callbacks ([Callback]):
-            monitors ([Monitor]):
-        """
         assert isinstance(callbacks, list), callbacks
         assert isinstance(monitors, list), monitors
 
@@ -62,8 +55,6 @@ class Trainer(object):
 
         self.monitors = MonitorGroup(self.monitors)
         self.callbacks = TimedCallbackGroup(self.callbacks + [self.monitors])
-
-        self.monitors.set_trainer(weakref.proxy(self))
         self.callbacks.set_trainer(weakref.proxy(self))
 
     @call_only_once

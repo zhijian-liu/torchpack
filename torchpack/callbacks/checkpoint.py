@@ -55,8 +55,11 @@ class ModelSaver(Callback):
     def _remove_least_recent(self):
         while len(self.checkpoints) > self.max_to_keep:
             ckpt = self.checkpoints.popleft()
-            print('removed', ckpt)
-            os.remove(ckpt)
+            try:
+                os.remove(ckpt)
+                print('removed', ckpt)
+            except FileNotFoundError:
+                print('failed')
 
 
 class MinSaver(Callback):

@@ -115,6 +115,10 @@ class MonitorGroup(Monitor):
         for monitor in self.monitors:
             monitor.trigger()
 
+    def add(self, name, val):
+        for monitor in self.monitors:
+            monitor.add(name, val)
+
     def add_scalar(self, name, val):
         if isinstance(val, np.integer):
             val = int(val)
