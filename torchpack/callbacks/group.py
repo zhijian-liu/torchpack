@@ -1,4 +1,3 @@
-import re
 import time
 from collections import defaultdict
 
@@ -115,42 +114,39 @@ class MonitorGroup(Monitor):
         for monitor in self.monitors:
             monitor.trigger()
 
-    def add(self, name, val):
+    def add(self, tag, val):
         for monitor in self.monitors:
-            monitor.add(name, val)
+            monitor.add(tag, val)
 
-    def add_scalar(self, name, val):
+    def add_scalar(self, tag, val):
         if isinstance(val, np.integer):
             val = int(val)
         if isinstance(val, np.floating):
             val = float(val)
 
-        self.scalars[name].append((self.trainer.global_step, val))
+        self.scalars[tag].append((self.trainer.global_step, val))
 
-        summary = create_scalar_summary(name, val)
+        summary = create_scalar_summary(tag, val)
         for monitor in self.monitors:
-            monitor.add_scalar(name, val)
+            monitor.add_scalar(tag, val)
             monitor.add_summary(summary)
 
-    def add_image(self, name, val):
-        assert isinstance(val, np.ndarray)
+    def add_image(self, tag, val):
+        assert isinstance(val, np.ndarray), type(val)
 
-        im = val
-        if im.ndim == 4:
-            pass
-        elif im.ndim == 3:
-            if im.shape[-1] in [1, 3, 4]:
-                im = im[np.newaxis, ...]
+        # todo: double check whether transform is correct
+        if val.ndim == 2:
+            val = val[np.newaxis, :, :, np.newaxis]
+        elif val.ndim == 3:
+            if val.shape[-1] in [1, 3, 4]:
+                val = val[np.newaxis, ...]
             else:
-                im = im[..., np.newaxis]
-        elif im.ndim == 2:
-            im = im[np.newaxis, :, :, np.newaxis]
-        else:
-            raise ValueError('Array of shape {} is not an image!'.format(im.shape))
+                val = val[..., np.newaxis]
+        assert val.ndim == 4, val.shape
 
-        summary = create_image_summary(name, im)
+        summary = create_image_summary(tag, val)
         for monitor in self.monitors:
-            monitor.add_image(name, im)
+            monitor.add_image(tag, val)
             monitor.add_summary(summary)
 
     def add_summary(self, summary):
@@ -158,17 +154,8 @@ class MonitorGroup(Monitor):
             summary = tf.Summary.FromString(summary)
         assert isinstance(summary, tf.Summary), type(summary)
 
-        # TODO other types
         for val in summary.value:
             if val.WhichOneof('value') == 'simple_value':
-                val.tag = re.sub('tower[0-9]+/', '', val.tag)  # TODO move to subclasses
-
-                # TODO This hack is still needed, seem to disappear only when
-                # compiled from source.
-                suffix = '-summary'  # tensorflow#6150, tensorboard#59
-                if val.tag.endswith(suffix):
-                    val.tag = val.tag[:-len(suffix)]
-
                 for monitor in self.monitors:
                     monitor.add_scalar(val.tag, val.simple_value)
 
@@ -182,11 +169,7 @@ class MonitorGroup(Monitor):
             monitor.add_event(event)
 
     def get_latest(self, name):
-        hist = self.scalars[name]
-        if len(hist) == 0:
-            raise KeyError(name)
-        else:
-            return hist[-1][1]
+        return self.scalars[name][-1][1]
 
     def get_history(self, name):
         return self.scalars[name]
