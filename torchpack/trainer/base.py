@@ -49,7 +49,7 @@ class Trainer(object):
 
         self.callbacks = []
         for callback in callbacks:
-            assert isinstance(callback, Callback), callback
+            assert isinstance(callback, Callback), type(callback)
             if not self.is_chief and callback.chief_only:
                 logger.warning('Callback {} is chief-only, skipped.'.format(callback))
                 continue
@@ -57,7 +57,7 @@ class Trainer(object):
 
         self.monitors = []
         for monitor in monitors:
-            assert isinstance(monitor, Monitor), monitor
+            assert isinstance(monitor, Monitor), type(monitor)
             self.monitors.append(monitor)
 
         self.monitors = MonitorGroup(self.monitors)
