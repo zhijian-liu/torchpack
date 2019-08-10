@@ -4,9 +4,9 @@ import torch
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs
 
+from torchpack.callbacks.callback import Callback
+from torchpack.callbacks.inference import InferenceCallback
 from torchpack.utils.logging import logger
-from .base import Callback
-from .inference import InferenceCallback
 
 __all__ = ['InferenceRunnerBase', 'InferenceRunner']
 

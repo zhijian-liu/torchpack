@@ -3,7 +3,7 @@ import os
 import torch
 
 from torchpack.utils.logging import logger
-from .base import Callback
+from .callback import Callback
 
 __all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
 
@@ -21,8 +21,8 @@ class ModelSaver(Callback):
         self.max_to_keep = max_to_keep
         if checkpoint_dir is None:
             checkpoint_dir = logger.get_logger_dir()
-        os.makedirs(checkpoint_dir, exist_ok=True)
         self.checkpoint_dir = os.path.normpath(checkpoint_dir)
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
 
     def trigger_epoch(self):
         self.trigger()
@@ -33,7 +33,7 @@ class ModelSaver(Callback):
         try:
             torch.save(state_dict, checkpoint_path)
             logger.info('Checkpoint saved to {}.'.format(checkpoint_path))
-        except (OSError, IOError) as e:
+        except (OSError, IOError):
             logger.exception('Exception in ModelSaver!')
 
 
@@ -88,27 +88,17 @@ class MinSaver(Callback):
 
             extreme_name = 'maximum' if self.reverse else 'minimum'
 
-            if curr_step != self.trainer.global_step:
-                logger.warning("[MinSaver] New {} '{}' found at global_step={}, but the latest checkpoint is {}.".format(
-                    extreme_name, self.monitor_stat, curr_step, self.trainer.global_step
-                ))
-                logger.warning("MinSaver will do nothing this time. "
-                               "The callbacks may have inconsistent frequency or wrong order.")
-                return
-
-            def _escape(name):
+            def _escape_name(name):
                 return name.replace('/', '-')
 
             state_dict = self.trainer.state_dict()
-            checkpoint_path = os.path.join(self.checkpoint_dir,
-                                           self.filename or
-                                           ('max-' if self.reverse else 'min-') + _escape(self.monitor_stat)
-                                           + '.pth')
+            filename = self.filename or ('max-' if self.reverse else 'min-') + _escape_name(self.monitor_stat) + '.pth'
+            checkpoint_path = os.path.join(self.checkpoint_dir, filename)
+
             try:
                 torch.save(state_dict, checkpoint_path)
-                logger.info('Checkpoint at [global step: {}] with {} {}={:.5g} saved.'.format(
-                    self.best[0], extreme_name, self.monitor_stat, self.best[1]))
-            except (OSError, IOError) as e:
+                logger.info('Checkpoint with {} {}={:.5g} saved.'.format(extreme_name, self.monitor_stat, self.best[1]))
+            except (OSError, IOError):
                 logger.exception('Exception in ModelSaver!')
 
         # fixme: use min/max instead of best
@@ -126,6 +116,6 @@ class MaxSaver(MinSaver):
         Args:
             monitor_stat(str): the name of the statistics.
             filename (str): the name for the saved model.
-                Defaults to ``max-{monitor_stat}.tfmodel``.
+                Defaults to ``max-{monitor_stat}.pth``.
         """
         super(MaxSaver, self).__init__(monitor_stat, True, filename=filename, checkpoint_dir=checkpoint_dir)

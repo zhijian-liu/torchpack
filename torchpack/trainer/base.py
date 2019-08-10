@@ -108,12 +108,6 @@ class Trainer(object):
         self.callbacks = TimedCallbackGroup(self.callbacks)
         self.callbacks.set_trainer(weakref.proxy(self))
 
-    def state_dict(self):
-        return dict(model=self.model.state_dict())
-
-    def load_state_dict(self, state_dict):
-        return
-
     @call_only_once
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
         """
@@ -156,8 +150,7 @@ class Trainer(object):
                     self.global_step += 1
 
                 self.callbacks.after_epoch()
-                logger.info('Training epoch {} finished in {}.'.format(
-                    self.epoch_num, humanize_time_delta(time.time() - start_time)))
+                logger.info('Training epoch finished in {}.'.format(humanize_time_delta(time.time() - start_time)))
                 self.callbacks.trigger_epoch()
             logger.info('Training has finished!')
         except StopTraining as e:
@@ -188,28 +181,11 @@ class Trainer(object):
         self.setup_callbacks(callbacks, monitors)
         self.main_loop(steps_per_epoch, starting_epoch, max_epoch)
 
-    # def train_with_defaults(
-    #         self, _sentinel=None,
-    #         callbacks=None, monitors=None,
-    #         steps_per_epoch=None, starting_epoch=1, max_epoch=9999999,
-    #         extra_callbacks=None):
-    #     """
-    #     Same as :meth:`train()`, except:
-    #
-    #     1. Add `extra_callbacks` to callbacks. The default value for
-    #        `extra_callbacks` is :meth:`DEFAULT_CALLBACKS()`.
-    #     2. Default value for `monitors` is :meth:`DEFAULT_MONITORS()`.
-    #     3. Provide default values for every option except `steps_per_epoch`.
-    #     """
-    #     assert _sentinel is None, "Please call `train_with_defaults` with keyword arguments only!"
-    #     callbacks = copy.copy(callbacks or [])
-    #     monitors = DEFAULT_MONITORS() if monitors is None else monitors
-    #     extra_callbacks = DEFAULT_CALLBACKS() if extra_callbacks is None else extra_callbacks
-    #     callbacks.extend(extra_callbacks)
-    #
-    #     assert steps_per_epoch is not None
-    #
-    #     self.train(callbacks, monitors, steps_per_epoch, starting_epoch, max_epoch)
+    def state_dict(self):
+        return dict(model=self.model.state_dict())
+
+    def load_state_dict(self, state_dict):
+        self.model.load_state_dict(state_dict['model'])
 
     def __new__(cls, *args, **kwargs):
         return super(Trainer, cls).__new__(cls)

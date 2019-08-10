@@ -1,7 +1,7 @@
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs
 
-from .base import Callback
+from .callback import Callback
 
 __all__ = ['ProgressBar']
 
@@ -11,7 +11,7 @@ class ProgressBar(Callback):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
-    chief_only = False
+    chief_only = True
 
     def __init__(self, names=None):
         """

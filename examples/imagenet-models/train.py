@@ -32,7 +32,8 @@ def main():
 
     logger.info('Loading the dataset.')
     dataset = ImageNet(root='/dataset/imagenet/', num_classes=100, image_size=224)
-    loaders = {}
+
+    loaders = dict()
     for split in dataset:
         loaders[split] = torch.utils.data.DataLoader(
             dataset[split],
@@ -56,13 +57,10 @@ def main():
             LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
                            after_step=lambda *_: optimizer.step()),
             LambdaCallback(before_epoch=lambda *_: scheduler.step()),
-            PeriodicTrigger(
-                InferenceRunner(loaders['test'], callbacks=[
-                    ClassificationError(k=1, summary_name='acc/test-top1'),
-                    ClassificationError(k=5, summary_name='acc/test-top5')
-                ]),
-                every_k_epochs=2
-            ),
+            InferenceRunner(loaders['test'], callbacks=[
+                ClassificationError(k=1, summary_name='acc/test-top1'),
+                ClassificationError(k=5, summary_name='acc/test-top5')
+            ]),
             ModelSaver(checkpoint_dir='runs/'),
             MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/'),
             ProgressBar(),

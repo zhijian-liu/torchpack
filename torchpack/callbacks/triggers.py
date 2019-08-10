@@ -1,4 +1,4 @@
-from .base import Callback, ProxyCallback
+from .callback import Callback, ProxyCallback
 
 __all__ = ['PeriodicTrigger', 'PeriodicCallback', 'EnableCallbackIf']
 

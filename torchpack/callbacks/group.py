@@ -3,8 +3,8 @@ from time import perf_counter as timer
 
 from tensorpack.utils.utils import humanize_time_delta
 
+from torchpack.callbacks.callback import CallbackGroup
 from torchpack.utils.logging import logger
-from .base import CallbackGroup
 
 __all__ = ['TimedCallbackGroup']
 
@@ -18,17 +18,17 @@ class TimedCallbackGroup(CallbackGroup):
         timers = []
 
         for callback in self.callbacks:
-            s = timer()
+            start_time = timer()
             callback.trigger_epoch()
-            duration = timer() - s
+            duration = timer() - start_time
             tot += duration
-            timers.append((str(callback), duration))
+            timers.append((duration, str(callback)))
 
+        timers = sorted(timers, reverse=True)[:5]
         if tot >= 1:
             texts = ['[{}] took {} in total.'.format(str(self), humanize_time_delta(tot))]
-            for name, t in timers:
-                if t >= 1:
-                    texts.append('[{}] took {}.'.format(name, humanize_time_delta(t)))
+            for t, name in timers:
+                texts.append('[{}] took {}.'.format(name, humanize_time_delta(t)))
             logger.info('\n+ '.join(texts))
 
     def after_train(self):

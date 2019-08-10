@@ -80,12 +80,12 @@ class Monitor(Callback):
 
 class NoOpMonitor(Monitor):
     def __init__(self, name=None):
-        self._name = name
+        self.name = name
 
     def __str__(self):
-        if self._name is None:
-            return "NoOpMonitor"
-        return "NoOpMonitor({})".format(self._name)
+        if self.name is None:
+            return 'NoOpMonitor'
+        return 'NoOpMonitor({})'.format(self.name)
 
 
 class Monitors(Callback):

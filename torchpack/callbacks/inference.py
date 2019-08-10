@@ -3,7 +3,7 @@ from abc import ABCMeta
 import six
 from tensorpack.utils import logger
 
-from .base import Callback
+from .callback import Callback
 
 __all__ = ['InferenceCallback', 'ClassificationError']
 

@@ -5,7 +5,7 @@ import numpy as np
 from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.utils.logging import logger
-from .base import Callback
+from .callback import Callback
 
 __all__ = ['EstimatedTimeLeft']
 
