@@ -14,21 +14,20 @@ class TimedCallbackGroup(CallbackGroup):
         self.trigger()
 
     def trigger(self):
-        tot = 0
-        timers = []
-
+        times = []
         for callback in self.callbacks:
             start_time = timer()
             callback.trigger_epoch()
-            duration = timer() - start_time
-            tot += duration
-            timers.append((duration, str(callback)))
+            times.append((timer() - start_time, str(callback)))
 
-        timers = sorted(timers, reverse=True)[:5]
-        if tot >= 1:
-            texts = ['[{}] took {} in total.'.format(str(self), humanize_time_delta(tot))]
-            for t, name in timers:
-                texts.append('[{}] took {}.'.format(name, humanize_time_delta(t)))
+        total_time = sum(time for time, _ in times)
+
+        times = sorted(times, reverse=True)[:5]
+
+        if total_time >= 1:
+            texts = ['[{}] took {} in total.'.format(str(self), humanize_time_delta(total_time))]
+            for time, name in times:
+                texts.append('[{}] took {}.'.format(name, humanize_time_delta(time)))
             logger.info('\n+ '.join(texts))
 
     def after_train(self):
