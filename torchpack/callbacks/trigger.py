@@ -9,8 +9,6 @@ class PeriodicTrigger(ProxyCallback):
     Most existing callbacks which do something every epoch are implemented
     with :meth:`trigger()` method. By default the :meth:`trigger()` method will be called every epoch.
     This wrapper can make the callback run at a different frequency.
-    All other methods (``before/after_run``, ``trigger_step``, etc) of the given callback
-    are unaffected. They will still be called as-is.
     """
 
     def __init__(self, callback, every_k_steps=None, every_k_epochs=None, before_train=False):

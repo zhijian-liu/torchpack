@@ -51,7 +51,7 @@ class ModelSaver(Callback):
     def _add_checkpoint(self, filename):
         heappush(self.files, (os.path.getmtime(filename), filename))
         while len(self.files) > self.max_to_keep:
-            ckpt, _ = heappop(self.files)
+            _, ckpt = heappop(self.files)
             try:
                 os.remove(ckpt)
                 print('removed', ckpt)

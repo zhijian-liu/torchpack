@@ -81,7 +81,6 @@ class Callback(object):
 
 class ProxyCallback(Callback):
     """ A callback which proxy all methods to another callback.
-        It's useful as a base class of callbacks which decorate other callbacks.
     """
 
     def __init__(self, callback):
@@ -125,7 +124,7 @@ class ProxyCallback(Callback):
 
 
 class LambdaCallback(Callback):
-    """ Create a callback with some lambdas.
+    """ A callback created with some lambda functions.
     """
 
     def __init__(self,
