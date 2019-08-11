@@ -81,7 +81,7 @@ class EstimatedTimeLeft(Callback):
         self.trigger()
 
     def trigger(self):
-        if self.trainer.epoch_num == self.trainer.epoch_num:
+        if self.trainer.epoch_num == self.trainer.max_epoch:
             return
 
         self.durations.append(time.time() - self.last_time)
