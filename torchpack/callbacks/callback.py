@@ -31,16 +31,12 @@ class Callback(object):
     def before_epoch(self):
         """
         Called before every epoch.
-        Usually you should use the :meth:`trigger_epoch` callback to run something between epochs.
-        Use this method only when something really needs to be run **immediately** before each epoch.
         """
         pass
 
     def after_epoch(self):
         """
         Called after every epoch.
-        Usually you should use the :meth:`trigger_epoch` callback to run something between epochs.
-        Use this method only when something really needs to be run **immediately** after each epoch.
         """
         pass
 
