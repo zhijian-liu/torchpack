@@ -1,5 +1,5 @@
 import os
-from collections import deque
+from heapq import heappush, heappop
 
 import torch
 
@@ -25,36 +25,33 @@ class ModelSaver(Callback):
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
         self.max_to_keep = max_to_keep
-        self.checkpoints = deque()
 
     def before_train(self):
-        files = []
+        self.files = []
         for filename in os.listdir(self.checkpoint_dir):
             filename = filename.lower()
             if filename.startswith('step-') and filename.endswith('.pth'):
                 filename = os.path.join(self.checkpoint_dir, filename)
-                files.append((os.path.getmtime(filename), filename))
-                self.checkpoints.append(filename)
-        self._remove_least_recent()
+                self._add_checkpoint(filename)
 
     def trigger_epoch(self):
         self.trigger()
 
     def trigger(self):
-        checkpoint_path = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
+        save_path = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
 
         try:
-            torch.save(self.trainer.state_dict(), checkpoint_path)
-            logger.info('Checkpoint saved to {}.'.format(checkpoint_path))
+            torch.save(self.trainer.state_dict(), save_path)
+            logger.info('Checkpoint saved to {}.'.format(save_path))
         except (OSError, IOError):
             logger.exception('Exception in ModelSaver!')
 
-        self.checkpoints.append(checkpoint_path)
-        self._remove_least_recent()
+        self._add_checkpoint(save_path)
 
-    def _remove_least_recent(self):
-        while len(self.checkpoints) > self.max_to_keep:
-            ckpt = self.checkpoints.popleft()
+    def _add_checkpoint(self, filename):
+        heappush(self.files, (os.path.getmtime(filename), filename))
+        while len(self.files) > self.max_to_keep:
+            ckpt, _ = heappop(self.files)
             try:
                 os.remove(ckpt)
                 print('removed', ckpt)

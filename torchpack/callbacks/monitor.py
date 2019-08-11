@@ -5,7 +5,6 @@ import re
 import shutil
 from datetime import datetime
 
-import numpy as np
 import tensorflow as tf
 
 from torchpack.callbacks.callback import Callback
@@ -21,36 +20,19 @@ class Monitor(Callback):
 
     chief_only = False
 
-    def add(self, name, val):
+    def add(self, tag, val):
         pass
 
-    def add_scalar(self, name, val):
-        """
-        Args:
-            val: a scalar
-        """
+    def add_scalar(self, tag, val):
         pass
 
     def add_image(self, name, val):
-        """
-        Args:
-            val (np.ndarray): 4D (NHWC) numpy array of images in range [0,255].
-                If channel is 3, assumed to be RGB.
-        """
         pass
 
     def add_summary(self, summary):
-        """
-        Process a tf.Summary.
-        """
         pass
 
     def add_event(self, event):
-        """
-        Args:
-            event (tf.Event): the most basic format acceptable by tensorboard.
-                It could include Summary, RunMetadata, LogMessage, and more.
-        """
         pass
 
 
@@ -174,11 +156,11 @@ class JSONWriter(Monitor):
                 logger.info("Found existing JSON inside {}, will append to it.".format(logger.get_logger_dir()))
                 self._stats = stats
             else:
-                logger.warn(
+                logger.warning(
                     "History epoch={} from JSON is not the predecessor of the current starting_epoch={}".format(
                         epoch - 1, starting_epoch))
-                logger.warn("If you want to resume old training, either use `AutoResumeTrainConfig` "
-                            "or correctly set the new starting_epoch yourself to avoid inconsistency. ")
+                logger.warning("If you want to resume old training, either use `AutoResumeTrainConfig` "
+                               "or correctly set the new starting_epoch yourself to avoid inconsistency. ")
 
                 backup_fname = JSONWriter.FILENAME + '.' + datetime.now().strftime('%m%d-%H%M%S')
                 backup_fname = os.path.join(logger.get_logger_dir(), backup_fname)
@@ -204,8 +186,8 @@ class JSONWriter(Monitor):
         Note that this method is idempotent.
         """
         if len(self._stat_now):
-            self._stat_now['epoch_num'] = self.epoch_num
-            self._stat_now['global_step'] = self.global_step
+            self._stat_now['epoch_num'] = self.trainer.epoch_num
+            self._stat_now['global_step'] = self.trainer.global_step
 
             self._stats.append(self._stat_now)
             self._stat_now = {}
@@ -220,8 +202,8 @@ class JSONWriter(Monitor):
         except IOError:  # disk error sometimes..
             logger.exception("Exception in JSONWriter._write_stat()!")
 
-    def add_scalar(self, name, val):
-        self._stat_now[name] = val
+    def add_scalar(self, tag, val):
+        self._stat_now[tag] = val
 
 
 class ScalarPrinter(Monitor):
@@ -292,5 +274,5 @@ class ScalarPrinter(Monitor):
 
         self._dic = {}
 
-    def add_scalar(self, name, val):
-        self._dic[name] = float(val)
+    def add_scalar(self, tag, val):
+        self._dic[tag] = float(val)

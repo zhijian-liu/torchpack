@@ -30,19 +30,18 @@ class InferenceCallback(Callback):
         """
         pass
 
-    # fixme
     def trigger_epoch(self):
         self.trigger()
 
     def trigger(self):
-        ret = self.after_inference()
-        if ret is None:
+        monitors = self.after_inference()
+        if monitors is None:
             return
-        for k, v in six.iteritems(ret):
+        for k, v in monitors.items():
             try:
                 v = float(v)
             except ValueError:
-                logger.warn("{} returns a non-scalar statistics!".format(type(self).__name__))
+                logger.warn('{} returns a non-scalar statistics!'.format(type(self).__name__))
                 continue
             else:
                 self.trainer.monitors.add_scalar(k, v)
