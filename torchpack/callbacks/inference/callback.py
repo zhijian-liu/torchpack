@@ -1,7 +1,6 @@
 from abc import ABCMeta
 
 import six
-from tensorpack.utils import logger
 
 from torchpack.utils.logging import logger
 
