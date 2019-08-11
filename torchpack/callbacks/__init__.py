@@ -1,7 +1,6 @@
 from .callback import *
 from .checkpoint import *
 from .group import *
-from .metric import *
 from .inference import *
 from .internal import *
 from .monitor import *
