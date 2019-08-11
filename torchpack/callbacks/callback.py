@@ -7,7 +7,8 @@ __all__ = ['Callback', 'ProxyCallback', 'LambdaCallback']
 
 @six.add_metaclass(ABCMeta)
 class Callback(object):
-    """ Base class for all callbacks.
+    """
+    Base class for all callbacks.
     """
 
     chief_only = True
@@ -27,7 +28,7 @@ class Callback(object):
     def before_epoch(self):
         """
         Called before every epoch.
-        Usually you should use the :meth:`trigger` callback to run something between epochs.
+        Usually you should use the :meth:`trigger_epoch` callback to run something between epochs.
         Use this method only when something really needs to be run **immediately** before each epoch.
         """
         pass
@@ -35,7 +36,7 @@ class Callback(object):
     def after_epoch(self):
         """
         Called after every epoch.
-        Usually you should use the :meth:`trigger` callback to run something between epochs.
+        Usually you should use the :meth:`trigger_epoch` callback to run something between epochs.
         Use this method only when something really needs to be run **immediately** after each epoch.
         """
         pass
@@ -80,7 +81,8 @@ class Callback(object):
 
 
 class ProxyCallback(Callback):
-    """ A callback which proxy all methods to another callback.
+    """
+    A callback which proxy all methods to another callback.
     """
 
     def __init__(self, callback):
@@ -124,7 +126,8 @@ class ProxyCallback(Callback):
 
 
 class LambdaCallback(Callback):
-    """ A callback created with some lambda functions.
+    """
+    A callback created with some lambda functions.
     """
 
     def __init__(self,
