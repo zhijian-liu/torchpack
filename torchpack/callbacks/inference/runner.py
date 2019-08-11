@@ -1,6 +1,5 @@
 import torch
 import tqdm
-from tensorpack.utils import logger
 from tensorpack.utils.utils import get_tqdm_kwargs
 
 from torchpack.callbacks.callback import Callback
