@@ -1,3 +1,3 @@
 from .callback import *
-from .metric import *
+from .metrics import *
 from .runner import *
