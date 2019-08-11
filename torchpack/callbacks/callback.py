@@ -13,6 +13,9 @@ class Callback(object):
 
     chief_only = True
 
+    def set_trainer(self, trainer):
+        self.trainer = trainer
+
     def before_train(self):
         """
         Called before training.
@@ -72,9 +75,6 @@ class Callback(object):
         method both inside an epoch and after an epoch.
         """
         pass
-
-    def set_trainer(self, trainer):
-        self.trainer = trainer
 
     def __str__(self):
         return type(self).__name__
