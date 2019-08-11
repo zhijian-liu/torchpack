@@ -1,11 +1,79 @@
 from abc import ABCMeta
 
 import six
+import torch
+import tqdm
 from tensorpack.utils import logger
+from tensorpack.utils.utils import get_tqdm_kwargs
 
 from torchpack.callbacks.callback import Callback
+from torchpack.utils.logging import logger
 
-__all__ = ['InferenceCallback', 'ClassificationError']
+__all__ = ['InferenceRunner', 'InferenceCallback']
+
+
+class InferenceRunner(Callback):
+    """
+    A callback that runs a list of :class:`Inferencer` on some :class:`InputSource`.
+    """
+
+    def __init__(self, dataflow, callbacks, device=0):
+        """
+        Args:
+            dataflow (InputSource or DataFlow): The :class:`InputSource` to run
+                inference on.  If given a DataFlow, will use :class:`FeedInput`.
+            callbacks (list): a list of :class:`Inferencer` instances.
+            device (int): the device to use
+        """
+        self.dataflow = dataflow
+        if not isinstance(callbacks, list):
+            self.callbacks = [callbacks]
+        else:
+            self.callbacks = callbacks
+        for v in self.callbacks:
+            assert isinstance(v, InferenceCallback), v
+
+        try:
+            self._size = len(dataflow)
+        except NotImplementedError:
+            self._size = 0
+
+    def set_trainer(self, trainer):
+        self.trainer = trainer
+        for callback in self.callbacks:
+            callback.set_trainer(trainer)
+
+    def trigger_epoch(self):
+        self.trigger()
+
+    def trigger(self):
+        for callback in self.callbacks:
+            callback.before_inference()
+
+        logger.info('Starting the inference.')
+        with tqdm.tqdm(total=self._size, **get_tqdm_kwargs()) as pbar:
+            # num_itr = self._size if self._size > 0 else sys.maxsize
+            # for _ in range(num_itr):
+
+            self.trainer.model.eval()
+            with torch.no_grad():
+                for inputs, targets in self.dataflow:
+                    inputs = inputs.to('cuda', non_blocking=True)
+                    targets = targets.to('cuda', non_blocking=True)
+
+                    fd = dict(inputs=inputs, targets=targets)
+                    outputs = self.trainer.model(fd['inputs'])
+                    od = dict(outputs=outputs)
+
+                    for callback in self.callbacks:
+                        callback.after_step(fd, od)
+
+                    pbar.update()
+
+        # fixme
+        for callback in self.callbacks:
+            callback.after_inference()
+            callback.trigger()
 
 
 @six.add_metaclass(ABCMeta)
@@ -52,44 +120,3 @@ class InferenceCallback(Callback):
         Returns a dict of scalar statistics which will be logged to monitors.
         """
         pass
-
-
-class ClassificationError(InferenceCallback):
-    """
-    Compute **true** classification error in batch mode, from a ``wrong`` tensor.
-    The ``wrong`` tensor is supposed to be an binary vector containing
-    whether each sample in the batch is *incorrectly* classified.
-    You can use ``tf.nn.in_top_k`` to produce this vector.
-    This Inferencer produces the "true" error, which could be different from
-    ``ScalarStats('error_rate')``.
-    It takes account of the fact that batches might not have the same size in
-    testing (because the size of test set might not be a multiple of batch size).
-    Therefore the result can be different from averaging the error rate of each batch.
-    You can also use the "correct prediction" tensor, then this inferencer will
-    give you "classification accuracy" instead of error.
-    """
-
-    def __init__(self, k, logit_tensor_name='outputs', label_tensor_name='targets', summary_name='validation_error'):
-        self.k = k
-        self.logit_tensor_name = logit_tensor_name
-        self.label_tensor_name = label_tensor_name
-        self.summary_name = summary_name
-
-    def before_inference(self):
-        self.num_examples = 0
-        self.num_correct = 0
-
-    def after_step(self, input_dict, output_dict):
-        outputs = output_dict[self.logit_tensor_name]
-        targets = input_dict[self.label_tensor_name]
-
-        _, indices = outputs.topk(self.k, 1, True, True)
-
-        indices = indices.transpose(0, 1)
-        masks = indices.eq(targets.view(1, -1).expand_as(indices))
-
-        self.num_examples += targets.size(0)
-        self.num_correct += masks[:self.k].view(-1).float().sum(0)
-
-    def after_inference(self):
-        return {self.summary_name: self.num_correct / max(self.num_examples, 1) * 100.}
