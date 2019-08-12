@@ -264,3 +264,9 @@ class Callbacks(Callback):
     def _trigger(self):
         for callback in self.callbacks:
             callback.trigger()
+
+    def __len__(self):
+        return len(self.callbacks)
+
+    def __getitem__(self, index):
+        return self.callbacks[index]
