@@ -6,32 +6,21 @@ __all__ = ['PeriodicTrigger', 'PeriodicCallback', 'EnableCallbackIf']
 class PeriodicTrigger(ProxyCallback):
     """
     Trigger a callback every k global steps or every k epochs by its :meth:`trigger()` method.
-    Most existing callbacks which do something every epoch are implemented
-    with :meth:`trigger()` method. By default the :meth:`trigger()` method will be called every epoch.
-    This wrapper can make the callback run at a different frequency.
     """
 
-    def __init__(self, callback, every_k_steps=None, every_k_epochs=None, before_train=False):
+    def __init__(self, callback, every_k_steps=None, every_k_epochs=None):
         """
         Args:
             callback (Callback): a Callback instance with a trigger method to be called.
             every_k_steps (int): trigger when ``global_step % k == 0``.
             every_k_epochs (int): trigger when ``epoch_num % k == 0``.
-            before_train (bool): trigger in the :meth:`before_train` method.
         """
         assert isinstance(callback, Callback), type(callback)
-        super().__init__(callback)
-        if before_train is False:
-            assert (every_k_epochs is not None) or (every_k_steps is not None), \
-                "Arguments to PeriodicTrigger have disabled the triggerable!"
+        assert (every_k_epochs is not None) or (every_k_steps is not None), \
+            'every_k_steps and every_k_epochs cannot both be None!'
         self.every_k_steps = every_k_steps
         self.every_k_epochs = every_k_epochs
-        self.trigger_before_train = before_train
-
-    def before_train(self):
-        self.callback.before_train()
-        if self.trigger_before_train:
-            self.callback.trigger()
+        super().__init__(callback)
 
     def trigger_epoch(self):
         if self.every_k_epochs is None:
@@ -58,7 +47,7 @@ class EnableCallbackIf(ProxyCallback):
     def __init__(self, callback, predicate):
         """
         Args:
-            callback (Callback):
+            callback (Callback): a Callback instance.
             predicate (self -> bool): a callable predicate. Has to be a pure function.
                 The callback is disabled unless this predicate returns True.
         """
@@ -101,8 +90,6 @@ class PeriodicCallback(EnableCallbackIf):
     methods of the given callback will be enabled only when ``global_step % every_k_steps == 0`
     or ``epoch_num % every_k_epochs == 0``. The other methods are unaffected.
     Note that this can only makes a callback **less** frequent than itself.
-    If you have a callback that by default runs every epoch by its :meth:`trigger()` method,
-    use :class:`PeriodicTrigger` to schedule it more frequent than itself.
     """
 
     def __init__(self, callback, every_k_steps=None, every_k_epochs=None):
@@ -111,9 +98,6 @@ class PeriodicCallback(EnableCallbackIf):
             callback (Callback): a Callback instance.
             every_k_steps (int): enable the callback when ``global_step % k == 0``.
             every_k_epochs (int): enable the callback when ``epoch_num % k == 0``.
-                Also enable when the last step finishes (``epoch_num == max_epoch``
-                and ``local_step == steps_per_epoch - 1``).
-        every_k_steps and every_k_epochs can be both set, but cannot be both None.
         """
         assert isinstance(callback, Callback), type(callback)
         assert (every_k_epochs is not None) or (every_k_steps is not None), \
@@ -127,10 +111,6 @@ class PeriodicCallback(EnableCallbackIf):
             return True
         if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
             return True
-        if self.every_k_epochs is not None:
-            if self.trainer.epoch_num == self.trainer.max_epoch and \
-                    self.trainer.local_step == self.trainer.steps_per_epoch - 1:
-                return True
         return False
 
     def __str__(self):
