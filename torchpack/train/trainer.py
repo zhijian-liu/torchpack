@@ -1,18 +1,21 @@
-import time
+import traceback
 import weakref
+from time import perf_counter as timer
 
-from tensorpack.utils.argtools import call_only_once
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Callback, Monitor, MonitorGroup, TimedCallbackGroup
-from torchpack.trainer.exception import StopTraining
+from torchpack.callbacks import Monitor, Monitors
+from torchpack.callbacks.base import Callbacks, Callback
+from torchpack.cuda.copy import async_copy_to
+from torchpack.train.exception import StopTraining
 from torchpack.utils.logging import logger
 
 __all__ = ['Trainer']
 
 
 class Trainer(object):
-    """ Base class for a trainer.
+    """
+    Base class for a trainer.
     """
 
     is_chief = True
@@ -26,38 +29,32 @@ class Trainer(object):
         self.device = device
         self.callbacks = None
         self.epoch_num = 0
-        self.global_step = 0
+        self.global_step = -1
         self.local_step = -1
 
-    def run_step(self, *args, **kwargs):
+    def setup_callbacks(self, callbacks, monitors):
+        assert isinstance(callbacks, list), callbacks
+        for callback in callbacks:
+            assert isinstance(callback, Callback), type(callback)
+
+        assert isinstance(monitors, list), monitors
+        for monitor in monitors:
+            assert isinstance(monitor, Monitor), type(monitor)
+
+        self.callbacks = callbacks
+        self.monitors = monitors
+
+        self.monitors = Monitors(self.monitors)
+        self.callbacks = Callbacks(self.callbacks + [self.monitors])
+        self.callbacks.set_trainer(weakref.proxy(self))
+
+    def run_step(self, feed_dict):
         """
         Defines what to do in one iteration.
         """
-        raise NotImplementedError
+        # raise NotImplementedError
+        return self.model(feed_dict)
 
-    @call_only_once
-    def setup_callbacks(self, callbacks, monitors):
-        assert isinstance(callbacks, list), callbacks
-        assert isinstance(monitors, list), monitors
-
-        self.callbacks = []
-        for callback in callbacks:
-            assert isinstance(callback, Callback), type(callback)
-            if not self.is_chief and callback.chief_only:
-                logger.warning('Callback {} is chief-only, skipped.'.format(callback))
-                continue
-            self.callbacks.append(callback)
-
-        self.monitors = []
-        for monitor in monitors:
-            assert isinstance(monitor, Monitor), type(monitor)
-            self.monitors.append(monitor)
-
-        self.monitors = MonitorGroup(self.monitors)
-        self.callbacks = TimedCallbackGroup(self.callbacks + [self.monitors])
-        self.callbacks.set_trainer(weakref.proxy(self))
-
-    @call_only_once
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
         """
         Run the main training loop.
@@ -66,9 +63,9 @@ class Trainer(object):
             steps_per_epoch, starting_epoch, max_epoch (int):
         """
 
+        self.steps_per_epoch = int(steps_per_epoch)
         self.starting_epoch = int(starting_epoch)
         self.max_epoch = int(max_epoch)
-        self.steps_per_epoch = int(steps_per_epoch)
 
         # Allow empty epoch (no steps), if we want to run the callbacks only.
         assert self.steps_per_epoch >= 0 and self.max_epoch >= 0
@@ -80,27 +77,33 @@ class Trainer(object):
             self.callbacks.before_train()
             for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
                 logger.info('Training epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
+
+                start_time = timer()
                 self.callbacks.before_epoch()
-                start_time = time.time()
 
                 self.model.train()
-                # for self.local_step in range(self.steps_per_epoch):
-                for self.local_step, (inputs, targets) in enumerate(self.loader):
-                    # fixme
-                    inputs = inputs.to(self.device, non_blocking=True)
-                    targets = targets.to(self.device, non_blocking=True)
-                    fd = dict(inputs=inputs, targets=targets)
+                for self.local_step, feed_dict in enumerate(self.dataflow):
+                    feed_dict = async_copy_to(feed_dict, device=self.device)
+                    self.global_step += 1
 
                     self.callbacks.before_step()
-                    self.run_step(fd)
+                    self.run_step(feed_dict)
                     self.callbacks.after_step()
 
                     self.callbacks.trigger_step()
-                    self.global_step += 1
 
                 self.callbacks.after_epoch()
-                logger.info('Training epoch finished in {}.'.format(humanize_time_delta(time.time() - start_time)))
-                self.callbacks.trigger_epoch()
+                logger.info('Training epoch finished in {}.'.format(humanize_time_delta(timer() - start_time)))
+
+                text = ['Training epoch finished in {}.'.format(humanize_time_delta(timer() - start_time))]
+                for callback in self.callbacks:
+                    start_time = timer()
+                    callback.trigger_epoch()
+                    duration = timer() - start_time
+                    if duration >= 1e-2:
+                        text.append('[{}] took {}.'.format(str(callback), humanize_time_delta(timer() - start_time)))
+                logger.info('\n+ '.join(text))
+
             logger.info('Training has finished!')
         except StopTraining as e:
             logger.info('Training was stopped by exception {}.'.format(str(e)))
@@ -108,9 +111,14 @@ class Trainer(object):
             logger.info('Detected Ctrl-C and exiting main loop.')
             raise
         finally:
-            self.callbacks.after_train()
+            # make sure all callbacks are properly finalized
+            for callback in self.callbacks:
+                try:
+                    callback.after_train()
+                except Exception:
+                    traceback.print_exc()
 
-    def train(self, loader, model, criterion,
+    def train(self, dataflow, model,
               callbacks=None, monitors=None,
               steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
         """
@@ -123,10 +131,9 @@ class Trainer(object):
 
         You can call those methods by yourself to have better control on details if needed.
         """
-        self.loader = loader
+        self.dataflow = dataflow
         self.model = model
-        self.criterion = criterion
-        steps_per_epoch = len(self.loader)
+        steps_per_epoch = len(self.dataflow)
         self.setup_callbacks(callbacks, monitors)
         self.main_loop(steps_per_epoch, starting_epoch, max_epoch)
 
