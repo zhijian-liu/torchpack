@@ -217,7 +217,7 @@ class ProxyCallback(Callback):
 
 class Callbacks(Callback):
     """
-    A container to hold all callbacks.
+    A container to hold callbacks.
     """
 
     def __init__(self, callbacks):
