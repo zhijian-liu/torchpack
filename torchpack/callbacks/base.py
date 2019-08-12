@@ -2,7 +2,7 @@ from abc import ABCMeta
 
 import six
 
-__all__ = ['Callback', 'ProxyCallback', 'LambdaCallback']
+__all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 
 
 @six.add_metaclass(ABCMeta)
@@ -116,52 +116,9 @@ class Callback(object):
         return type(self).__name__
 
 
-class ProxyCallback(Callback):
-    """
-    A callback which proxy all methods to another callback.
-    """
-
-    def __init__(self, callback):
-        assert isinstance(callback, Callback), type(callback)
-        self.callback = callback
-
-    def _set_trainer(self, trainer):
-        self.callback.set_trainer(trainer)
-
-    def _before_train(self):
-        self.callback.before_train()
-
-    def _after_train(self):
-        self.callback.after_train()
-
-    def _before_epoch(self):
-        self.callback.before_epoch()
-
-    def _after_epoch(self):
-        self.callback.after_epoch()
-
-    def _before_step(self, *args, **kwargs):
-        self.callback.before_step(*args, **kwargs)
-
-    def _after_step(self, *args, **kwargs):
-        self.callback.after_step(*args, **kwargs)
-
-    def _trigger_epoch(self):
-        self.callback.trigger_epoch()
-
-    def _trigger_step(self):
-        self.callback.trigger_step()
-
-    def _trigger(self):
-        self.callback.trigger()
-
-    def __str__(self):
-        return 'Proxy-' + str(self.callback)
-
-
 class LambdaCallback(Callback):
     """
-    A callback created with some lambda functions.
+    A callback created with lambda functions.
     """
 
     def __init__(self, before_train=None, after_train=None, before_epoch=None, after_epoch=None,
@@ -213,3 +170,97 @@ class LambdaCallback(Callback):
     def _trigger(self):
         if self.trigger_func:
             self.trigger_func(self)
+
+
+class ProxyCallback(Callback):
+    """
+    A callback which proxy all methods to another callback.
+    """
+
+    def __init__(self, callback):
+        assert isinstance(callback, Callback), type(callback)
+        self.callback = callback
+
+    def _set_trainer(self, trainer):
+        self.callback.set_trainer(trainer)
+
+    def _before_train(self):
+        self.callback.before_train()
+
+    def _after_train(self):
+        self.callback.after_train()
+
+    def _before_epoch(self):
+        self.callback.before_epoch()
+
+    def _after_epoch(self):
+        self.callback.after_epoch()
+
+    def _before_step(self, *args, **kwargs):
+        self.callback.before_step(*args, **kwargs)
+
+    def _after_step(self, *args, **kwargs):
+        self.callback.after_step(*args, **kwargs)
+
+    def _trigger_epoch(self):
+        self.callback.trigger_epoch()
+
+    def _trigger_step(self):
+        self.callback.trigger_step()
+
+    def _trigger(self):
+        self.callback.trigger()
+
+    def __str__(self):
+        return 'Proxy-' + str(self.callback)
+
+
+class Callbacks(Callback):
+    """
+    A container to hold all callbacks.
+    """
+
+    def __init__(self, callbacks):
+        for callback in callbacks:
+            assert isinstance(callback, Callback), type(callback)
+        self.callbacks = callbacks
+
+    def _set_trainer(self, trainer):
+        for callback in self.callbacks:
+            callback.set_trainer(trainer)
+
+    def _before_train(self):
+        for callback in self.callbacks:
+            callback.before_train()
+
+    def _after_train(self):
+        for callback in self.callbacks:
+            callback.after_train()
+
+    def _before_epoch(self):
+        for callback in self.callbacks:
+            callback.before_epoch()
+
+    def _after_epoch(self):
+        for callback in self.callbacks:
+            callback.after_epoch()
+
+    def _before_step(self, *args, **kwargs):
+        for callback in self.callbacks:
+            callback.before_step(*args, **kwargs)
+
+    def _after_step(self, *args, **kwargs):
+        for callback in self.callbacks:
+            callback.after_step(*args, **kwargs)
+
+    def _trigger_epoch(self):
+        for callback in self.callbacks:
+            callback.trigger_epoch()
+
+    def _trigger_step(self):
+        for callback in self.callbacks:
+            callback.trigger_step()
+
+    def _trigger(self):
+        for callback in self.callbacks:
+            callback.trigger()
