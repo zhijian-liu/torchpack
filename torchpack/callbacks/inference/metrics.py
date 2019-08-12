@@ -4,19 +4,19 @@ __all__ = ['ClassificationError']
 
 
 class ClassificationError(InferenceCallback):
-    def __init__(self, k, logit_tensor_name='outputs', label_tensor_name='targets', summary_name='validation_error'):
+    def __init__(self, k, logits_name='outputs', labels_name='targets', metric_name='validation_error'):
         self.k = k
-        self.logit_tensor_name = logit_tensor_name
-        self.label_tensor_name = label_tensor_name
-        self.summary_name = summary_name
+        self.logits_name = logits_name
+        self.labels_name = labels_name
+        self.metric_name = metric_name
 
-    def before_inference(self):
+    def _before_inference(self):
         self.num_examples = 0
         self.num_correct = 0
 
-    def after_step(self, input_dict, output_dict):
-        outputs = output_dict[self.logit_tensor_name]
-        targets = input_dict[self.label_tensor_name]
+    def _after_step(self, input_dict, output_dict):
+        outputs = output_dict[self.logits_name]
+        targets = input_dict[self.labels_name]
 
         _, indices = outputs.topk(self.k, 1, True, True)
 
@@ -26,5 +26,5 @@ class ClassificationError(InferenceCallback):
         self.num_examples += targets.size(0)
         self.num_correct += masks[:self.k].view(-1).float().sum(0)
 
-    def after_inference(self):
-        return {self.summary_name: self.num_correct / max(self.num_examples, 1) * 100.}
+    def _after_inference(self):
+        self.trainer.monitors.add_scalar(self.metric_name, self.num_correct / max(self.num_examples, 1) * 100.)
