@@ -11,60 +11,100 @@ class Callback(object):
     Base class for all callbacks.
     """
 
-    chief_only = True
+    chief_only = False
 
     def set_trainer(self, trainer):
         self.trainer = trainer
+        self._set_trainer(trainer)
+
+    def _set_trainer(self, trainer):
+        pass
 
     def before_train(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._before_train()
+
+    def _before_train(self):
         """
         Called before training.
         """
         pass
 
     def after_train(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._after_train()
+
+    def _after_train(self):
         """
         Called after training.
         """
         pass
 
     def before_epoch(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._before_epoch()
+
+    def _before_epoch(self):
         """
         Called before every epoch.
         """
         pass
 
     def after_epoch(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._after_epoch()
+
+    def _after_epoch(self):
         """
         Called after every epoch.
         """
         pass
 
     def before_step(self, *args, **kwargs):
+        if self.trainer.is_chief or not self.chief_only:
+            self._before_step(*args, **kwargs)
+
+    def _before_step(self, *args, **kwargs):
         """
         Called before every step.
         """
         pass
 
     def after_step(self, *args, **kwargs):
+        if self.trainer.is_chief or not self.chief_only:
+            self._after_step(*args, **kwargs)
+
+    def _after_step(self, *args, **kwargs):
         """
         Called after every step.
         """
         pass
 
     def trigger_epoch(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._trigger_epoch()
+
+    def _trigger_epoch(self):
         """
         Called after after epoch.
         """
         pass
 
     def trigger_step(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._trigger_step()
+
+    def _trigger_step(self):
         """
         Called after after step.
         """
         pass
 
     def trigger(self):
+        if self.trainer.is_chief or not self.chief_only:
+            self._trigger()
+
+    def _trigger(self):
         """
         Override this method to define a general trigger behavior, to be used with trigger schedulers.
         Note that the schedulers (e.g. :class:`PeriodicTrigger`) might call this
@@ -84,37 +124,35 @@ class ProxyCallback(Callback):
     def __init__(self, callback):
         assert isinstance(callback, Callback), type(callback)
         self.callback = callback
-        self.chief_only = callback.chief_only
 
-    def set_trainer(self, trainer):
-        self.trainer = trainer
+    def _set_trainer(self, trainer):
         self.callback.set_trainer(trainer)
 
-    def before_train(self):
+    def _before_train(self):
         self.callback.before_train()
 
-    def after_train(self):
+    def _after_train(self):
         self.callback.after_train()
 
-    def before_epoch(self):
+    def _before_epoch(self):
         self.callback.before_epoch()
 
-    def after_epoch(self):
+    def _after_epoch(self):
         self.callback.after_epoch()
 
-    def before_step(self, *args, **kwargs):
+    def _before_step(self, *args, **kwargs):
         self.callback.before_step(*args, **kwargs)
 
-    def after_step(self, *args, **kwargs):
+    def _after_step(self, *args, **kwargs):
         self.callback.after_step(*args, **kwargs)
 
-    def trigger_epoch(self):
+    def _trigger_epoch(self):
         self.callback.trigger_epoch()
 
-    def trigger_step(self):
+    def _trigger_step(self):
         self.callback.trigger_step()
 
-    def trigger(self):
+    def _trigger(self):
         self.callback.trigger()
 
     def __str__(self):
@@ -126,55 +164,52 @@ class LambdaCallback(Callback):
     A callback created with some lambda functions.
     """
 
-    def __init__(self,
-                 before_train=None, after_train=None,
-                 before_epoch=None, after_epoch=None,
-                 before_step=None, after_step=None,
-                 trigger_epoch=None, trigger_step=None, trigger=None,
-                 chief_only=True):
-        self.before_train_fn = before_train
-        self.after_train_fn = after_train
-        self.before_epoch_fn = before_epoch
-        self.after_epoch_fn = after_epoch
-        self.before_step_fn = before_step
-        self.after_step_fn = after_step
-        self.trigger_epoch_fn = trigger_epoch
-        self.trigger_step_fn = trigger_step
-        self.trigger_fn = trigger
+    def __init__(self, before_train=None, after_train=None, before_epoch=None, after_epoch=None,
+                 before_step=None, after_step=None, trigger_epoch=None, trigger_step=None, trigger=None,
+                 chief_only=False):
+        self.before_train_func = before_train
+        self.after_train_func = after_train
+        self.before_epoch_func = before_epoch
+        self.after_epoch_func = after_epoch
+        self.before_step_func = before_step
+        self.after_step_func = after_step
+        self.trigger_epoch_func = trigger_epoch
+        self.trigger_step_func = trigger_step
+        self.trigger_func = trigger
         self.chief_only = chief_only
 
-    def before_train(self):
-        if self.before_train_fn:
-            self.before_train_fn(self)
+    def _before_train(self):
+        if self.before_train_func:
+            self.before_train_func(self)
 
-    def after_train(self):
-        if self.after_train_fn:
-            self.after_train_fn(self)
+    def _after_train(self):
+        if self.after_train_func:
+            self.after_train_func(self)
 
-    def before_epoch(self):
-        if self.before_epoch_fn:
-            self.before_epoch_fn(self)
+    def _before_epoch(self):
+        if self.before_epoch_func:
+            self.before_epoch_func(self)
 
-    def after_epoch(self):
-        if self.after_epoch_fn:
-            self.after_epoch_fn(self)
+    def _after_epoch(self):
+        if self.after_epoch_func:
+            self.after_epoch_func(self)
 
-    def before_step(self, *args, **kwargs):
-        if self.before_step_fn:
-            self.before_step_fn(self, *args, **kwargs)
+    def _before_step(self, *args, **kwargs):
+        if self.before_step_func:
+            self.before_step_func(self, *args, **kwargs)
 
-    def after_step(self, *args, **kwargs):
-        if self.after_step_fn:
-            self.after_step_fn(self, *args, **kwargs)
+    def _after_step(self, *args, **kwargs):
+        if self.after_step_func:
+            self.after_step_func(self, *args, **kwargs)
 
-    def trigger_epoch(self):
-        if self.trigger_epoch_fn:
-            self.trigger_epoch_fn(self)
+    def _trigger_epoch(self):
+        if self.trigger_epoch_func:
+            self.trigger_epoch_func(self)
 
-    def trigger_step(self):
-        if self.trigger_step_fn:
-            self.trigger_step_fn(self)
+    def _trigger_step(self):
+        if self.trigger_step_func:
+            self.trigger_step_func(self)
 
-    def trigger(self):
-        if self.trigger_fn:
-            self.trigger_fn(self)
+    def _trigger(self):
+        if self.trigger_func:
+            self.trigger_func(self)
