@@ -27,15 +27,6 @@ class InferenceCallback(object):
         """
         pass
 
-    def after_inference(self):
-        self._after_inference()
-
-    def _after_inference(self):
-        """
-        Called after inference ends.
-        """
-        pass
-
     def before_step(self, *args, **kwargs):
         self._before_step(*args, **kwargs)
 
@@ -51,6 +42,15 @@ class InferenceCallback(object):
     def _after_step(self, *args, **kwargs):
         """
         Called after every step.
+        """
+        pass
+
+    def after_inference(self):
+        self._after_inference()
+
+    def _after_inference(self):
+        """
+        Called after inference ends.
         """
         pass
 
@@ -74,10 +74,6 @@ class InferenceCallbacks(InferenceCallback):
         for callback in self.callbacks:
             callback.before_inference()
 
-    def _after_inference(self):
-        for callback in self.callbacks:
-            callback.after_inference()
-
     def _before_step(self, *args, **kwargs):
         for callback in self.callbacks:
             callback.before_step(*args, **kwargs)
@@ -85,6 +81,10 @@ class InferenceCallbacks(InferenceCallback):
     def _after_step(self, *args, **kwargs):
         for callback in self.callbacks:
             callback.after_step(*args, **kwargs)
+
+    def _after_inference(self):
+        for callback in self.callbacks:
+            callback.after_inference()
 
     def __len__(self):
         return len(self.callbacks)
