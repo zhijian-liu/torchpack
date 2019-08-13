@@ -52,10 +52,10 @@ class ModelSaver(Callback):
         filename = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
         try:
             torch.save(self.trainer.state_dict(), filename)
-            logger.info('Checkpoint saved to {}.'.format(filename))
         except (OSError, IOError):
             logger.exception('Failed to save checkpoint to {}.'.format(filename))
         else:
+            logger.info('Checkpoint saved to {}.'.format(filename))
             self._add_checkpoint(filename)
 
 
@@ -109,13 +109,14 @@ class MinSaver(Callback):
             self.best = (step, value)
 
             filename = self.filename or '{}-{}.pth'.format(self.key.replace('/', '-'), suffix)
-            save_path = os.path.join(self.checkpoint_dir, filename)
+            filename = os.path.join(self.checkpoint_dir, filename)
 
             try:
-                torch.save(self.trainer.state_dict(), save_path)
-                logger.info('Checkpoint saved to {} ({}={:.5g}).'.format(save_path, self.key, self.best[1]))
+                torch.save(self.trainer.state_dict(), filename)
             except (OSError, IOError):
-                logger.exception('Exception in ModelSaver!')
+                logger.exception('Failed to save checkpoint to {}.'.format(filename))
+            else:
+                logger.info('Checkpoint saved to {} ({}={:.5g}).'.format(filename, self.key, self.best[1]))
 
         self.trainer.monitors.add_scalar(self.key + '/' + suffix, self.best[1])
 
