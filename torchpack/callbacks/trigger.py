@@ -22,13 +22,13 @@ class PeriodicTrigger(ProxyCallback):
         self.every_k_steps = every_k_steps
         super().__init__(callback)
 
-    def trigger_epoch(self):
+    def _trigger_epoch(self):
         if self.every_k_epochs is None:
             return
         if self.trainer.epoch_num % self.every_k_epochs == 0:
             self.callback.trigger()
 
-    def trigger_step(self):
+    def _trigger_step(self):
         if self.every_k_steps is None:
             return
         if self.trainer.global_step % self.every_k_steps == 0:
