@@ -1,5 +1,6 @@
+import heapq
 import os
-from heapq import heappush, heappop
+import re
 
 import torch
 
@@ -11,7 +12,7 @@ __all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
 
 class ModelSaver(Callback):
     """
-    Save the model once triggered.
+    Save the trainer's checkpoint once triggered.
     """
 
     def __init__(self, checkpoint_dir=None, max_to_keep=10):
@@ -26,12 +27,21 @@ class ModelSaver(Callback):
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
         self.max_to_keep = max_to_keep
+        self.checkpoints = []
+
+    def _add_checkpoint(self, filename):
+        heapq.heappush(self.checkpoints, (os.path.getmtime(filename), filename))
+        while len(self.checkpoints) > self.max_to_keep:
+            filename = heapq.heappop(self.checkpoints)[1]
+            try:
+                os.remove(filename)
+            except FileNotFoundError:
+                logger.exception('Failed to remove {}.'.format(filename))
 
     def _before_train(self):
-        self.filenames = []
+        regex = re.compile('^step-[0-9]+.pth$')
         for filename in os.listdir(self.checkpoint_dir):
-            filename = filename.lower()
-            if filename.startswith('step-') and filename.endswith('.pth'):
+            if regex.match(filename):
                 filename = os.path.join(self.checkpoint_dir, filename)
                 self._add_checkpoint(filename)
 
@@ -39,24 +49,13 @@ class ModelSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        save_path = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
-
+        filename = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
         try:
-            torch.save(self.trainer.state_dict(), save_path)
-            logger.info('Checkpoint saved to {}.'.format(save_path))
+            torch.save(self.trainer.state_dict(), filename)
+            logger.info('Checkpoint saved to {}.'.format(filename))
         except (OSError, IOError):
             logger.exception('Failed to save checkpoint due to exception.')
-
-        self._add_checkpoint(save_path)
-
-    def _add_checkpoint(self, filename):
-        heappush(self.filenames, (os.path.getmtime(filename), filename))
-        while len(self.filenames) > self.max_to_keep:
-            _, filename = heappop(self.filenames)
-            try:
-                os.remove(filename)
-            except FileNotFoundError:
-                logger.exception('Failed to remove checkpoint due to exception.')
+        self._add_checkpoint(filename)
 
 
 class MinSaver(Callback):
@@ -103,15 +102,12 @@ class MinSaver(Callback):
             # todo: add warning that saver is skipped.
             return
 
-        extreme_name = 'max' if self.reverse else 'min'
+        suffix = 'max' if self.reverse else 'min'
 
         if self.best is None or (value > self.best[1] if self.reverse else value < self.best[1]):
             self.best = (step, value)
 
-            def _escape_name(name):
-                return name.replace('/', '-')
-
-            filename = self.filename or '{}-{}.pth'.format(extreme_name, _escape_name(self.key))
+            filename = self.filename or '{}-{}.pth'.format(self.key.replace('/', '-'), suffix)
             save_path = os.path.join(self.checkpoint_dir, filename)
 
             try:
@@ -120,7 +116,7 @@ class MinSaver(Callback):
             except (OSError, IOError):
                 logger.exception('Exception in ModelSaver!')
 
-        self.trainer.monitors.add_scalar(self.key + '/' + extreme_name, self.best[1])
+        self.trainer.monitors.add_scalar(self.key + '/' + suffix, self.best[1])
 
 
 class MaxSaver(MinSaver):
