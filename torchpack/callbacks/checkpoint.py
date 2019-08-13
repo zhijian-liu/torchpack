@@ -35,8 +35,8 @@ class ModelSaver(Callback):
             filename = heapq.heappop(self.checkpoints)[1]
             try:
                 os.remove(filename)
-            except FileNotFoundError:
-                logger.exception('Failed to remove {}.'.format(filename))
+            except (OSError, IOError):
+                logger.exception('Failed to remove checkpoint at {}.'.format(filename))
 
     def _before_train(self):
         regex = re.compile('^step-[0-9]+.pth$')
@@ -54,8 +54,9 @@ class ModelSaver(Callback):
             torch.save(self.trainer.state_dict(), filename)
             logger.info('Checkpoint saved to {}.'.format(filename))
         except (OSError, IOError):
-            logger.exception('Failed to save checkpoint due to exception.')
-        self._add_checkpoint(filename)
+            logger.exception('Failed to save checkpoint to {}.'.format(filename))
+        else:
+            self._add_checkpoint(filename)
 
 
 class MinSaver(Callback):
@@ -85,14 +86,14 @@ class MinSaver(Callback):
         if self.checkpoint_dir is None:
             self.checkpoint_dir = logger.get_logger_dir()
 
-    def before_train(self):
+    def _before_train(self):
         # todo: fetch best values from current checkpoint (resume)
         pass
 
-    def trigger_epoch(self):
-        self.trigger()
+    def _trigger_epoch(self):
+        self._trigger()
 
-    def trigger(self):
+    def _trigger(self):
         try:
             step, value = self.trainer.monitors.get_history(self.key)[-1]
         except (KeyError, IndexError):
