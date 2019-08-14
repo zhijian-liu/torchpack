@@ -12,7 +12,7 @@ __all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
 
 class ModelSaver(Callback):
     """
-    Save the trainer's checkpoint once triggered.
+    Save the trainer's state dict once triggered.
     """
 
     def __init__(self, checkpoint_dir=None, max_to_keep=10):
@@ -21,11 +21,8 @@ class ModelSaver(Callback):
             checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
             max_to_keep (int): Maximum number of recent checkpoint files to keep.
         """
-        if checkpoint_dir is None:
-            checkpoint_dir = logger.get_logger_dir()
-        self.checkpoint_dir = os.path.normpath(checkpoint_dir)
+        self.checkpoint_dir = checkpoint_dir or os.path.join(logger.get_logger_dir(), 'checkpoints')
         os.makedirs(self.checkpoint_dir, exist_ok=True)
-
         self.max_to_keep = max_to_keep
         self.checkpoints = []
 
@@ -69,22 +66,15 @@ class MinSaver(Callback):
         Args:
             key(str): the name of the statistics.
             reverse (bool): if True, will save the maximum.
-            filename (str): the name for the saved model.
-                Defaults to ``min-{monitor_stat}.tfmodel``.
+            filename (str): the name for the saved model. Defaults to ``min-{key}.pth``.
             checkpoint_dir (str): the directory containing checkpoints.
-        Example:
-            Save the model with minimum validation error to
-            "min-val-error.tfmodel":
-            .. code-block:: python
-                MinSaver('val-error')
         """
+        self.checkpoint_dir = checkpoint_dir or os.path.join(logger.get_logger_dir(), 'checkpoints')
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
         self.key = key
         self.reverse = reverse
         self.filename = filename
         self.best = None
-        self.checkpoint_dir = checkpoint_dir
-        if self.checkpoint_dir is None:
-            self.checkpoint_dir = logger.get_logger_dir()
 
     def _before_train(self):
         # todo: fetch best values from current checkpoint (resume)
