@@ -21,8 +21,11 @@ class ModelSaver(Callback):
             checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
             max_to_keep (int): Maximum number of recent checkpoint files to keep.
         """
-        self.checkpoint_dir = checkpoint_dir or os.path.join(logger.get_logger_dir(), 'checkpoints')
-        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        if checkpoint_dir is None:
+            checkpoint_dir = os.path.join(logger.get_logger_dir(), 'checkpoints')
+        checkpoint_dir = os.path.normpath(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        self.checkpoint_dir = checkpoint_dir
         self.max_to_keep = max_to_keep
         self.checkpoints = []
 
@@ -69,8 +72,11 @@ class MinSaver(Callback):
             filename (str): the name for the saved model. Defaults to ``min-{key}.pth``.
             checkpoint_dir (str): the directory containing checkpoints.
         """
-        self.checkpoint_dir = checkpoint_dir or os.path.join(logger.get_logger_dir(), 'checkpoints')
-        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        if checkpoint_dir is None:
+            checkpoint_dir = os.path.join(logger.get_logger_dir(), 'checkpoints')
+        checkpoint_dir = os.path.normpath(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        self.checkpoint_dir = checkpoint_dir
         self.key = key
         self.reverse = reverse
         self.filename = filename
