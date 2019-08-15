@@ -1,63 +1,50 @@
+import time
+
 import torch
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs
+from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.callbacks.callback import Callback
-from torchpack.callbacks.inference.callback import InferenceCallback
+from torchpack.callbacks.inference.callback import InferenceCallback, InferenceCallbacks
+from torchpack.cuda.copy import async_copy_to
 from torchpack.utils.logging import logger
 
 __all__ = ['InferenceRunner']
 
 
 class InferenceRunner(Callback):
-    """ A callback that runs a list of :class:`InferenceCallback`.
+    """
+    A callback that runs inference with a list of :class:`InferenceCallback`.
     """
 
-    def __init__(self, dataflow, callbacks, device=0):
-        """
-        Args:
-            dataflow (InputSource or DataFlow): The :class:`InputSource` to run
-                inference on.  If given a DataFlow, will use :class:`FeedInput`.
-            callbacks (list): a list of :class:`Inferencer` instances.
-            device (int): the device to use
-        """
+    def __init__(self, dataflow, callbacks, device=None):
         for callback in callbacks:
             assert isinstance(callback, InferenceCallback), callback
-
         self.dataflow = dataflow
         self.callbacks = callbacks
-        self.size = len(dataflow)
+        self.device = device
 
-    def set_trainer(self, trainer):
-        self.trainer = trainer
-        for callback in self.callbacks:
-            callback.set_trainer(trainer)
+    def _set_trainer(self, trainer):
+        self.device = self.device or trainer.device
+        self.callbacks = InferenceCallbacks(self.callbacks)
+        self.callbacks.set_trainer(trainer)
 
-    def trigger_epoch(self):
-        self.trigger()
+    def _trigger_epoch(self):
+        self._trigger()
 
-    def trigger(self):
-        for callback in self.callbacks:
-            callback.before_inference()
+    def _trigger(self):
+        start_time = time.time()
+        self.callbacks.before_inference()
 
-        logger.info('Starting the inference.')
-        with tqdm.tqdm(total=self.size, **get_tqdm_kwargs()) as pbar:
-            self.trainer.model.eval()
-            with torch.no_grad():
-                for inputs, targets in self.dataflow:
-                    inputs = inputs.to('cuda', non_blocking=True)
-                    targets = targets.to('cuda', non_blocking=True)
+        self.trainer.model.eval()
+        with torch.no_grad():
+            for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
+                feed_dict = async_copy_to(feed_dict, device=self.device)
 
-                    fd = dict(inputs=inputs, targets=targets)
-                    outputs = self.trainer.model(fd['inputs'])
-                    od = dict(outputs=outputs)
+                self.callbacks.before_step(feed_dict)
+                output_dict = self.trainer.model(feed_dict)
+                self.callbacks.after_step(feed_dict, output_dict)
 
-                    for callback in self.callbacks:
-                        callback.after_step(fd, od)
-
-                    pbar.update()
-
-        # fixme
-        for callback in self.callbacks:
-            callback.after_inference()
-            callback.trigger()
+        self.callbacks.after_inference()
+        logger.info('Inference finished in {}.'.format(humanize_time_delta(time.time() - start_time)))
