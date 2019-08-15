@@ -1,4 +1,4 @@
-from torchpack.callbacks.inference.callback import InferenceCallback
+from torchpack.callbacks.inference.inference import InferenceCallback
 
 __all__ = ['ClassificationError']
 

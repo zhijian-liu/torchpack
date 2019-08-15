@@ -5,7 +5,7 @@ import re
 import torch
 
 from torchpack.callbacks.callback import Callback
-from torchpack.utils.logging import logger
+from torchpack.utils.logging import logger, get_logger_dir
 
 __all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
 
@@ -22,7 +22,7 @@ class ModelSaver(Callback):
             max_to_keep (int): Maximum number of recent checkpoint files to keep.
         """
         if checkpoint_dir is None:
-            checkpoint_dir = os.path.join(logger.get_logger_dir(), 'checkpoints')
+            checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
         checkpoint_dir = os.path.normpath(checkpoint_dir)
         os.makedirs(checkpoint_dir, exist_ok=True)
         self.checkpoint_dir = checkpoint_dir
@@ -73,7 +73,7 @@ class MinSaver(Callback):
             checkpoint_dir (str): the directory containing checkpoints.
         """
         if checkpoint_dir is None:
-            checkpoint_dir = os.path.join(logger.get_logger_dir(), 'checkpoints')
+            checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
         checkpoint_dir = os.path.normpath(checkpoint_dir)
         os.makedirs(checkpoint_dir, exist_ok=True)
         self.checkpoint_dir = checkpoint_dir

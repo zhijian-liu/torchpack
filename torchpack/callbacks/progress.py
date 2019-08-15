@@ -20,7 +20,7 @@ class ProgressBar(Callback):
 
     chief_only = True
 
-    def __init__(self, names=None):
+    def __init__(self, names=None, tqdm_args=None):
         """
         Args:
             names(list): list of string, the names of the tensors to monitor
@@ -39,9 +39,6 @@ class ProgressBar(Callback):
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.total, **self.tqdm_args)
 
-    def _after_epoch(self):
-        self.pbar.close()
-
     def _before_step(self, *args, **kwargs):
         if self.last_updated != self.trainer.local_step:
             self.last_updated = self.trainer.local_step
@@ -51,10 +48,10 @@ class ProgressBar(Callback):
         pass
 
     def _trigger_step(self):
-        self._trigger()
-
-    def _trigger(self):
         self.pbar.update()
+
+    def _after_epoch(self):
+        self.pbar.close()
 
     def _after_train(self):
         if self.pbar:
@@ -77,9 +74,6 @@ class EstimatedTimeLeft(Callback):
         self.last_time = time.time()
 
     def _trigger_epoch(self):
-        self._trigger()
-
-    def _trigger(self):
         if self.trainer.epoch_num == self.trainer.max_epoch:
             return
 
