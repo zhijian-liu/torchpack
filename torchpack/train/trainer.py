@@ -1,11 +1,11 @@
+import time
 import traceback
 import weakref
-from time import perf_counter as timer
 
 from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.callbacks import Monitor, Monitors
-from torchpack.callbacks.base import Callbacks, Callback
+from torchpack.callbacks.callback import Callbacks, Callback
 from torchpack.cuda.copy import async_copy_to
 from torchpack.train.exception import StopTraining
 from torchpack.utils.logging import logger
@@ -24,7 +24,6 @@ class Trainer(object):
     Certain callbacks will only be run by chief worker.
     """
 
-    # fixme: too ugly
     def __init__(self, device='cuda'):
         self.device = device
         self.callbacks = None
@@ -32,28 +31,27 @@ class Trainer(object):
         self.global_step = -1
         self.local_step = -1
 
-    def setup_callbacks(self, callbacks, monitors):
-        assert isinstance(callbacks, list), callbacks
+    def set_callbacks(self, callbacks, monitors):
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
-
-        assert isinstance(monitors, list), monitors
         for monitor in monitors:
             assert isinstance(monitor, Monitor), type(monitor)
-
-        self.callbacks = callbacks
-        self.monitors = monitors
-
-        self.monitors = Monitors(self.monitors)
-        self.callbacks = Callbacks(self.callbacks + [self.monitors])
+        self.monitors = Monitors(monitors)
+        self.callbacks = Callbacks(callbacks + [self.monitors])
         self.callbacks.set_trainer(weakref.proxy(self))
 
     def run_step(self, feed_dict):
+        self.callbacks.before_step(feed_dict)
+        self._run_step(feed_dict)
+        self.callbacks.after_step()
+
+    def _run_step(self, feed_dict):
         """
         Defines what to do in one iteration.
         """
         # raise NotImplementedError
-        return self.model(feed_dict)
+        outputs = self.model(feed_dict)
+        return outputs
 
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
         """
@@ -74,39 +72,33 @@ class Trainer(object):
         self.global_step = self.epoch_num * self.steps_per_epoch
 
         try:
+            start_train = time.time()
             self.callbacks.before_train()
-            for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
-                logger.info('Training epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
 
-                start_time = timer()
+            for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
+                logger.info('Epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
+
+                start_epoch = time.time()
                 self.callbacks.before_epoch()
 
                 self.model.train()
                 for self.local_step, feed_dict in enumerate(self.dataflow):
                     feed_dict = async_copy_to(feed_dict, device=self.device)
+
                     self.global_step += 1
-
-                    self.callbacks.before_step()
                     self.run_step(feed_dict)
-                    self.callbacks.after_step()
-
                     self.callbacks.trigger_step()
 
                 self.callbacks.after_epoch()
-                logger.info('Training epoch finished in {}.'.format(humanize_time_delta(timer() - start_time)))
+                logger.info('Training finished in {}.'.format(humanize_time_delta(time.time() - start_epoch)))
 
-                text = ['Training epoch finished in {}.'.format(humanize_time_delta(timer() - start_time))]
-                for callback in self.callbacks:
-                    start_time = timer()
-                    callback.trigger_epoch()
-                    duration = timer() - start_time
-                    if duration >= 1e-2:
-                        text.append('[{}] took {}.'.format(str(callback), humanize_time_delta(timer() - start_time)))
-                logger.info('\n+ '.join(text))
+                self.callbacks.trigger_epoch()
+                logger.info('Epoch finished in {}.'.format(humanize_time_delta(time.time() - start_epoch)))
 
-            logger.info('Training has finished!')
+            logger.info('{} epochs of training finished in {}.'.format(self.max_epoch - self.starting_epoch + 1,
+                                                                       humanize_time_delta(time.time() - start_train)))
         except StopTraining as e:
-            logger.info('Training was stopped by exception {}.'.format(str(e)))
+            logger.info('Training was stopped by {}.'.format(str(e)))
         except KeyboardInterrupt:
             logger.info('Detected Ctrl-C and exiting main loop.')
             raise
@@ -133,8 +125,8 @@ class Trainer(object):
         """
         self.dataflow = dataflow
         self.model = model
-        steps_per_epoch = len(self.dataflow)
-        self.setup_callbacks(callbacks, monitors)
+        steps_per_epoch = steps_per_epoch or len(self.dataflow)
+        self.set_callbacks(callbacks, monitors)
         self.main_loop(steps_per_epoch, starting_epoch, max_epoch)
 
     def state_dict(self):
