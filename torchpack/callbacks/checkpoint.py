@@ -36,7 +36,7 @@ class ModelSaver(Callback):
             try:
                 os.remove(filename)
             except (OSError, IOError):
-                logger.exception('Failed to remove checkpoint at {}.'.format(filename))
+                logger.exception('Error occurred when removing checkpoint "{}".'.format(filename))
 
     def _before_train(self):
         regex = re.compile('^step-[0-9]+.pth$')
@@ -53,9 +53,9 @@ class ModelSaver(Callback):
         try:
             torch.save(self.trainer.state_dict(), filename)
         except (OSError, IOError):
-            logger.exception('Failed to save checkpoint to {}.'.format(filename))
+            logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
         else:
-            logger.info('Checkpoint saved to {}.'.format(filename))
+            logger.info('Checkpoint saved: "{}".'.format(filename))
             self._add_checkpoint(filename)
 
 
@@ -64,22 +64,24 @@ class MinSaver(Callback):
     Separately save the model with minimum value of some statistics.
     """
 
-    def __init__(self, key, reverse=False, filename=None, checkpoint_dir=None):
+    def __init__(self, key, reverse=False, checkpoint_dir=None, filename=None):
         """
         Args:
             key(str): the name of the statistics.
             reverse (bool): if True, will save the maximum.
-            filename (str): the name for the saved model. Defaults to ``min-{key}.pth``.
             checkpoint_dir (str): the directory containing checkpoints.
+            filename (str): the name for the saved model. Defaults to ``{key}-min.pth``.
         """
         if checkpoint_dir is None:
             checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
         checkpoint_dir = os.path.normpath(checkpoint_dir)
         os.makedirs(checkpoint_dir, exist_ok=True)
         self.checkpoint_dir = checkpoint_dir
-        self.key = key
-        self.reverse = reverse
+        if filename is None:
+            filename = '{}-{}.pth'.format(key.replace('/', '-'), 'max' if reverse else 'min')
         self.filename = filename
+        self.reverse = reverse
+        self.key = key
         self.best = None
 
     def _before_train(self):
@@ -99,22 +101,17 @@ class MinSaver(Callback):
             # todo: add warning that saver is skipped.
             return
 
-        suffix = 'max' if self.reverse else 'min'
-
         if self.best is None or (value > self.best[1] if self.reverse else value < self.best[1]):
-            self.best = (step, value)
-
-            filename = self.filename or '{}-{}.pth'.format(self.key.replace('/', '-'), suffix)
-            filename = os.path.join(self.checkpoint_dir, filename)
-
+            filename = os.path.join(self.checkpoint_dir, self.filename)
             try:
                 torch.save(self.trainer.state_dict(), filename)
             except (OSError, IOError):
-                logger.exception('Failed to save checkpoint to {}.'.format(filename))
+                logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
             else:
-                logger.info('Checkpoint saved to {} ({}={:.5g}).'.format(filename, self.key, self.best[1]))
+                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(filename, value))
+                self.best = (step, value)
 
-        self.trainer.monitors.add_scalar(self.key + '/' + suffix, self.best[1])
+        self.trainer.monitors.add_scalar(self.key + '/' + 'max' if self.reverse else 'min', self.best[1])
 
 
 class MaxSaver(MinSaver):
