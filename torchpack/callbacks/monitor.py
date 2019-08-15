@@ -51,44 +51,43 @@ class Monitors(Monitor):
         self.monitors = monitors
         self.scalars = defaultdict(list)
 
-    def set_trainer(self, trainer):
-        self.trainer = trainer
+    def _set_trainer(self, trainer):
         for monitor in self.monitors:
             monitor.set_trainer(trainer)
 
-    def before_train(self):
+    def _before_train(self):
         for monitor in self.monitors:
             monitor.before_train()
 
-    def after_train(self):
+    def _after_train(self):
         for monitor in self.monitors:
             monitor.after_train()
 
-    def before_epoch(self):
+    def _before_epoch(self):
         for monitor in self.monitors:
             monitor.before_epoch()
 
-    def after_epoch(self):
+    def _after_epoch(self):
         for monitor in self.monitors:
             monitor.after_epoch()
 
-    def before_step(self, *args, **kwargs):
+    def _before_step(self, *args, **kwargs):
         for monitor in self.monitors:
             monitor.before_step(*args, **kwargs)
 
-    def after_step(self, *args, **kwargs):
+    def _after_step(self, *args, **kwargs):
         for monitor in self.monitors:
             monitor.after_step(*args, **kwargs)
 
-    def trigger_epoch(self):
+    def _trigger_epoch(self):
         for monitor in self.monitors:
             monitor.trigger_epoch()
 
-    def trigger_step(self):
+    def _trigger_step(self):
         for monitor in self.monitors:
             monitor.trigger_step()
 
-    def trigger(self):
+    def _trigger(self):
         for monitor in self.monitors:
             monitor.trigger()
 
@@ -183,21 +182,21 @@ class TFEventWriter(Monitor):
             logger.warn('logger directory was not set. Ignore TFEventWriter.')
             return Monitor()
 
-    def before_train(self):
+    def _before_train(self):
         self.writer = tf.summary.FileWriter(
             self._logdir, graph=tf.get_default_graph(),
             max_queue=self._max_queue, flush_secs=self._flush_secs)
 
-    def trigger_epoch(self):
+    def _trigger_epoch(self):
         self.trigger()
 
-    def trigger(self):
+    def _trigger(self):
         self.writer.flush()
         if self._split_files:
             self.writer.close()
             self.writer.reopen()
 
-    def after_train(self):
+    def _after_train(self):
         self.writer.close()
 
     def add_summary(self, summary):
@@ -355,24 +354,24 @@ class ScalarPrinter(Monitor):
         self._enable_epoch = trigger_epoch
         self._dic = {}
 
-    def before_train(self):
-        self.trigger()
+    def _before_train(self):
+        self._trigger()
 
-    def trigger_step(self):
+    def _trigger_step(self):
         if self._enable_step:
             if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
                 # not the last step
-                self.trigger()
+                self._trigger()
             else:
                 if not self._enable_epoch:
-                    self.trigger()
+                    self._trigger()
                 # otherwise, will print them together
 
-    def trigger_epoch(self):
+    def _trigger_epoch(self):
         if self._enable_epoch:
-            self.trigger()
+            self._trigger()
 
-    def trigger(self):
+    def _trigger(self):
         # Print stats here
         def match_regex_list(regexs, name):
             for r in regexs:
