@@ -59,7 +59,7 @@ class ModelSaver(Callback):
             self._add_checkpoint(filename)
 
 
-class BestSaver(Callback):
+class MinMaxSaver(Callback):
     """
     Save the model with best value of some statistics.
     """
@@ -108,7 +108,7 @@ class BestSaver(Callback):
         self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, best[1])
 
 
-class MinSaver(BestSaver):
+class MinSaver(MinMaxSaver):
     """
     Save the model with minimum value of some statistics.
     """
@@ -116,7 +116,7 @@ class MinSaver(BestSaver):
     extreme = 'min'
 
 
-class MaxSaver(BestSaver):
+class MaxSaver(MinMaxSaver):
     """
     Save the model with maximum value of some statistics.
     """
