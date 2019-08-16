@@ -3,7 +3,6 @@ import os
 import time
 
 import numpy as np
-import psutil
 import torch
 from six.moves import map, queue
 from tensorpack.utils.concurrency import ensure_proc_terminate, start_proc_mask_signal
@@ -13,7 +12,7 @@ from tensorpack.utils.timer import Timer
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger
 
-__all__ = ['GPUUtilizationTracker', 'HostMemoryTracker', 'ThroughputTracker']
+__all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 
 
 class GPUUtilizationTracker(Callback):
@@ -125,25 +124,6 @@ class GPUUtilizationTracker(Callback):
                     logger.exception("Exception in GPUUtilizationTracker.worker")
                     queue.put(-1)
                     return
-
-
-class HostMemoryTracker(Callback):
-    """
-    Track free RAM on the host.
-    When triggered, it writes the size of free RAM into monitors.
-    """
-    chief_only = False
-
-    def _before_train(self):
-        logger.info("[HostMemoryTracker] Free RAM in before_train() is {:.2f} GB.".format(self._free_ram_gb()))
-
-    def _trigger_epoch(self):
-        ram_gb = self._free_ram_gb()
-        self.trainer.monitors.add_scalar('HostFreeMemory (GB)', ram_gb)
-
-    @staticmethod
-    def _free_ram_gb():
-        return psutil.virtual_memory().available / 1024 ** 3
 
 
 class ThroughputTracker(Callback):
