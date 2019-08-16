@@ -56,7 +56,7 @@ class ModelSaver(Callback):
             logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
         else:
             logger.info('Checkpoint saved: "{}".'.format(filename))
-            self._add_checkpoint(filename)
+        self._add_checkpoint(filename)
 
 
 class BestSaver(Callback):
@@ -104,7 +104,7 @@ class BestSaver(Callback):
                 logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
             else:
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(filename, value))
-                best = (step, value)
+            best = (step, value)
 
         self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, best[1])
 
