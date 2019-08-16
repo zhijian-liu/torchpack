@@ -23,7 +23,7 @@ class Monitor(Callback):
     by processing different types of summary/statistics from trainer.
     """
 
-    chief_only = False
+    master_only = False
 
     def add(self, tag, val):
         pass

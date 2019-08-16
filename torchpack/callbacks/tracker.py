@@ -24,7 +24,7 @@ class GPUUtilizationTracker(Callback):
     This callback creates a process, therefore it's not safe to be used with MPI.
     """
 
-    chief_only = False
+    master_only = False
 
     def __init__(self, devices=None):
         """
@@ -134,7 +134,7 @@ class ThroughputTracker(Callback):
     The time spent on callbacks after each epoch is excluded.
     """
 
-    chief_only = False
+    master_only = False
 
     def __init__(self, samples_per_step=None):
         """

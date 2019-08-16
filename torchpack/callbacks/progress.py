@@ -18,7 +18,7 @@ class ProgressBar(Callback):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
-    chief_only = True
+    master_only = True
 
     def __init__(self, names=None, tqdm_args=None):
         """
@@ -63,7 +63,7 @@ class EstimatedTimeLeft(Callback):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
-    chief_only = True
+    master_only = True
 
     def __init__(self, last_k_epochs=5, estimator=np.mean):
         self.estimator = estimator

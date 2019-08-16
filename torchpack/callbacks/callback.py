@@ -11,7 +11,7 @@ class Callback(object):
     Base class for all callbacks.
     """
 
-    chief_only = False
+    master_only = False
 
     def set_trainer(self, trainer):
         self.trainer = trainer
@@ -21,7 +21,7 @@ class Callback(object):
         pass
 
     def before_train(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._before_train()
 
     def _before_train(self):
@@ -31,7 +31,7 @@ class Callback(object):
         pass
 
     def before_epoch(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._before_epoch()
 
     def _before_epoch(self):
@@ -41,7 +41,7 @@ class Callback(object):
         pass
 
     def before_step(self, *args, **kwargs):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._before_step(*args, **kwargs)
 
     def _before_step(self, *args, **kwargs):
@@ -51,7 +51,7 @@ class Callback(object):
         pass
 
     def after_step(self, *args, **kwargs):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._after_step(*args, **kwargs)
 
     def _after_step(self, *args, **kwargs):
@@ -61,7 +61,7 @@ class Callback(object):
         pass
 
     def trigger_step(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._trigger_step()
 
     def _trigger_step(self):
@@ -71,7 +71,7 @@ class Callback(object):
         pass
 
     def after_epoch(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._after_epoch()
 
     def _after_epoch(self):
@@ -81,7 +81,7 @@ class Callback(object):
         pass
 
     def trigger_epoch(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._trigger_epoch()
 
     def _trigger_epoch(self):
@@ -91,7 +91,7 @@ class Callback(object):
         pass
 
     def trigger(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._trigger()
 
     def _trigger(self):
@@ -103,7 +103,7 @@ class Callback(object):
         pass
 
     def after_train(self):
-        if self.trainer.is_chief or not self.chief_only:
+        if self.trainer.is_master or not self.master_only:
             self._after_train()
 
     def _after_train(self):
