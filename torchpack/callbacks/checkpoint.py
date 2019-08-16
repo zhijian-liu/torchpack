@@ -83,13 +83,13 @@ class BestSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        # todo: switch to `self.key in self.train.monitors`
+        # TODO: switch to `self.key in self.train.monitors`
         try:
             step, value = self.trainer.monitors.get_history(self.key)[-1]
         except (KeyError, IndexError):
             return
 
-        # todo: switch to `self.key + '/' + self.extreme in self.train.monitors`
+        # TODO: switch to `self.key + '/' + self.extreme in self.train.monitors`
         try:
             best = self.trainer.monitors.get_history(self.key + '/' + self.extreme)[-1]
         except (KeyError, IndexError):
