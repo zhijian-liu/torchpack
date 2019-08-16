@@ -113,16 +113,6 @@ class Trainer(object):
     def train(self, dataflow, model,
               callbacks=None, monitors=None,
               steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
-        """
-        Implemented by two lines:
-
-        .. code-block:: python
-
-            self.setup_callbacks(callbacks, monitors)
-            self.main_loop(steps_per_epoch, starting_epoch, max_epoch)
-
-        You can call those methods by yourself to have better control on details if needed.
-        """
         self.dataflow = dataflow
         self.model = model
         steps_per_epoch = steps_per_epoch or len(self.dataflow)

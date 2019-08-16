@@ -1,9 +1,9 @@
-from torchpack.callbacks.inference.inference import InferenceCallback
+from torchpack.callbacks.inference import InferenceCallback
 
-__all__ = ['ClassificationError']
+__all__ = ['ClassificationAcc']
 
 
-class ClassificationError(InferenceCallback):
+class ClassificationAcc(InferenceCallback):
     def __init__(self, k, logits_name='outputs', labels_name='targets', metric_name='validation_error'):
         self.k = k
         self.logits_name = logits_name
@@ -14,9 +14,9 @@ class ClassificationError(InferenceCallback):
         self.num_examples = 0
         self.num_correct = 0
 
-    def _after_step(self, input_dict, output_dict):
+    def _after_step(self, feed_dict, output_dict):
         outputs = output_dict[self.logits_name]
-        targets = input_dict[self.labels_name]
+        targets = feed_dict[self.labels_name]
 
         _, indices = outputs.topk(self.k, 1, True, True)
 

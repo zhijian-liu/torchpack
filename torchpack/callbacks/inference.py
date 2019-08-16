@@ -111,12 +111,11 @@ class InferenceRunner(Callback):
         for callback in callbacks:
             assert isinstance(callback, InferenceCallback), callback
         self.dataflow = dataflow
-        self.callbacks = callbacks
+        self.callbacks = InferenceCallbacks(callbacks)
         self.device = device
 
     def _set_trainer(self, trainer):
         self.device = self.device or trainer.device
-        self.callbacks = InferenceCallbacks(self.callbacks)
         self.callbacks.set_trainer(trainer)
 
     def _trigger_epoch(self):
@@ -129,6 +128,7 @@ class InferenceRunner(Callback):
         self.trainer.model.eval()
         with torch.no_grad():
             for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
+                # todo: maybe move `async_copy_to` to `dataflow`
                 feed_dict = async_copy_to(feed_dict, device=self.device)
 
                 self.callbacks.before_step(feed_dict)

@@ -13,7 +13,7 @@ import tensorflow as tf
 from tensorpack.tfutils.summary import create_image_summary, create_scalar_summary
 
 from torchpack.callbacks.callback import Callback
-from torchpack.utils.logging import logger
+from torchpack.utils.logging import logger, get_logger_dir
 
 __all__ = ['Monitor', 'Monitors', 'TFEventWriter', 'JSONWriter', 'ScalarPrinter']
 
@@ -165,7 +165,7 @@ class TFEventWriter(Monitor):
                 append to a single file. Useful on certain filesystems where append is expensive.
         """
         if logdir is None:
-            logdir = logger.get_logger_dir()
+            logdir = get_logger_dir()
         assert tf.gfile.IsDirectory(logdir), logdir
         self._logdir = logdir
         self._max_queue = max_queue
@@ -174,7 +174,7 @@ class TFEventWriter(Monitor):
 
     def __new__(cls, logdir=None, max_queue=10, flush_secs=120, **kwargs):
         if logdir is None:
-            logdir = logger.get_logger_dir()
+            logdir = get_logger_dir()
 
         if logdir is not None:
             return super(TFEventWriter, cls).__new__(cls)
@@ -218,7 +218,7 @@ class JSONWriter(Monitor):
     """
 
     def __new__(cls):
-        if logger.get_logger_dir():
+        if get_logger_dir():
             return super(JSONWriter, cls).__new__(cls)
         else:
             logger.warn("logger directory was not set. Ignore JSONWriter.")
@@ -230,7 +230,7 @@ class JSONWriter(Monitor):
         Look for an existing json under :meth:`logger.get_logger_dir()` named "stats.json",
         and return the loaded list of statistics if found. Returns None otherwise.
         """
-        dir = logger.get_logger_dir()
+        dir = get_logger_dir()
         fname = os.path.join(dir, JSONWriter.FILENAME)
         if tf.gfile.Exists(fname):
             with open(fname) as f:
@@ -258,7 +258,7 @@ class JSONWriter(Monitor):
         self._last_gs = -1
 
         stats = JSONWriter.load_existing_json()
-        self._fname = os.path.join(logger.get_logger_dir(), JSONWriter.FILENAME)
+        self._fname = os.path.join(get_logger_dir(), JSONWriter.FILENAME)
         if stats is not None:
             try:
                 epoch = stats[-1]['epoch_num'] + 1
@@ -267,9 +267,9 @@ class JSONWriter(Monitor):
 
             # check against the current training settings
             # therefore this logic needs to be in before_train stage
-            starting_epoch = self.trainer.loop.starting_epoch
+            starting_epoch = self.trainer.starting_epoch
             if epoch is None or epoch == starting_epoch:
-                logger.info("Found existing JSON inside {}, will append to it.".format(logger.get_logger_dir()))
+                logger.info("Found existing JSON inside {}, will append to it.".format(get_logger_dir()))
                 self._stats = stats
             else:
                 logger.warning(
@@ -279,10 +279,10 @@ class JSONWriter(Monitor):
                                "or correctly set the new starting_epoch yourself to avoid inconsistency. ")
 
                 backup_fname = JSONWriter.FILENAME + '.' + datetime.now().strftime('%m%d-%H%M%S')
-                backup_fname = os.path.join(logger.get_logger_dir(), backup_fname)
+                backup_fname = os.path.join(get_logger_dir(), backup_fname)
 
                 logger.warn("Now, we will train with starting_epoch={} and backup old json to {}".format(
-                    self.trainer.loop.starting_epoch, backup_fname))
+                    self.trainer.starting_epoch, backup_fname))
                 shutil.move(self._fname, backup_fname)
 
         # in case we have something to log here.
@@ -290,7 +290,7 @@ class JSONWriter(Monitor):
 
     def trigger_step(self):
         # will do this in trigger_epoch
-        if self.local_step != self.trainer.steps_per_epoch - 1:
+        if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
             self.trigger()
 
     def trigger_epoch(self):
@@ -307,19 +307,17 @@ class JSONWriter(Monitor):
 
             self._stats.append(self._stat_now)
             self._stat_now = {}
-            self._write_stat()
 
-    def _write_stat(self):
-        tmp_filename = self._fname + '.tmp'
-        try:
-            with open(tmp_filename, 'w') as f:
-                json.dump(self._stats, f)
-            shutil.move(tmp_filename, self._fname)
-        except IOError:  # disk error sometimes..
-            logger.exception("Exception in JSONWriter._write_stat()!")
+            tmp_filename = self._fname + '.tmp'
+            try:
+                with open(tmp_filename, 'w') as f:
+                    json.dump(self._stats, f)
+                shutil.move(tmp_filename, self._fname)
+            except IOError:  # disk error sometimes..
+                logger.exception("Exception in JSONWriter._write_stat()!")
 
     def add_scalar(self, tag, val):
-        self._stat_now[tag] = val
+        self._stat_now[tag] = float(val)
 
 
 class ScalarPrinter(Monitor):

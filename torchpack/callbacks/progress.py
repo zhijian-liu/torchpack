@@ -26,14 +26,13 @@ class ProgressBar(Callback):
             names(list): list of string, the names of the tensors to monitor
                 on the progress bar.
         """
-        super().__init__()
+        self.tqdm_args = tqdm_args
         self.pbar = None
 
     def _before_train(self):
         self.last_updated = self.trainer.local_step
-
         self.total = self.trainer.steps_per_epoch
-        self.tqdm_args = get_tqdm_kwargs(leave=True)
+        self.tqdm_args = self.tqdm_args or get_tqdm_kwargs(leave=True)
         # self._tqdm_args['bar_format'] = self._tqdm_args['bar_format'] + "{postfix} "
 
     def _before_epoch(self):
@@ -81,4 +80,4 @@ class EstimatedTimeLeft(Callback):
         self.last_time = time.time()
 
         estimated_time = (self.trainer.max_epoch - self.trainer.epoch_num) * self.estimator(self.durations)
-        logger.info('Estimated time left is {}.'.format(humanize_time_delta(estimated_time)))
+        logger.info('Estimated time left: {}.'.format(humanize_time_delta(estimated_time)))
