@@ -4,9 +4,8 @@ import weakref
 
 from tensorpack.utils.utils import humanize_time_delta
 
-from torchpack.callbacks import Monitor, Monitors
-from torchpack.callbacks.callback import Callbacks, Callback
-from torchpack.cuda.copy import async_copy_to
+from torchpack.callbacks.callback import Callback, Callbacks
+from torchpack.callbacks.monitor import Monitor, Monitors
 from torchpack.train.exception import StopTraining
 from torchpack.utils.logging import logger
 
@@ -24,10 +23,7 @@ class Trainer(object):
     Certain callbacks will only be run by chief worker.
     """
 
-    def __init__(self, model, device='cuda'):
-        self.model = model
-        self.device = device
-        self.callbacks = None
+    def __init__(self):
         self.epoch_num = 0
         self.global_step = -1
         self.local_step = -1
@@ -42,17 +38,14 @@ class Trainer(object):
         self.callbacks.set_trainer(weakref.proxy(self))
 
     def run_step(self, feed_dict):
-        self.callbacks.before_step(feed_dict)
-        self._run_step(feed_dict)
-        self.callbacks.after_step()
+        output_dict = self._run_step(feed_dict)
+        return output_dict
 
     def _run_step(self, feed_dict):
         """
         Defines what to do in one iteration.
         """
-        # raise NotImplementedError
-        outputs = self.model(feed_dict)
-        return outputs
+        raise NotImplementedError()
 
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
         """
@@ -62,42 +55,36 @@ class Trainer(object):
             steps_per_epoch, starting_epoch, max_epoch (int):
         """
 
-        self.steps_per_epoch = int(steps_per_epoch)
-        self.starting_epoch = int(starting_epoch)
-        self.max_epoch = int(max_epoch)
-
-        # Allow empty epoch (no steps), if we want to run the callbacks only.
-        assert self.steps_per_epoch >= 0 and self.max_epoch >= 0
-
         self.epoch_num = starting_epoch - 1
         self.global_step = self.epoch_num * self.steps_per_epoch
 
         try:
-            start_train = time.time()
+            train_time = time.time()
             self.callbacks.before_train()
 
             for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
                 logger.info('Epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
 
-                start_epoch = time.time()
+                epoch_time = time.time()
                 self.callbacks.before_epoch()
 
-                self.model.train()
                 for self.local_step, feed_dict in enumerate(self.dataflow):
-                    feed_dict = async_copy_to(feed_dict, device=self.device)
-
                     self.global_step += 1
-                    self.run_step(feed_dict)
+
+                    self.callbacks.before_step(feed_dict)
+                    output_dict = self.run_step(feed_dict)
+                    self.callbacks.after_step(feed_dict, output_dict)
+
                     self.callbacks.trigger_step()
 
                 self.callbacks.after_epoch()
-                logger.info('Training finished in {}.'.format(humanize_time_delta(time.time() - start_epoch)))
+                logger.info('Training finished in {}.'.format(humanize_time_delta(time.time() - epoch_time)))
 
                 self.callbacks.trigger_epoch()
-                logger.info('Epoch finished in {}.'.format(humanize_time_delta(time.time() - start_epoch)))
+                logger.info('Epoch finished in {}.'.format(humanize_time_delta(time.time() - epoch_time)))
 
             logger.info('{} epochs of training finished in {}.'.format(self.max_epoch - self.starting_epoch + 1,
-                                                                       humanize_time_delta(time.time() - start_train)))
+                                                                       humanize_time_delta(time.time() - train_time)))
         except StopTraining as e:
             logger.info('Training was stopped by {}.'.format(str(e)))
         except KeyboardInterrupt:
@@ -113,17 +100,21 @@ class Trainer(object):
 
     def train(self, dataflow,
               callbacks=None, monitors=None,
-              steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
+              starting_epoch=1, max_epoch=9999999):
         self.dataflow = dataflow
-        steps_per_epoch = steps_per_epoch or len(self.dataflow)
         self.set_callbacks(callbacks, monitors)
-        self.main_loop(steps_per_epoch, starting_epoch, max_epoch)
+
+        self.steps_per_epoch = len(self.dataflow)
+        self.starting_epoch = starting_epoch
+        self.max_epoch = max_epoch
+
+        self.main_loop(self.steps_per_epoch, self.starting_epoch, self.max_epoch)
 
     def state_dict(self):
-        return dict(model=self.model.state_dict())
+        return dict()
 
     def load_state_dict(self, state_dict):
-        self.model.load_state_dict(state_dict['model'])
+        pass
 
     def __new__(cls, *args, **kwargs):
         return super(Trainer, cls).__new__(cls)

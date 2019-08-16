@@ -107,15 +107,14 @@ class InferenceRunner(Callback):
     A callback that runs inference with a list of :class:`InferenceCallback`.
     """
 
-    def __init__(self, dataflow, callbacks, device=None):
+    def __init__(self, dataflow, callbacks):
         for callback in callbacks:
             assert isinstance(callback, InferenceCallback), callback
+        self.callbacks = callbacks
         self.dataflow = dataflow
-        self.callbacks = InferenceCallbacks(callbacks)
-        self.device = device
 
     def _set_trainer(self, trainer):
-        self.device = self.device or trainer.device
+        self.callbacks = InferenceCallbacks(self.callbacks)
         self.callbacks.set_trainer(trainer)
 
     def _trigger_epoch(self):
@@ -125,14 +124,10 @@ class InferenceRunner(Callback):
         start_time = time.time()
         self.callbacks.before_inference()
 
-        self.trainer.model.eval()
         with torch.no_grad():
             for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
-                # todo: maybe move `async_copy_to` to `dataflow`
-                feed_dict = async_copy_to(feed_dict, device=self.device)
-
                 self.callbacks.before_step(feed_dict)
-                output_dict = self.trainer.model(feed_dict)
+                output_dict = self.trainer.run_step(feed_dict)
                 self.callbacks.after_step(feed_dict, output_dict)
 
         self.callbacks.after_inference()
