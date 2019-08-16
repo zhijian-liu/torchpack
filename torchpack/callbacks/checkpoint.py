@@ -18,8 +18,8 @@ class ModelSaver(Callback):
     def __init__(self, max_to_keep=10, checkpoint_dir=None):
         """
         Args:
-            checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
             max_to_keep (int): Maximum number of recent checkpoint files to keep.
+            checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
         """
         if checkpoint_dir is None:
             checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
@@ -31,7 +31,7 @@ class ModelSaver(Callback):
 
     def _add_checkpoint(self, filename):
         heapq.heappush(self.checkpoints, (os.path.getmtime(filename), filename))
-        while len(self.checkpoints) > self.max_to_keep:
+        while self.max_to_keep is not None and len(self.checkpoints) > self.max_to_keep:
             filename = heapq.heappop(self.checkpoints)[1]
             try:
                 os.remove(filename)
