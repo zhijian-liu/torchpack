@@ -24,7 +24,8 @@ class Trainer(object):
     Certain callbacks will only be run by chief worker.
     """
 
-    def __init__(self, device='cuda'):
+    def __init__(self, model, device='cuda'):
+        self.model = model
         self.device = device
         self.callbacks = None
         self.epoch_num = 0
@@ -110,11 +111,10 @@ class Trainer(object):
                 except Exception:
                     traceback.print_exc()
 
-    def train(self, dataflow, model,
+    def train(self, dataflow,
               callbacks=None, monitors=None,
               steps_per_epoch=None, starting_epoch=1, max_epoch=9999999):
         self.dataflow = dataflow
-        self.model = model
         steps_per_epoch = steps_per_epoch or len(self.dataflow)
         self.set_callbacks(callbacks, monitors)
         self.main_loop(steps_per_epoch, starting_epoch, max_epoch)
