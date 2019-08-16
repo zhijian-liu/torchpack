@@ -59,49 +59,44 @@ class ModelSaver(Callback):
             self._add_checkpoint(filename)
 
 
-class MinSaver(Callback):
+class BestSaver(Callback):
     """
-    Separately save the model with minimum value of some statistics.
+    Save the model with best value of some statistics.
     """
 
-    def __init__(self, key, reverse=False, checkpoint_dir=None, filename=None):
+    def __init__(self, key, checkpoint_dir=None, filename=None):
         """
         Args:
             key(str): the name of the statistics.
-            reverse (bool): if True, will save the maximum.
             checkpoint_dir (str): the directory containing checkpoints.
             filename (str): the name for the saved model. Defaults to ``{key}-min.pth``.
         """
+        self.key = key
         if checkpoint_dir is None:
             checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
         checkpoint_dir = os.path.normpath(checkpoint_dir)
         os.makedirs(checkpoint_dir, exist_ok=True)
         self.checkpoint_dir = checkpoint_dir
         if filename is None:
-            filename = '{}-{}.pth'.format(key.replace('/', '-'), 'max' if reverse else 'min')
+            filename = '{}-{}.pth'.format(key.replace('/', '-'), self.extreme)
         self.filename = filename
-        self.reverse = reverse
-        self.key = key
-        self.best = None
-
-    def _before_train(self):
-        # todo: fetch best values from current checkpoint (resume)
-        pass
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
         try:
+            self.best = self.trainer.monitors.get_history(self.key + '/' + self.extreme)[-1]
+        except (KeyError, IndexError):
+            self.best = None
+
+        try:
             step, value = self.trainer.monitors.get_history(self.key)[-1]
         except (KeyError, IndexError):
             return
 
-        if step != self.trainer.global_step:
-            # todo: add warning that saver is skipped.
-            return
-
-        if self.best is None or (value > self.best[1] if self.reverse else value < self.best[1]):
+        if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
+                (self.extreme == 'max' and value > self.best[1]):
             filename = os.path.join(self.checkpoint_dir, self.filename)
             try:
                 torch.save(self.trainer.state_dict(), filename)
@@ -111,20 +106,20 @@ class MinSaver(Callback):
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(filename, value))
                 self.best = (step, value)
 
-        self.trainer.monitors.add_scalar(self.key + '/' + 'max' if self.reverse else 'min', self.best[1])
+        self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
 
-class MaxSaver(MinSaver):
+class MinSaver(BestSaver):
     """
-    Separately save the model with maximum value of some statistics.
-    See docs of :class:`MinSaver` for details.
+    Save the model with minimum value of some statistics.
     """
 
-    def __init__(self, key, filename=None, checkpoint_dir=None):
-        """
-        Args:
-            key(str): the name of the statistics.
-            filename (str): the name for the saved model.
-                Defaults to ``max-{monitor_stat}.pth``.
-        """
-        super(MaxSaver, self).__init__(key, True, filename=filename, checkpoint_dir=checkpoint_dir)
+    extreme = 'min'
+
+
+class MaxSaver(BestSaver):
+    """
+    Save the model with maximum value of some statistics.
+    """
+
+    extreme = 'max'
