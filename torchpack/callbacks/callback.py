@@ -122,7 +122,7 @@ class LambdaCallback(Callback):
     """
 
     def __init__(self, before_train=None, before_epoch=None, before_step=None, after_step=None, trigger_step=None,
-                 after_epoch=None, trigger_epoch=None, trigger=None, after_train=None, chief_only=False):
+                 after_epoch=None, trigger_epoch=None, trigger=None, after_train=None, master_only=False):
         self.before_train_func = before_train
         self.before_epoch_func = before_epoch
         self.before_step_func = before_step
@@ -132,7 +132,7 @@ class LambdaCallback(Callback):
         self.trigger_epoch_func = trigger_epoch
         self.trigger_func = trigger
         self.after_train_func = after_train
-        self.chief_only = chief_only
+        self.master_only = master_only
 
     def _before_train(self):
         if self.before_train_func:
