@@ -86,17 +86,16 @@ class BestSaver(Callback):
 
     def _trigger(self):
         try:
-            self.best = self.trainer.monitors.get_history(self.key + '/' + self.extreme)[-1]
-        except (KeyError, IndexError):
-            self.best = None
-
-        try:
             step, value = self.trainer.monitors.get_history(self.key)[-1]
         except (KeyError, IndexError):
             return
 
-        if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
-                (self.extreme == 'max' and value > self.best[1]):
+        try:
+            best = self.trainer.monitors.get_history(self.key + '/' + self.extreme)[-1]
+        except (KeyError, IndexError):
+            best = None
+
+        if best is None or (self.extreme == 'min' and value < best[1]) or (self.extreme == 'max' and value > best[1]):
             filename = os.path.join(self.checkpoint_dir, self.filename)
             try:
                 torch.save(self.trainer.state_dict(), filename)
@@ -104,7 +103,6 @@ class BestSaver(Callback):
                 logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
             else:
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(filename, value))
-                self.best = (step, value)
 
         self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
