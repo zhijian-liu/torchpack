@@ -83,13 +83,13 @@ class BestSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        # TODO: switch to `self.key in self.train.monitors`
+        # TODO: `self.key in self.train.monitors`
         try:
             step, value = self.trainer.monitors.get_history(self.key)[-1]
         except (KeyError, IndexError):
             return
 
-        # TODO: switch to `self.key + '/' + self.extreme in self.train.monitors`
+        # TODO: `self.key + '/' + self.extreme in self.train.monitors`
         try:
             best = self.trainer.monitors.get_history(self.key + '/' + self.extreme)[-1]
         except (KeyError, IndexError):
@@ -106,7 +106,8 @@ class BestSaver(Callback):
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(filename, value))
                 best = (step, value)
 
-        self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, best[1])
+        if best is not None:
+            self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, best[1])
 
 
 class MinSaver(BestSaver):
