@@ -7,12 +7,12 @@ import torch
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
 
-__all__ = ['ModelSaver', 'MinSaver', 'MaxSaver']
+__all__ = ['Saver', 'MinSaver', 'MaxSaver']
 
 
-class ModelSaver(Callback):
+class Saver(Callback):
     """
-    Save the trainer's state dict once triggered.
+    Save the checkpoint once triggered.
     """
 
     def __init__(self, max_to_keep=10, checkpoint_dir=None):
