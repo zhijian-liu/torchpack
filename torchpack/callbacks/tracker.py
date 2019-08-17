@@ -34,26 +34,26 @@ class GPUUtilizationTracker(Callback):
         if devices is not None:
             self.devices = devices
         else:
-            env = os.environ['CUDA_VISIBLE_DEVICES']
+            env = os.environ.get('CUDA_VISIBLE_DEVICES')
             if env:
                 self.devices = list(map(int, env.split(',')))
             elif env is None:
                 self.devices = list(range(torch.cuda.device_count()))
                 if len(self.devices) > 1:
-                    logger.warning('Both `devices` and `CUDA_VISIBLE_DEVICES` are None! '
+                    logger.warning('Neither `devices` nor `CUDA_VISIBLE_DEVICES` is set! '
                                    'All {} visible GPUs will be monitored.'.format(len(self.devices)))
             else:
                 raise RuntimeError('No GPU device is specified!')
 
     @staticmethod
-    def _worker(queue, event, stop_event, devices):
+    def _worker(devices, event, stop_event, queue):
         with NVMLContext() as ctx:
             devices = [ctx.device(i) for i in devices]
             while True:
                 try:
-                    event.wait()  # start epoch
+                    event.wait()
                     event.clear()
-                    if stop_event.is_set():  # or on exit
+                    if stop_event.is_set():
                         return
 
                     count = 0
@@ -66,12 +66,11 @@ class GPUUtilizationTracker(Callback):
                         count += 1
                         stats += data
 
-                        if event.is_set():  # stop epoch
-                            if stop_event.is_set():  # or on exit
-                                return
+                        if event.is_set():
                             event.clear()
+                            if stop_event.is_set():
+                                return
                             if count > 1:
-                                # Ignore the last datapoint. Usually is zero, makes us underestimate the util.
                                 count -= 1
                                 stats -= data
                             queue.put(stats / count)
@@ -82,10 +81,10 @@ class GPUUtilizationTracker(Callback):
                     return
 
     def _before_train(self):
-        self.queue = mp.Queue()
         self.event = mp.Event()
         self.stop_event = mp.Event()
-        self.process = mp.Process(target=self._worker, args=(self.queue, self.event, self.stop_event, self.devices))
+        self.queue = mp.Queue()
+        self.process = mp.Process(target=self._worker, args=(self.devices, self.event, self.stop_event, self.queue))
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
@@ -133,23 +132,12 @@ class ThroughputTracker(Callback):
     def __init__(self, samples_per_step=None):
         """
         Args:
-            samples_per_step (int or None): total number of samples processed in each step
-                (i.e., your total batch size in each step).
+            samples_per_step: total number of samples processed in each step.
                 If not provided, this callback will record "steps/sec" instead of "samples/sec".
         """
         self.samples_per_step = samples_per_step
         self.timer = Timer()
         self.timer.pause()
-
-    # only include the time between before_epoch/after_epoch
-    def _before_epoch(self):
-        self.timer.resume()
-
-    def _after_epoch(self):
-        self.timer.pause()
-
-    def _before_train(self):
-        self._update_last()
 
     def _update_last(self):
         old_pause = self.timer.is_paused()
@@ -157,6 +145,15 @@ class ThroughputTracker(Callback):
         if old_pause:
             self.timer.pause()
         self.last_step = self.trainer.global_step
+
+    def _before_train(self):
+        self._update_last()
+
+    def _before_epoch(self):
+        self.timer.resume()
+
+    def _after_epoch(self):
+        self.timer.pause()
 
     def _trigger_epoch(self):
         steps_per_sec = (self.trainer.global_step - self.last_step) / self.timer.seconds()
