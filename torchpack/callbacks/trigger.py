@@ -22,12 +22,12 @@ class PeriodicTrigger(ProxyCallback):
         self.every_k_epochs = every_k_epochs
         self.every_k_steps = every_k_steps
 
-    def _trigger_step(self):
-        if self.every_k_steps is not None and self.trainer.global_step % self.every_k_steps == 0:
-            self.callback.trigger()
-
     def _trigger_epoch(self):
         if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
+            self.callback.trigger()
+
+    def _trigger_step(self):
+        if self.every_k_steps is not None and self.trainer.global_step % self.every_k_steps == 0:
             self.callback.trigger()
 
     def __str__(self):
