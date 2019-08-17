@@ -18,10 +18,9 @@ __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 
 class GPUUtilizationTracker(Callback):
     """
-    Summarize the average GPU utilization within an epoch.
-    It will start a process to obtain GPU utilization through NVML every second
-    within the epoch (the trigger_epoch time was not included),
-    and write the average GPU utilization to monitors.
+    Track the average GPU utilization within an epoch.
+    It will start a process to track GPU utilization through NVML every second
+    within the epoch (the `trigger_epoch` time is not included).
     This callback creates a process, therefore it's not safe to be used with MPI.
     """
 
