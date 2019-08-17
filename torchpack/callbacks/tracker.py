@@ -10,6 +10,7 @@ from tensorpack.utils.nvml import NVMLContext
 from tensorpack.utils.timer import Timer
 
 from torchpack.callbacks.callback import Callback
+from torchpack.train.exception import StopTraining
 from torchpack.utils.logging import logger
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
@@ -29,7 +30,7 @@ class GPUUtilizationTracker(Callback):
     def __init__(self, devices=None):
         """
         Args:
-            devices (list[int]): physical GPU ids. If None, will use CUDA_VISIBLE_DEVICES
+            devices (list[int]): physical GPU IDs. If None, will use CUDA_VISIBLE_DEVICES
         """
         if devices is None:
             env = os.environ.get('CUDA_VISIBLE_DEVICES')
@@ -50,8 +51,7 @@ class GPUUtilizationTracker(Callback):
         self.event = mp.Event()
         self.stop_event = mp.Event()
         self.queue = mp.Queue()
-        self.process = mp.Process(target=self.worker, args=(
-            self.event, self.queue, self.stop_event, self.devices))
+        self.process = mp.Process(target=self.worker, args=(self.event, self.queue, self.stop_event, self.devices))
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
@@ -73,7 +73,6 @@ class GPUUtilizationTracker(Callback):
                 raise RuntimeError("GPUUtilization.worker() process is killed unexpectedly.")
 
         if isinstance(results, int) and results == -1:
-            from torchpack.train.exception import StopTraining
             raise StopTraining("GPUUtilizationTracker.worker has failed.")
 
         self.trainer.monitors.add_scalar('utilization/gpu', np.mean(results))
@@ -87,10 +86,6 @@ class GPUUtilizationTracker(Callback):
 
     @staticmethod
     def worker(event, queue, stop_event, devices):
-        """
-        Args:
-            devices (list[int])
-        """
         with NVMLContext() as ctx:
             devices = [ctx.device(i) for i in devices]
             while True:
