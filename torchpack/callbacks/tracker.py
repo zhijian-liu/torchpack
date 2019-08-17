@@ -1,10 +1,10 @@
 import multiprocessing as mp
 import os
+import queue
 import time
 
 import numpy as np
 import torch
-from six.moves import map, queue
 from tensorpack.utils.concurrency import ensure_proc_terminate, start_proc_mask_signal
 from tensorpack.utils.nvml import NVMLContext
 from tensorpack.utils.timer import Timer
@@ -21,7 +21,7 @@ class GPUUtilizationTracker(Callback):
     Summarize the average GPU utilization within an epoch.
     It will start a process to obtain GPU utilization through NVML every second
     within the epoch (the trigger_epoch time was not included),
-    and write average utilization to monitors.
+    and write the average GPU utilization to monitors.
     This callback creates a process, therefore it's not safe to be used with MPI.
     """
 
@@ -30,62 +30,24 @@ class GPUUtilizationTracker(Callback):
     def __init__(self, devices=None):
         """
         Args:
-            devices (list[int]): physical GPU IDs. If None, will use CUDA_VISIBLE_DEVICES
+            devices: list of physical GPU IDs. If None, will use CUDA_VISIBLE_DEVICES.
         """
-        if devices is None:
-            env = os.environ.get('CUDA_VISIBLE_DEVICES')
-            if env is None:
+        if devices is not None:
+            self.devices = devices
+        else:
+            env = os.environ['CUDA_VISIBLE_DEVICES']
+            if env:
+                self.devices = list(map(int, env.split(',')))
+            elif env is None:
                 self.devices = list(range(torch.cuda.device_count()))
                 if len(self.devices) > 1:
-                    logger.warning('Both devices and CUDA_VISIBLE_DEVICES are None! '
-                                   'Will monitor all {} visible GPUs!'.format(len(self.devices)))
-            elif env:
-                self.devices = list(map(int, env.split(',')))
+                    logger.warning('Both `devices` and `CUDA_VISIBLE_DEVICES` are None! '
+                                   'All {} visible GPUs will be monitored.'.format(len(self.devices)))
             else:
-                self.devices = []
-        else:
-            self.devices = devices
-        assert len(self.devices), 'No GPU device is given!'
-
-    def _before_train(self):
-        self.event = mp.Event()
-        self.stop_event = mp.Event()
-        self.queue = mp.Queue()
-        self.process = mp.Process(target=self.worker, args=(self.event, self.queue, self.stop_event, self.devices))
-        ensure_proc_terminate(self.process)
-        start_proc_mask_signal(self.process)
-
-    def _before_epoch(self):
-        self.event.set()
-
-    def _after_epoch(self):
-        while self.event.is_set():  # unlikely, unless the epoch is extremely fast
-            pass
-        self.event.set()
-
-    def _trigger_epoch(self):
-        try:
-            results = self.queue.get(timeout=60)
-        except queue.Empty:
-            if self.process.is_alive():
-                raise RuntimeError("GPUUtilization.worker() is stuck. This is a bug.")
-            else:
-                raise RuntimeError("GPUUtilization.worker() process is killed unexpectedly.")
-
-        if isinstance(results, int) and results == -1:
-            raise StopTraining("GPUUtilizationTracker.worker has failed.")
-
-        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(results))
-        for k, device in enumerate(self.devices):
-            self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), results[k])
-
-    def _after_train(self):
-        self.stop_event.set()
-        self.event.set()
-        self.process.terminate()
+                raise RuntimeError('No GPU device is specified!')
 
     @staticmethod
-    def worker(event, queue, stop_event, devices):
+    def _worker(queue, event, stop_event, devices):
         with NVMLContext() as ctx:
             devices = [ctx.device(i) for i in devices]
             while True:
@@ -95,30 +57,68 @@ class GPUUtilizationTracker(Callback):
                     if stop_event.is_set():  # or on exit
                         return
 
+                    count = 0
                     stats = np.zeros((len(devices),), dtype='f4')
-                    cnt = 0
                     while True:
                         time.sleep(1)
 
-                        data = [d.utilization()['gpu'] for d in devices]
+                        data = [device.utilization()['gpu'] for device in devices]
                         data = list(map(float, data))
+                        count += 1
                         stats += data
-                        cnt += 1
 
                         if event.is_set():  # stop epoch
                             if stop_event.is_set():  # or on exit
                                 return
                             event.clear()
-                            if cnt > 1:
+                            if count > 1:
                                 # Ignore the last datapoint. Usually is zero, makes us underestimate the util.
+                                count -= 1
                                 stats -= data
-                                cnt -= 1
-                            queue.put(stats / cnt)
+                            queue.put(stats / count)
                             break
                 except Exception:
-                    logger.exception("Exception in GPUUtilizationTracker.worker")
+                    logger.exception('Error occurred in worker.')
                     queue.put(-1)
                     return
+
+    def _before_train(self):
+        self.queue = mp.Queue()
+        self.event = mp.Event()
+        self.stop_event = mp.Event()
+        self.process = mp.Process(target=self._worker, args=(self.queue, self.event, self.stop_event, self.devices))
+        ensure_proc_terminate(self.process)
+        start_proc_mask_signal(self.process)
+
+    def _before_epoch(self):
+        self.event.set()
+
+    def _after_epoch(self):
+        while self.event.is_set():
+            pass
+        self.event.set()
+
+    def _trigger_epoch(self):
+        try:
+            results = self.queue.get(timeout=60)
+        except queue.Empty:
+            if self.process.is_alive():
+                raise RuntimeError('Worker stuck. This is a bug!')
+            else:
+                raise RuntimeError('Worker is killed unexpectedly!')
+
+        if isinstance(results, int) and results == -1:
+            raise StopTraining('Worker has failed!')
+
+        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(results))
+        if len(self.devices) > 1:
+            for k, device in enumerate(self.devices):
+                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), results[k])
+
+    def _after_train(self):
+        self.stop_event.set()
+        self.event.set()
+        self.process.terminate()
 
 
 class ThroughputTracker(Callback):
@@ -166,4 +166,4 @@ class ThroughputTracker(Callback):
         if self.samples_per_step is None:
             self.trainer.monitors.add_scalar('throughput', steps_per_sec)
         else:
-            self.trainer.monitors.add_scalar("Throughput (samples/sec)", steps_per_sec * self.samples_per_step)
+            self.trainer.monitors.add_scalar('throughput', steps_per_sec * self.samples_per_step)
