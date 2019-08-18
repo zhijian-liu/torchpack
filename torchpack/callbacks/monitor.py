@@ -7,8 +7,7 @@ from collections import defaultdict
 from datetime import datetime
 
 import numpy as np
-from tensorboardX import FileWriter
-from tensorboardX.summary import scalar, image
+from tensorboardX import SummaryWriter
 
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
@@ -22,32 +21,32 @@ class Monitor(Callback):
     by processing different types of summary/statistics from trainer.
     """
 
-    master_only = False
+    master_only = True
 
-    def add_scalar(self, name, val):
-        if isinstance(val, np.integer):
-            val = int(val)
-        if isinstance(val, np.floating):
-            val = float(val)
-        self._add_scalar(name, val)
+    def add_scalar(self, name, scalar):
+        if isinstance(scalar, np.integer):
+            scalar = int(scalar)
+        if isinstance(scalar, np.floating):
+            scalar = float(scalar)
+        self._add_scalar(name, scalar)
 
-    def _add_scalar(self, name, val):
+    def _add_scalar(self, name, scalar):
         pass
 
-    def add_image(self, name, val):
-        assert isinstance(val, np.ndarray), type(val)
-        # TODO: double check whether transform is correct
-        if val.ndim == 2:
-            val = val[np.newaxis, :, :, np.newaxis]
-        elif val.ndim == 3:
-            if val.shape[-1] in [1, 3, 4]:
-                val = val[np.newaxis, ...]
+    def add_image(self, name, tensor):
+        assert isinstance(tensor, np.ndarray), type(tensor)
+        if tensor.ndim == 2:
+            tensor = tensor[np.newaxis, :, :, np.newaxis]
+        elif tensor.ndim == 3:
+            # TODO: check whether the transform is correct
+            if tensor.shape[-1] in [1, 3, 4]:
+                tensor = tensor[np.newaxis, ...]
             else:
-                val = val[..., np.newaxis]
-        assert val.ndim == 4, val.shape
-        self._add_image(name, val)
+                tensor = tensor[..., np.newaxis]
+        assert tensor.ndim == 4, tensor.shape
+        self._add_image(name, tensor)
 
-    def _add_image(self, name, val):
+    def _add_image(self, name, tensor):
         pass
 
 
@@ -102,14 +101,14 @@ class Monitors(Monitor):
         for monitor in self.monitors:
             monitor.trigger()
 
-    def _add_scalar(self, name, val):
-        self.scalars[name].append((self.trainer.global_step, val))
+    def _add_scalar(self, name, scalar):
+        self.scalars[name].append((self.trainer.global_step, scalar))
         for monitor in self.monitors:
-            monitor.add_scalar(name, val)
+            monitor.add_scalar(name, scalar)
 
-    def _add_image(self, name, val):
+    def _add_image(self, name, tensor):
         for monitor in self.monitors:
-            monitor.add_image(name, val)
+            monitor.add_image(name, tensor)
 
     def get_latest(self, name):
         return self.scalars[name][-1][1]
@@ -123,38 +122,22 @@ class TFEventWriter(Monitor):
     Write summaries to TensorFlow event file.
     """
 
-    def __init__(self, logdir=None, max_queue=10, flush_secs=120):
-        """
-        Args:
-            logdir: ``logger.get_logger_dir()`` by default.
-            max_queue, flush_secs: Same as in :class:`tf.summary.FileWriter`.
-        """
+    def __init__(self, logdir=None):
         if logdir is None:
             logdir = get_logger_dir()
         self.logdir = logdir
-        self.max_queue = max_queue
-        self.flush_secs = flush_secs
 
     def _before_train(self):
-        self.writer = FileWriter(self.logdir, max_queue=self.max_queue, flush_secs=self.flush_secs)
+        self.writer = SummaryWriter(self.logdir)
 
-    def _trigger_epoch(self):
-        self._trigger()
+    def _add_scalar(self, name, scalar):
+        self.writer.add_scalar(name, scalar, self.trainer.global_step)
 
-    def _trigger(self):
-        self.writer.flush()
+    def _add_image(self, name, tensor):
+        self.writer.add_image(name, tensor, self.trainer.global_step)
 
     def _after_train(self):
         self.writer.close()
-
-    def _add_summary(self, summary):
-        self.writer.add_summary(summary, self.trainer.global_step)
-
-    def _add_scalar(self, name, val):
-        self._add_summary(scalar(name, val))
-
-    def _add_image(self, name, val):
-        self._add_summary(image(name, val))
 
 
 class JSONWriter(Monitor):
@@ -193,9 +176,8 @@ class JSONWriter(Monitor):
             return None
 
     def _before_train(self):
-        self._stats = []
-        self._stat_now = {}
-        self._last_gs = -1
+        self.records = []
+        self.record = dict()
 
         stats = JSONWriter.load_existing_json()
         self._fname = os.path.join(get_logger_dir(), JSONWriter.FILENAME)
@@ -210,7 +192,7 @@ class JSONWriter(Monitor):
             starting_epoch = self.trainer.starting_epoch
             if epoch is None or epoch == starting_epoch:
                 logger.info("Found existing JSON inside {}, will append to it.".format(get_logger_dir()))
-                self._stats = stats
+                self.records = stats
             else:
                 logger.warning(
                     "History epoch={} from JSON is not the predecessor of the current starting_epoch={}".format(
@@ -237,23 +219,23 @@ class JSONWriter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        if len(self._stat_now):
-            self._stat_now['epoch_num'] = self.trainer.epoch_num
-            self._stat_now['global_step'] = self.trainer.global_step
+        if len(self.record):
+            self.record['epoch_num'] = self.trainer.epoch_num
+            self.record['global_step'] = self.trainer.global_step
 
-            self._stats.append(self._stat_now)
-            self._stat_now = {}
+            self.records.append(self.record)
+            self.record = dict()
 
             tmp_filename = self._fname + '.tmp'
             try:
                 with open(tmp_filename, 'w') as f:
-                    json.dump(self._stats, f)
+                    json.dump(self.records, f)
                 shutil.move(tmp_filename, self._fname)
             except IOError:
                 logger.exception("Exception in JSONWriter._write_stat()!")
 
-    def _add_scalar(self, name, val):
-        self._stat_now[name] = val
+    def _add_scalar(self, name, scalar):
+        self.record[name] = scalar
 
 
 class ScalarPrinter(Monitor):
@@ -320,5 +302,5 @@ class ScalarPrinter(Monitor):
 
         self._dic = {}
 
-    def _add_scalar(self, name, val):
-        self._dic[name] = val
+    def _add_scalar(self, name, scalar):
+        self._dic[name] = scalar
