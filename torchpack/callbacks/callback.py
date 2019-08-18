@@ -177,7 +177,7 @@ class ProxyCallback(Callback):
     """
 
     def __init__(self, callback):
-        assert isinstance(callback, Callback), callback
+        assert isinstance(callback, Callback), type(callback)
         self.callback = callback
 
     def _set_trainer(self, trainer):
@@ -221,7 +221,7 @@ class Callbacks(Callback):
 
     def __init__(self, callbacks):
         for callback in callbacks:
-            assert isinstance(callback, Callback), callback
+            assert isinstance(callback, Callback), type(callback)
         self.callbacks = callbacks
 
     def _set_trainer(self, trainer):
