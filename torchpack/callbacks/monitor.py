@@ -3,14 +3,12 @@ import operator
 import os
 import re
 import shutil
-import time
 from collections import defaultdict
 from datetime import datetime
 
 import numpy as np
-import six
-import tensorflow as tf
-from tensorpack.tfutils.summary import create_image_summary, create_scalar_summary
+from tensorboardX import FileWriter
+from tensorboardX.summary import scalar, image
 
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
@@ -19,22 +17,43 @@ __all__ = ['Monitor', 'Monitors', 'TFEventWriter', 'JSONWriter', 'ScalarPrinter'
 
 
 class Monitor(Callback):
-    """ Base class for monitors which monitor a training progress,
+    """
+    Base class for monitors which monitor a training progress,
     by processing different types of summary/statistics from trainer.
     """
 
     master_only = False
 
-    def add(self, tag, val):
-        pass
+    def add_scalar(self, name, val):
+        if isinstance(val, np.integer):
+            val = int(val)
+        if isinstance(val, np.floating):
+            val = float(val)
 
-    def add_scalar(self, tag, val):
+        self._add_scalar(name, val)
+
+    def _add_scalar(self, name, val):
         pass
 
     def add_image(self, name, val):
+        assert isinstance(val, np.ndarray), type(val)
+
+        # todo: double check whether transform is correct
+        if val.ndim == 2:
+            val = val[np.newaxis, :, :, np.newaxis]
+        elif val.ndim == 3:
+            if val.shape[-1] in [1, 3, 4]:
+                val = val[np.newaxis, ...]
+            else:
+                val = val[..., np.newaxis]
+        assert val.ndim == 4, val.shape
+
+        self._add_image(name, val)
+
+    def _add_image(self, name, val):
         pass
 
-    def add_summary(self, summary):
+    def _add_summary(self, summary):
         pass
 
     def add_event(self, event):
@@ -42,7 +61,8 @@ class Monitor(Callback):
 
 
 class Monitors(Monitor):
-    """ A container to hold all monitors.
+    """
+    A container to hold all monitors.
     """
 
     def __init__(self, monitors):
@@ -91,59 +111,14 @@ class Monitors(Monitor):
         for monitor in self.monitors:
             monitor.trigger()
 
-    def add(self, tag, val):
+    def _add_scalar(self, name, val):
+        self.scalars[name].append((self.trainer.global_step, val))
         for monitor in self.monitors:
-            monitor.add(tag, val)
+            monitor.add_scalar(name, val)
 
-    def add_scalar(self, tag, val):
-        if isinstance(val, np.integer):
-            val = int(val)
-        if isinstance(val, np.floating):
-            val = float(val)
-
-        self.scalars[tag].append((self.trainer.global_step, val))
-
-        summary = create_scalar_summary(tag, val)
-        for monitor in self.monitors:
-            monitor.add_scalar(tag, val)
-            monitor.add_summary(summary)
-
-    def add_image(self, tag, val):
-        assert isinstance(val, np.ndarray), type(val)
-
-        # todo: double check whether transform is correct
-        if val.ndim == 2:
-            val = val[np.newaxis, :, :, np.newaxis]
-        elif val.ndim == 3:
-            if val.shape[-1] in [1, 3, 4]:
-                val = val[np.newaxis, ...]
-            else:
-                val = val[..., np.newaxis]
-        assert val.ndim == 4, val.shape
-
-        summary = create_image_summary(tag, val)
+    def _add_image(self, tag, val):
         for monitor in self.monitors:
             monitor.add_image(tag, val)
-            monitor.add_summary(summary)
-
-    def add_summary(self, summary):
-        if isinstance(summary, six.binary_type):
-            summary = tf.Summary.FromString(summary)
-        assert isinstance(summary, tf.Summary), type(summary)
-
-        for val in summary.value:
-            if val.WhichOneof('value') == 'simple_value':
-                for monitor in self.monitors:
-                    monitor.add_scalar(val.tag, val.simple_value)
-
-        for monitor in self.monitors:
-            monitor.add_summary(summary)
-
-    def add_event(self, event):
-        event.step = self.global_step
-        event.wall_time = time.time()
-        for monitor in self.monitors:
-            monitor.add_event(event)
 
     def get_latest(self, name):
         return self.scalars[name][-1][1]
@@ -153,57 +128,42 @@ class Monitors(Monitor):
 
 
 class TFEventWriter(Monitor):
-    """ Write summaries to TensorFlow event file.
+    """
+    Write summaries to TensorFlow event file.
     """
 
-    def __init__(self, logdir=None, max_queue=10, flush_secs=120, split_files=False):
+    def __init__(self, logdir=None, max_queue=10, flush_secs=120):
         """
         Args:
             logdir: ``logger.get_logger_dir()`` by default.
             max_queue, flush_secs: Same as in :class:`tf.summary.FileWriter`.
-            split_files: if True, split events to multiple files rather than
-                append to a single file. Useful on certain filesystems where append is expensive.
         """
         if logdir is None:
             logdir = get_logger_dir()
-        assert tf.gfile.IsDirectory(logdir), logdir
-        self._logdir = logdir
-        self._max_queue = max_queue
-        self._flush_secs = flush_secs
-        self._split_files = split_files
-
-    def __new__(cls, logdir=None, max_queue=10, flush_secs=120, **kwargs):
-        if logdir is None:
-            logdir = get_logger_dir()
-
-        if logdir is not None:
-            return super(TFEventWriter, cls).__new__(cls)
-        else:
-            logger.warn('logger directory was not set. Ignore TFEventWriter.')
-            return Monitor()
+        self.logdir = logdir
+        self.max_queue = max_queue
+        self.flush_secs = flush_secs
 
     def _before_train(self):
-        self.writer = tf.summary.FileWriter(
-            self._logdir, graph=tf.get_default_graph(),
-            max_queue=self._max_queue, flush_secs=self._flush_secs)
+        self.writer = FileWriter(self.logdir, max_queue=self.max_queue, flush_secs=self.flush_secs)
 
     def _trigger_epoch(self):
-        self.trigger()
+        self._trigger()
 
     def _trigger(self):
         self.writer.flush()
-        if self._split_files:
-            self.writer.close()
-            self.writer.reopen()
 
     def _after_train(self):
         self.writer.close()
 
-    def add_summary(self, summary):
+    def _add_summary(self, summary):
         self.writer.add_summary(summary, self.trainer.global_step)
 
-    def add_event(self, event):
-        self.writer.add_event(event)
+    def _add_scalar(self, name, val):
+        self._add_summary(scalar(name, val))
+
+    def _add_image(self, name, val):
+        self._add_summary(image(name, val))
 
 
 class JSONWriter(Monitor):
@@ -217,13 +177,6 @@ class JSONWriter(Monitor):
     The name of the json file. Do not change it.
     """
 
-    def __new__(cls):
-        if get_logger_dir():
-            return super(JSONWriter, cls).__new__(cls)
-        else:
-            logger.warn("logger directory was not set. Ignore JSONWriter.")
-            return Monitor()
-
     @staticmethod
     def load_existing_json():
         """
@@ -232,7 +185,7 @@ class JSONWriter(Monitor):
         """
         dir = get_logger_dir()
         fname = os.path.join(dir, JSONWriter.FILENAME)
-        if tf.gfile.Exists(fname):
+        if os.path.exists(fname):
             with open(fname) as f:
                 stats = json.load(f)
                 assert isinstance(stats, list), type(stats)
@@ -252,7 +205,7 @@ class JSONWriter(Monitor):
             return None
 
     # initialize the stats here, because before_train from other callbacks may use it
-    def before_train(self):
+    def _before_train(self):
         self._stats = []
         self._stat_now = {}
         self._last_gs = -1
@@ -286,17 +239,17 @@ class JSONWriter(Monitor):
                 shutil.move(self._fname, backup_fname)
 
         # in case we have something to log here.
-        self.trigger()
+        self._trigger()
 
-    def trigger_step(self):
+    def _trigger_step(self):
         # will do this in trigger_epoch
         if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
-            self.trigger()
+            self._trigger()
 
-    def trigger_epoch(self):
-        self.trigger()
+    def _trigger_epoch(self):
+        self._trigger()
 
-    def trigger(self):
+    def _trigger(self):
         """
         Add stats to json and dump to disk.
         Note that this method is idempotent.
@@ -316,12 +269,13 @@ class JSONWriter(Monitor):
             except IOError:  # disk error sometimes..
                 logger.exception("Exception in JSONWriter._write_stat()!")
 
-    def add_scalar(self, tag, val):
-        self._stat_now[tag] = float(val)
+    def _add_scalar(self, name, val):
+        self._stat_now[name] = float(val)
 
 
 class ScalarPrinter(Monitor):
-    """ Print scalar data into terminal.
+    """
+    Print scalar data into terminal.
     """
 
     def __init__(self, trigger_epoch=True, trigger_step=False,
@@ -370,7 +324,6 @@ class ScalarPrinter(Monitor):
             self._trigger()
 
     def _trigger(self):
-        # Print stats here
         def match_regex_list(regexs, name):
             for r in regexs:
                 if r.search(name) is not None:
@@ -388,5 +341,5 @@ class ScalarPrinter(Monitor):
 
         self._dic = {}
 
-    def add_scalar(self, tag, val):
-        self._dic[tag] = float(val)
+    def _add_scalar(self, name, val):
+        self._dic[name] = float(val)
