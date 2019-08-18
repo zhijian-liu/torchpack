@@ -14,37 +14,17 @@ __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 
 class ProgressBar(Callback):
     """
-    A progress bar based on tqdm.
+    A progress bar based on `tqdm`.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
     master_only = True
 
-    def __init__(self, names=None, tqdm_args=None):
-        """
-        Args:
-            names(list): list of string, the names of the tensors to monitor
-                on the progress bar.
-        """
-        self.tqdm_args = tqdm_args
-        self.pbar = None
-
-    def _before_train(self):
-        self.last_updated = self.trainer.local_step
-        self.total = self.trainer.steps_per_epoch
-        self.tqdm_args = self.tqdm_args or get_tqdm_kwargs(leave=True)
-        # self._tqdm_args['bar_format'] = self._tqdm_args['bar_format'] + "{postfix} "
+    def __init__(self, names=None, tqdm_kwargs=None):
+        self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs(leave=True)
 
     def _before_epoch(self):
-        self.pbar = tqdm.trange(self.total, **self.tqdm_args)
-
-    def _before_step(self, *args, **kwargs):
-        if self.last_updated != self.trainer.local_step:
-            self.last_updated = self.trainer.local_step
-
-    def _after_step(self, *args, **kwargs):
-        # self._bar.set_postfix(dict(loss=1))
-        pass
+        self.pbar = tqdm.trange(self.trainer.steps_per_epoch, **self.tqdm_kwargs)
 
     def _trigger_step(self):
         self.pbar.update()
@@ -52,22 +32,18 @@ class ProgressBar(Callback):
     def _after_epoch(self):
         self.pbar.close()
 
-    def _after_train(self):
-        if self.pbar:
-            self.pbar.close()
-
 
 class EstimatedTimeLeft(Callback):
     """
-    Estimate the time left until completion of training.
+    Estimate the time left until completion.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
     master_only = True
 
-    def __init__(self, last_k_epochs=5, estimator=np.mean):
-        self.estimator = estimator
-        self.durations = deque(maxlen=last_k_epochs)
+    def __init__(self, last_k_epochs=5, median=True):
+        self.times = deque(maxlen=last_k_epochs)
+        self.median = median
 
     def _before_train(self):
         self.last_time = time.time()
@@ -76,8 +52,9 @@ class EstimatedTimeLeft(Callback):
         if self.trainer.epoch_num == self.trainer.max_epoch:
             return
 
-        self.durations.append(time.time() - self.last_time)
+        self.times.append(time.time() - self.last_time)
         self.last_time = time.time()
 
-        estimated_time = (self.trainer.max_epoch - self.trainer.epoch_num) * self.estimator(self.durations)
-        logger.info('Estimated time left: {}.'.format(humanize_time_delta(estimated_time)))
+        epoch_time = np.median(self.times) if self.median else np.mean(self.times)
+        time_left = (self.trainer.max_epoch - self.trainer.epoch_num) * epoch_time
+        logger.info('Estimated time left: {}.'.format(humanize_time_delta(time_left)))
