@@ -42,10 +42,11 @@ class EstimatedTimeLeft(Callback):
     master_only = True
 
     def __init__(self, last_k_epochs=5, median=True):
-        self.times = deque(maxlen=last_k_epochs)
+        self.last_k_epochs = last_k_epochs
         self.median = median
 
     def _before_train(self):
+        self.times = deque(maxlen=self.last_k_epochs)
         self.last_time = time.time()
 
     def _trigger_epoch(self):
