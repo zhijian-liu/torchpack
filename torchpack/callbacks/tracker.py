@@ -24,7 +24,7 @@ class GPUUtilizationTracker(Callback):
     This callback creates a process, therefore it's not safe to be used with MPI.
     """
 
-    master_only = False
+    master_only = True
 
     def __init__(self, devices=None):
         """
@@ -76,8 +76,8 @@ class GPUUtilizationTracker(Callback):
                             queue.put(stats / count)
                             break
                 except Exception:
-                    logger.exception('Error occurred in worker.')
-                    queue.put(-1)
+                    logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
+                    queue.put(None)
                     return
 
     def _before_train(self):
@@ -101,12 +101,12 @@ class GPUUtilizationTracker(Callback):
             results = self.queue.get(timeout=60)
         except queue.Empty:
             if self.process.is_alive():
-                raise RuntimeError('Worker stuck. This is a bug!')
+                raise RuntimeError('`GPUUtilizationTracker` worker stuck. This is a bug!')
             else:
-                raise RuntimeError('Worker is killed unexpectedly!')
+                raise RuntimeError('`GPUUtilizationTracker` worker is killed unexpectedly!')
 
-        if isinstance(results, int) and results == -1:
-            raise StopTraining('Worker has failed!')
+        if results is None:
+            raise StopTraining('`GPUUtilizationTracker` worker has failed!')
 
         self.trainer.monitors.add_scalar('utilization/gpu', np.mean(results))
         if len(self.devices) > 1:
@@ -126,7 +126,7 @@ class ThroughputTracker(Callback):
     The time spent on callbacks after each epoch is excluded.
     """
 
-    master_only = False
+    master_only = True
 
     def __init__(self, samples_per_step=None):
         """
