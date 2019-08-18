@@ -10,8 +10,9 @@ setup(
     install_requires=[
         'numpy>=1.14',
         'six',
+        'tqdm',
         'termcolor>=1.1',
-        'torch>=1.0',
-        'torchvision>=0.3'
+        'torch>=1.2',
+        'torchvision>=0.4'
     ]
 )
