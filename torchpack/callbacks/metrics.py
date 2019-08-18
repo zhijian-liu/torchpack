@@ -25,4 +25,4 @@ class ClassificationError(Callback):
         self.num_correct += masks.sum().item()
 
     def _after_epoch(self):
-        self.trainer.monitors.add_scalar(self.name, self.num_correct / self.num_examples * 100.)
+        self.trainer.monitors.add_scalar(self.name, self.num_correct / self.num_examples * 100)
