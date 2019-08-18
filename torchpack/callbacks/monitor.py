@@ -69,17 +69,9 @@ class Monitors(Monitor):
         for monitor in self.monitors:
             monitor.before_train()
 
-    def _after_train(self):
-        for monitor in self.monitors:
-            monitor.after_train()
-
     def _before_epoch(self):
         for monitor in self.monitors:
             monitor.before_epoch()
-
-    def _after_epoch(self):
-        for monitor in self.monitors:
-            monitor.after_epoch()
 
     def _before_step(self, *args, **kwargs):
         for monitor in self.monitors:
@@ -89,19 +81,28 @@ class Monitors(Monitor):
         for monitor in self.monitors:
             monitor.after_step(*args, **kwargs)
 
-    def _trigger_epoch(self):
-        for monitor in self.monitors:
-            monitor.trigger_epoch()
-
     def _trigger_step(self):
         for monitor in self.monitors:
             monitor.trigger_step()
+
+    def _after_epoch(self):
+        for monitor in self.monitors:
+            monitor.after_epoch()
+
+    def _trigger_epoch(self):
+        for monitor in self.monitors:
+            monitor.trigger_epoch()
 
     def _trigger(self):
         for monitor in self.monitors:
             monitor.trigger()
 
+    def _after_train(self):
+        for monitor in self.monitors:
+            monitor.after_train()
+
     def _add_scalar(self, name, scalar):
+        # TODO: track scalar/image history in `Monitor.add()`
         self.scalars[name].append((self.trainer.global_step, scalar))
         for monitor in self.monitors:
             monitor.add_scalar(name, scalar)
@@ -154,13 +155,13 @@ class JSONWriter(Monitor):
         Look for an existing json under :meth:`logger.get_logger_dir()` named "stats.json",
         and return the loaded list of statistics if found. Returns None otherwise.
         """
-        dir = get_logger_dir()
-        fname = os.path.join(dir, JSONWriter.FILENAME)
-        if os.path.exists(fname):
-            with open(fname) as f:
-                stats = json.load(f)
-                assert isinstance(stats, list), type(stats)
-                return stats
+        logdir = get_logger_dir()
+        filename = os.path.join(logdir, JSONWriter.FILENAME)
+        if os.path.exists(filename):
+            with open(filename) as fp:
+                stats = json.load(fp)
+            assert isinstance(stats, list), type(stats)
+            return stats
         return None
 
     @staticmethod
@@ -180,34 +181,31 @@ class JSONWriter(Monitor):
         self.record = dict()
 
         stats = JSONWriter.load_existing_json()
-        self._fname = os.path.join(get_logger_dir(), JSONWriter.FILENAME)
+        self.filename = os.path.join(get_logger_dir(), JSONWriter.FILENAME)
         if stats is not None:
             try:
                 epoch = stats[-1]['epoch_num'] + 1
             except Exception:
                 epoch = None
 
-            # check against the current training settings
-            # therefore this logic needs to be in before_train stage
             starting_epoch = self.trainer.starting_epoch
             if epoch is None or epoch == starting_epoch:
-                logger.info("Found existing JSON inside {}, will append to it.".format(get_logger_dir()))
+                logger.info('Found existing JSON inside {}, will append to it.'.format(get_logger_dir()))
                 self.records = stats
             else:
                 logger.warning(
-                    "History epoch={} from JSON is not the predecessor of the current starting_epoch={}".format(
+                    'History epoch={} from JSON is not the predecessor of the current starting_epoch={}'.format(
                         epoch - 1, starting_epoch))
-                logger.warning("If you want to resume old training, either use `AutoResumeTrainConfig` "
-                               "or correctly set the new starting_epoch yourself to avoid inconsistency. ")
+                logger.warning('If you want to resume old training, either use `AutoResumeTrainConfig` '
+                               'or correctly set the new starting_epoch yourself to avoid inconsistency.')
 
                 backup_fname = JSONWriter.FILENAME + '.' + datetime.now().strftime('%m%d-%H%M%S')
                 backup_fname = os.path.join(get_logger_dir(), backup_fname)
 
-                logger.warn("Now, we will train with starting_epoch={} and backup old json to {}".format(
+                logger.warning('Now, we will train with starting_epoch={} and backup old json to {}'.format(
                     self.trainer.starting_epoch, backup_fname))
-                shutil.move(self._fname, backup_fname)
+                shutil.move(self.filename, backup_fname)
 
-        # in case we have something to log here.
         self._trigger()
 
     def _trigger_step(self):
@@ -226,13 +224,13 @@ class JSONWriter(Monitor):
             self.records.append(self.record)
             self.record = dict()
 
-            tmp_filename = self._fname + '.tmp'
+            tmp_filename = self.filename + '.tmp'
             try:
-                with open(tmp_filename, 'w') as f:
-                    json.dump(self.records, f)
-                shutil.move(tmp_filename, self._fname)
+                with open(tmp_filename, 'w') as fp:
+                    json.dump(self.records, fp)
+                shutil.move(tmp_filename, self.filename)
             except IOError:
-                logger.exception("Exception in JSONWriter._write_stat()!")
+                logger.exception('Error occurred in JSONWriter._write_stat()!')
 
     def _add_scalar(self, name, scalar):
         self.record[name] = scalar
@@ -261,27 +259,27 @@ class ScalarPrinter(Monitor):
             rs = set([re.compile(r) for r in rs])
             return rs
 
-        self._whitelist = compile_regex(whitelist)
+        self.whitelist = compile_regex(whitelist)
         if blacklist is None:
             blacklist = []
-        self._blacklist = compile_regex(blacklist)
+        self.blacklist = compile_regex(blacklist)
 
-        self._enable_step = trigger_step
-        self._enable_epoch = trigger_epoch
-        self._dic = {}
+        self.enable_epoch = trigger_epoch
+        self.enable_step = trigger_step
+        self.scalars = dict()
 
     def _before_train(self):
         self._trigger()
 
     def _trigger_step(self):
-        if self._enable_step:
+        if self.enable_step:
             if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
                 self._trigger()
-            elif not self._enable_epoch:
+            elif not self.enable_epoch:
                 self._trigger()
 
     def _trigger_epoch(self):
-        if self._enable_epoch:
+        if self.enable_epoch:
             self._trigger()
 
     def _trigger(self):
@@ -292,15 +290,15 @@ class ScalarPrinter(Monitor):
             return False
 
         texts = []
-        for k, v in sorted(self._dic.items(), key=operator.itemgetter(0)):
-            if self._whitelist is None or match_regex_list(self._whitelist, k):
-                if not match_regex_list(self._blacklist, k):
+        for k, v in sorted(self.scalars.items(), key=operator.itemgetter(0)):
+            if self.whitelist is None or match_regex_list(self.whitelist, k):
+                if not match_regex_list(self.blacklist, k):
                     texts.append('[{}] = {:.5g}'.format(k, v))
 
         if texts:
             logger.info('\n+ '.join([''] + texts))
 
-        self._dic = {}
+        self.scalars = dict()
 
     def _add_scalar(self, name, scalar):
-        self._dic[name] = scalar
+        self.scalars[name] = scalar
