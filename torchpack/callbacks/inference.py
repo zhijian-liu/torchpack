@@ -18,7 +18,7 @@ class InferenceRunner(Callback):
 
     def __init__(self, dataflow, callbacks):
         for callback in callbacks:
-            assert isinstance(callback, Callback), type(callback)
+            assert isinstance(callback, Callback), callback
         self.dataflow = dataflow
         self.callbacks = callbacks
 

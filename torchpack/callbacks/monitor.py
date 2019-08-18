@@ -57,7 +57,7 @@ class Monitors(Monitor):
 
     def __init__(self, monitors):
         for monitor in monitors:
-            assert isinstance(monitor, Monitor), type(monitor)
+            assert isinstance(monitor, Monitor), monitor
         self.monitors = monitors
         self.scalars = defaultdict(list)
 
