@@ -121,8 +121,7 @@ class GPUUtilizationTracker(Callback):
 
 class ThroughputTracker(Callback):
     """
-    This callback writes the training throughput (in terms of either steps/sec, or samples/sec)
-    to the monitors everytime it is triggered.
+    Track the throughput everytime it is triggered.
     The throughput is computed based on the duration between the consecutive triggers.
     The time spent on callbacks after each epoch is excluded.
     """
