@@ -29,7 +29,6 @@ class Monitor(Callback):
             val = int(val)
         if isinstance(val, np.floating):
             val = float(val)
-
         self._add_scalar(name, val)
 
     def _add_scalar(self, name, val):
@@ -37,8 +36,7 @@ class Monitor(Callback):
 
     def add_image(self, name, val):
         assert isinstance(val, np.ndarray), type(val)
-
-        # todo: double check whether transform is correct
+        # TODO: double check whether transform is correct
         if val.ndim == 2:
             val = val[np.newaxis, :, :, np.newaxis]
         elif val.ndim == 3:
@@ -47,16 +45,9 @@ class Monitor(Callback):
             else:
                 val = val[..., np.newaxis]
         assert val.ndim == 4, val.shape
-
         self._add_image(name, val)
 
     def _add_image(self, name, val):
-        pass
-
-    def _add_summary(self, summary):
-        pass
-
-    def add_event(self, event):
         pass
 
 
@@ -116,9 +107,9 @@ class Monitors(Monitor):
         for monitor in self.monitors:
             monitor.add_scalar(name, val)
 
-    def _add_image(self, tag, val):
+    def _add_image(self, name, val):
         for monitor in self.monitors:
-            monitor.add_image(tag, val)
+            monitor.add_image(name, val)
 
     def get_latest(self, name):
         return self.scalars[name][-1][1]
@@ -173,9 +164,6 @@ class JSONWriter(Monitor):
     """
 
     FILENAME = 'stats.json'
-    """
-    The name of the json file. Do not change it.
-    """
 
     @staticmethod
     def load_existing_json():
@@ -204,7 +192,6 @@ class JSONWriter(Monitor):
         except Exception:
             return None
 
-    # initialize the stats here, because before_train from other callbacks may use it
     def _before_train(self):
         self._stats = []
         self._stat_now = {}
@@ -250,10 +237,6 @@ class JSONWriter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        """
-        Add stats to json and dump to disk.
-        Note that this method is idempotent.
-        """
         if len(self._stat_now):
             self._stat_now['epoch_num'] = self.trainer.epoch_num
             self._stat_now['global_step'] = self.trainer.global_step
@@ -266,11 +249,11 @@ class JSONWriter(Monitor):
                 with open(tmp_filename, 'w') as f:
                     json.dump(self._stats, f)
                 shutil.move(tmp_filename, self._fname)
-            except IOError:  # disk error sometimes..
+            except IOError:
                 logger.exception("Exception in JSONWriter._write_stat()!")
 
     def _add_scalar(self, name, val):
-        self._stat_now[name] = float(val)
+        self._stat_now[name] = val
 
 
 class ScalarPrinter(Monitor):
@@ -278,8 +261,7 @@ class ScalarPrinter(Monitor):
     Print scalar data into terminal.
     """
 
-    def __init__(self, trigger_epoch=True, trigger_step=False,
-                 whitelist=None, blacklist=None):
+    def __init__(self, trigger_epoch=True, trigger_step=False, whitelist=None, blacklist=None):
         """
         Args:
             enable_step, enable_epoch (bool): whether to print the
@@ -312,12 +294,9 @@ class ScalarPrinter(Monitor):
     def _trigger_step(self):
         if self._enable_step:
             if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
-                # not the last step
                 self._trigger()
-            else:
-                if not self._enable_epoch:
-                    self._trigger()
-                # otherwise, will print them together
+            elif not self._enable_epoch:
+                self._trigger()
 
     def _trigger_epoch(self):
         if self._enable_epoch:
@@ -342,4 +321,4 @@ class ScalarPrinter(Monitor):
         self._dic = {}
 
     def _add_scalar(self, name, val):
-        self._dic[name] = float(val)
+        self._dic[name] = val
