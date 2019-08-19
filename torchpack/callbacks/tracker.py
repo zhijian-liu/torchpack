@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import os
-import queue
 import time
+from queue import Empty
 
 import numpy as np
 import torch
@@ -45,7 +45,7 @@ class GPUUtilizationTracker(Callback):
                 raise RuntimeError('No GPU device is specified!')
 
     @staticmethod
-    def _worker(devices, event, queue):
+    def _worker(devices, queue, event):
         try:
             with NVMLContext() as ctx:
                 while True:
@@ -61,9 +61,9 @@ class GPUUtilizationTracker(Callback):
             queue.put(None)
 
     def _before_train(self):
-        self.event = mp.Event()
         self.queue = mp.Queue()
-        self.process = mp.Process(target=self._worker, args=(self.devices, self.event, self.queue))
+        self.event = mp.Event()
+        self.process = mp.Process(target=self._worker, args=(self.devices, self.queue, self.event))
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
@@ -80,7 +80,7 @@ class GPUUtilizationTracker(Callback):
     def _trigger_epoch(self):
         try:
             meters = self.queue.get(timeout=60)
-        except queue.Empty:
+        except Empty:
             meters = None
 
         if meters is None:
@@ -93,7 +93,8 @@ class GPUUtilizationTracker(Callback):
                 self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), meters[k])
 
     def _after_train(self):
-        self.process.terminate()
+        if self.process.is_alive():
+            self.process.terminate()
 
 
 class ThroughputTracker(Callback):
