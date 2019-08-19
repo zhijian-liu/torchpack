@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from tensorpack.utils.concurrency import ensure_proc_terminate, start_proc_mask_signal
 from tensorpack.utils.nvml import NVMLContext
-from tensorpack.utils.timer import Timer
 
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger
@@ -18,9 +17,9 @@ __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 class GPUUtilizationTracker(Callback):
     """
     Track the average GPU utilization within an epoch.
-    It will start a process to track GPU utilization through NVML every second
-    within the epoch (the `trigger_epoch` time is not included).
-    This callback creates a process, therefore it's not safe to be used with MPI.
+    It will start a process to track GPU utilization through NVML
+    every second within the epoch (the time of `trigger_epoch` is not included).
+    This callback creates a process, therefore it is not safe to be used with MPI.
     """
 
     master_only = True
@@ -51,7 +50,7 @@ class GPUUtilizationTracker(Callback):
                 while True:
                     event.wait()
                     event.clear()
-                    meters = []
+                    meters = list()
                     while not event.is_set():
                         time.sleep(1)
                         meters.append([ctx.device(k).utilization()['gpu'] for k in devices])
@@ -99,9 +98,7 @@ class GPUUtilizationTracker(Callback):
 
 class ThroughputTracker(Callback):
     """
-    Track the throughput everytime it is triggered.
-    The throughput is computed based on the duration between the consecutive triggers.
-    The time spent on callbacks after each epoch is excluded.
+    Track the throughput within an epoch (the time of `trigger_epoch` is not included).
     """
 
     master_only = True
@@ -109,34 +106,25 @@ class ThroughputTracker(Callback):
     def __init__(self, samples_per_step=None):
         """
         Args:
-            samples_per_step: total number of samples processed in each step.
-                If not provided, this callback will record "steps/sec" instead of "samples/sec".
+            samples_per_step: number of samples processed in each step.
+                If not provided, this callback will track `steps/sec` instead of `samples/sec`.
         """
         self.samples_per_step = samples_per_step
-        self.timer = Timer()
-        self.timer.pause()
-
-    def _update_last(self):
-        paused = self.timer.is_paused()
-        self.timer.reset()
-        if paused:
-            self.timer.pause()
-        self.last_step = self.trainer.global_step
 
     def _before_train(self):
-        self._update_last()
+        self.last_step = self.trainer.global_step
 
     def _before_epoch(self):
-        self.timer.resume()
+        self.start_time = time.time()
 
     def _after_epoch(self):
-        self.timer.pause()
+        self.end_time = time.time()
 
     def _trigger_epoch(self):
-        steps_per_sec = (self.trainer.global_step - self.last_step) / self.timer.seconds()
-        self._update_last()
+        steps_per_sec = (self.trainer.global_step - self.last_step) / (self.end_time - self.start_time)
+        self.last_step = self.trainer.global_step
 
         if self.samples_per_step is None:
-            self.trainer.monitors.add_scalar('throughput', steps_per_sec)
+            self.trainer.monitors.add_scalar('throughput/steps', steps_per_sec)
         else:
-            self.trainer.monitors.add_scalar('throughput', steps_per_sec * self.samples_per_step)
+            self.trainer.monitors.add_scalar('throughput/samples', steps_per_sec * self.samples_per_step)
