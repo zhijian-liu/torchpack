@@ -53,12 +53,12 @@ class GPUUtilizationTracker(Callback):
                 while True:
                     event.wait()
                     event.clear()
-                    utilizations = []
+                    utils = []
                     while not event.is_set():
                         time.sleep(1)
-                        utilizations.append([device.utilization()['gpu'] for device in devices])
+                        utils.append([device.utilization()['gpu'] for device in devices])
+                    queue.put(np.mean(utils[:-1], axis=0))
                     event.clear()
-                    queue.put(np.mean(utilizations[:-1], axis=0))
             except Exception:
                 logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
                 queue.put(None)
@@ -71,31 +71,27 @@ class GPUUtilizationTracker(Callback):
         start_proc_mask_signal(self.process)
 
     def _before_epoch(self):
-        while self.event.is_set():
-            pass
         self.event.set()
 
     def _after_epoch(self):
-        while self.event.is_set():
-            pass
         self.event.set()
 
     def _trigger_epoch(self):
         try:
-            utilizations = self.queue.get(timeout=60)
+            utils = self.queue.get(timeout=60)
         except queue.Empty:
             if self.process.is_alive():
-                raise RuntimeError('`GPUUtilizationTracker` worker stuck, which is a bug.')
+                raise RuntimeError('`GPUUtilizationTracker` worker is stuck, which is a bug.')
             else:
                 raise RuntimeError('`GPUUtilizationTracker` worker is killed unexpectedly.')
 
-        if utilizations is None:
+        if utils is None:
             raise StopTraining('Error occurred in `GPUUtilizationTracker` worker.')
 
-        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(utilizations))
+        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(utils))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), utilizations[k])
+                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), utils[k])
 
     def _after_train(self):
         self.process.terminate()
