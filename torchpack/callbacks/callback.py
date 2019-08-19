@@ -97,8 +97,8 @@ class Callback(object):
     def _trigger(self):
         """
         Override this method to define a general trigger behavior, to be used with trigger schedulers.
-        Note that the schedulers (e.g. :class:`PeriodicTrigger`) might call this
-        method both inside an epoch and after an epoch.
+        Note that the schedulers (e.g. :class:`PeriodicTrigger`) might call this method
+        both inside an epoch and after an epoch.
         """
         pass
 
