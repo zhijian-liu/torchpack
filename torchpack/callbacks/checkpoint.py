@@ -2,8 +2,6 @@ import heapq
 import os
 import re
 
-import torch
-
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
 
@@ -51,7 +49,7 @@ class Saver(Callback):
     def _trigger(self):
         filename = os.path.join(self.checkpoint_dir, 'step-{}.pth'.format(self.trainer.global_step))
         try:
-            torch.save(self.trainer.state_dict(), filename)
+            self.trainer.save_checkpoint(filename)
         except (OSError, IOError):
             logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
         else:
@@ -61,7 +59,7 @@ class Saver(Callback):
 
 class BestSaver(Callback):
     """
-    Save the model with best value of some statistics.
+    Save the checkpoint with best value of some statistics.
     """
 
     def __init__(self, key, filename=None, checkpoint_dir=None):
@@ -97,9 +95,9 @@ class BestSaver(Callback):
 
         if best is None or (self.extreme == 'min' and value < best[1]) or (self.extreme == 'max' and value > best[1]):
             filename = os.path.join(self.checkpoint_dir, self.filename or
-                                    self.key.replace('/', '-') + '-' + self.extreme + '.pth')
+                                    self.extreme + '-' + self.key.replace('/', '-') + '.pth')
             try:
-                torch.save(self.trainer.state_dict(), filename)
+                self.trainer.save_checkpoint(filename)
             except (OSError, IOError):
                 logger.exception('Error occurred when saving checkpoint "{}".'.format(filename))
             else:
@@ -112,7 +110,7 @@ class BestSaver(Callback):
 
 class MinSaver(BestSaver):
     """
-    Save the model with minimum value of some statistics.
+    Save the checkpoint with minimum value of some statistics.
     """
 
     extreme = 'min'
@@ -120,7 +118,7 @@ class MinSaver(BestSaver):
 
 class MaxSaver(BestSaver):
     """
-    Save the model with maximum value of some statistics.
+    Save the checkpoint with maximum value of some statistics.
     """
 
     extreme = 'max'
