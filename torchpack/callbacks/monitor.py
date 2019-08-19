@@ -15,8 +15,7 @@ __all__ = ['Monitor', 'Monitors', 'TFEventWriter', 'JSONWriter', 'ScalarPrinter'
 
 class Monitor(Callback):
     """
-    Base class for monitors which monitor a training progress,
-    by processing different types of summary/statistics from trainer.
+    Base class for all monitors.
     """
 
     master_only = True
