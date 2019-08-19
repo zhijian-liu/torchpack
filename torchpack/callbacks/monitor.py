@@ -1,10 +1,8 @@
 import json
-import operator
 import os
 import re
 import shutil
 from collections import defaultdict
-from datetime import datetime
 
 import numpy as np
 from tensorboardX import SummaryWriter
@@ -34,11 +32,11 @@ class Monitor(Callback):
         pass
 
     def add_image(self, name, tensor):
+        # TODO: check whether these transforms are correct
         assert isinstance(tensor, np.ndarray), type(tensor)
         if tensor.ndim == 2:
             tensor = tensor[np.newaxis, :, :, np.newaxis]
         elif tensor.ndim == 3:
-            # TODO: check whether the transform is correct
             if tensor.shape[-1] in [1, 3, 4]:
                 tensor = tensor[np.newaxis, ...]
             else:
@@ -131,14 +129,14 @@ class TFEventWriter(Monitor):
     def _before_train(self):
         self.writer = SummaryWriter(self.logdir)
 
+    def _after_train(self):
+        self.writer.close()
+
     def _add_scalar(self, name, scalar):
         self.writer.add_scalar(name, scalar, self.trainer.global_step)
 
     def _add_image(self, name, tensor):
         self.writer.add_image(name, tensor, self.trainer.global_step)
-
-    def _after_train(self):
-        self.writer.close()
 
 
 class JSONWriter(Monitor):
@@ -149,14 +147,17 @@ class JSONWriter(Monitor):
 
     FILENAME = 'stats.json'
 
-    @staticmethod
-    def load_existing_json():
+    def __init__(self, logdir=None):
+        if logdir is None:
+            logdir = get_logger_dir()
+        self.logdir = logdir
+
+    def load_existing_json(self):
         """
         Look for an existing json under :meth:`logger.get_logger_dir()` named "stats.json",
         and return the loaded list of statistics if found. Returns None otherwise.
         """
-        logdir = get_logger_dir()
-        filename = os.path.join(logdir, JSONWriter.FILENAME)
+        filename = os.path.join(self.logdir, JSONWriter.FILENAME)
         if os.path.exists(filename):
             with open(filename) as fp:
                 stats = json.load(fp)
@@ -164,76 +165,53 @@ class JSONWriter(Monitor):
             return stats
         return None
 
-    @staticmethod
-    def load_existing_epoch_number():
+    def load_existing_epoch_number(self):
         """
         Try to load the latest epoch number from an existing json stats file (if any).
         Returns None if not found.
         """
-        stats = JSONWriter.load_existing_json()
+        stats = self.load_existing_json()
         try:
             return int(stats[-1]['epoch_num'])
-        except Exception:
+        except:
             return None
 
     def _before_train(self):
         self.records = []
-        self.record = dict()
 
-        stats = JSONWriter.load_existing_json()
-        self.filename = os.path.join(get_logger_dir(), JSONWriter.FILENAME)
+        stats = self.load_existing_json()
         if stats is not None:
             try:
                 epoch = stats[-1]['epoch_num'] + 1
-            except Exception:
+            except:
                 epoch = None
 
-            starting_epoch = self.trainer.starting_epoch
-            if epoch is None or epoch == starting_epoch:
-                logger.info('Found existing JSON inside {}, will append to it.'.format(get_logger_dir()))
-                self.records = stats
-            else:
+            if epoch is not None and epoch != self.trainer.starting_epoch:
                 logger.warning(
                     'History epoch={} from JSON is not the predecessor of the current starting_epoch={}'.format(
-                        epoch - 1, starting_epoch))
+                        epoch - 1, self.trainer.starting_epoch))
                 logger.warning('If you want to resume old training, either use `AutoResumeTrainConfig` '
                                'or correctly set the new starting_epoch yourself to avoid inconsistency.')
-
-                backup_fname = JSONWriter.FILENAME + '.' + datetime.now().strftime('%m%d-%H%M%S')
-                backup_fname = os.path.join(get_logger_dir(), backup_fname)
-
-                logger.warning('Now, we will train with starting_epoch={} and backup old json to {}'.format(
-                    self.trainer.starting_epoch, backup_fname))
-                shutil.move(self.filename, backup_fname)
-
-        self._trigger()
-
-    def _trigger_step(self):
-        # will do this in trigger_epoch
-        if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
-            self._trigger()
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        if len(self.record):
-            self.record['epoch_num'] = self.trainer.epoch_num
-            self.record['global_step'] = self.trainer.global_step
+        filename = os.path.join(self.logdir, self.FILENAME)
+        try:
+            with open(filename + '.tmp', 'w') as fp:
+                json.dump(self.records, fp)
+            shutil.move(filename + '.tmp', filename)
+        except (OSError, IOError):
+            logger.exception('Error occurred when saving JSON file "{}".'.format(filename))
 
-            self.records.append(self.record)
-            self.record = dict()
-
-            tmp_filename = self.filename + '.tmp'
-            try:
-                with open(tmp_filename, 'w') as fp:
-                    json.dump(self.records, fp)
-                shutil.move(tmp_filename, self.filename)
-            except IOError:
-                logger.exception('Error occurred in JSONWriter._write_stat()!')
+    def _after_train(self):
+        self._trigger()
 
     def _add_scalar(self, name, scalar):
-        self.record[name] = scalar
+        if not self.records or self.records[-1]['global_step'] != self.trainer.global_step:
+            self.records += [{'epoch_num': self.trainer.epoch_num, 'global_step': self.trainer.global_step}]
+        self.records[-1][name] = scalar
 
 
 class ScalarPrinter(Monitor):
@@ -290,14 +268,12 @@ class ScalarPrinter(Monitor):
             return False
 
         texts = []
-        for k, v in sorted(self.scalars.items(), key=operator.itemgetter(0)):
+        for k, v in sorted(self.scalars.items()):
             if self.whitelist is None or match_regex_list(self.whitelist, k):
                 if not match_regex_list(self.blacklist, k):
                     texts.append('[{}] = {:.5g}'.format(k, v))
-
         if texts:
             logger.info('\n+ '.join([''] + texts))
-
         self.scalars = dict()
 
     def _add_scalar(self, name, scalar):
