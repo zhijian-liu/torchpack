@@ -10,7 +10,6 @@ from tensorpack.utils.nvml import NVMLContext
 from tensorpack.utils.timer import Timer
 
 from torchpack.callbacks.callback import Callback
-from torchpack.train.exception import StopTraining
 from torchpack.utils.logging import logger
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
@@ -47,21 +46,19 @@ class GPUUtilizationTracker(Callback):
 
     @staticmethod
     def _worker(devices, event, queue):
-        with NVMLContext() as ctx:
-            devices = [ctx.device(index) for index in devices]
-            try:
+        try:
+            with NVMLContext() as ctx:
                 while True:
                     event.wait()
                     event.clear()
-                    utils = []
+                    meters = []
                     while not event.is_set():
                         time.sleep(1)
-                        utils.append([device.utilization()['gpu'] for device in devices])
-                    queue.put(np.mean(utils[:-1], axis=0))
+                        meters.append([ctx.device(k).utilization()['gpu'] for k in devices])
+                    queue.put(np.mean(meters[:-1], axis=0))
                     event.clear()
-            except Exception:
-                logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
-                queue.put(None)
+        except:
+            queue.put(None)
 
     def _before_train(self):
         self.event = mp.Event()
@@ -71,27 +68,29 @@ class GPUUtilizationTracker(Callback):
         start_proc_mask_signal(self.process)
 
     def _before_epoch(self):
+        while self.event.is_set():
+            pass
         self.event.set()
 
     def _after_epoch(self):
+        while self.event.is_set():
+            pass
         self.event.set()
 
     def _trigger_epoch(self):
         try:
-            utils = self.queue.get(timeout=60)
+            meters = self.queue.get(timeout=60)
         except queue.Empty:
-            if self.process.is_alive():
-                raise RuntimeError('`GPUUtilizationTracker` worker is stuck, which is a bug.')
-            else:
-                raise RuntimeError('`GPUUtilizationTracker` worker is killed unexpectedly.')
+            meters = None
 
-        if utils is None:
-            raise StopTraining('Error occurred in `GPUUtilizationTracker` worker.')
+        if meters is None:
+            logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
+            return
 
-        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(utils))
+        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(meters))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), utils[k])
+                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), meters[k])
 
     def _after_train(self):
         self.process.terminate()
