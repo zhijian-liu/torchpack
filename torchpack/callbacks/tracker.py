@@ -29,7 +29,7 @@ class GPUUtilizationTracker(Callback):
     def __init__(self, devices=None):
         """
         Args:
-            devices: list of physical GPU IDs. If None, will use CUDA_VISIBLE_DEVICES.
+            devices: list of physical GPU IDs. If None, will use `CUDA_VISIBLE_DEVICES`.
         """
         if devices is not None:
             self.devices = devices
@@ -46,49 +46,33 @@ class GPUUtilizationTracker(Callback):
                 raise RuntimeError('No GPU device is specified!')
 
     @staticmethod
-    def _worker(devices, event, stop_event, queue):
+    def _worker(devices, event, queue):
         with NVMLContext() as ctx:
-            devices = [ctx.device(i) for i in devices]
-            while True:
-                try:
+            devices = [ctx.device(index) for index in devices]
+            try:
+                while True:
                     event.wait()
                     event.clear()
-                    if stop_event.is_set():
-                        return
-
-                    count = 0
-                    stats = np.zeros((len(devices),), dtype='f4')
-                    while True:
+                    utilizations = []
+                    while not event.is_set():
                         time.sleep(1)
-
-                        data = [device.utilization()['gpu'] for device in devices]
-                        data = list(map(float, data))
-                        count += 1
-                        stats += data
-
-                        if event.is_set():
-                            event.clear()
-                            if stop_event.is_set():
-                                return
-                            if count > 1:
-                                count -= 1
-                                stats -= data
-                            queue.put(stats / count)
-                            break
-                except Exception:
-                    logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
-                    queue.put(None)
-                    return
+                        utilizations.append([device.utilization()['gpu'] for device in devices])
+                    event.clear()
+                    queue.put(np.mean(utilizations[:-1], axis=0))
+            except Exception:
+                logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
+                queue.put(None)
 
     def _before_train(self):
         self.event = mp.Event()
-        self.stop_event = mp.Event()
         self.queue = mp.Queue()
-        self.process = mp.Process(target=self._worker, args=(self.devices, self.event, self.stop_event, self.queue))
+        self.process = mp.Process(target=self._worker, args=(self.devices, self.event, self.queue))
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
     def _before_epoch(self):
+        while self.event.is_set():
+            pass
         self.event.set()
 
     def _after_epoch(self):
@@ -98,24 +82,22 @@ class GPUUtilizationTracker(Callback):
 
     def _trigger_epoch(self):
         try:
-            results = self.queue.get(timeout=60)
+            utilizations = self.queue.get(timeout=60)
         except queue.Empty:
             if self.process.is_alive():
-                raise RuntimeError('`GPUUtilizationTracker` worker stuck. This is a bug!')
+                raise RuntimeError('`GPUUtilizationTracker` worker stuck, which is a bug.')
             else:
-                raise RuntimeError('`GPUUtilizationTracker` worker is killed unexpectedly!')
+                raise RuntimeError('`GPUUtilizationTracker` worker is killed unexpectedly.')
 
-        if results is None:
-            raise StopTraining('`GPUUtilizationTracker` worker has failed!')
+        if utilizations is None:
+            raise StopTraining('Error occurred in `GPUUtilizationTracker` worker.')
 
-        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(results))
+        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(utilizations))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), results[k])
+                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), utilizations[k])
 
     def _after_train(self):
-        self.stop_event.set()
-        self.event.set()
         self.process.terminate()
 
 
@@ -139,9 +121,9 @@ class ThroughputTracker(Callback):
         self.timer.pause()
 
     def _update_last(self):
-        old_pause = self.timer.is_paused()
+        paused = self.timer.is_paused()
         self.timer.reset()
-        if old_pause:
+        if paused:
             self.timer.pause()
         self.last_step = self.trainer.global_step
 
