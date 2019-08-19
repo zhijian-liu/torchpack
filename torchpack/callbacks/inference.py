@@ -19,11 +19,10 @@ class InferenceRunner(Callback):
     def __init__(self, dataflow, callbacks):
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
+        self.callbacks = Callbacks(callbacks)
         self.dataflow = dataflow
-        self.callbacks = callbacks
 
     def _set_trainer(self, trainer):
-        self.callbacks = Callbacks(self.callbacks)
         self.callbacks.set_trainer(trainer)
 
     def _trigger_epoch(self):
@@ -33,6 +32,7 @@ class InferenceRunner(Callback):
         start_time = time.time()
         self.callbacks.before_epoch()
 
+        # TODO: a better way to create train/eval context
         with torch.no_grad():
             for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
                 self.callbacks.before_step(feed_dict)
