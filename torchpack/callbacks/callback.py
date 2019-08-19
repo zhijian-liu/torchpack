@@ -264,8 +264,14 @@ class Callbacks(Callback):
         for callback in self.callbacks:
             callback.after_train()
 
-    def __len__(self):
-        return len(self.callbacks)
+    def append(self, callback):
+        self.callbacks.append(callback)
+
+    def extend(self, callbacks):
+        self.callbacks.extend(callbacks)
 
     def __getitem__(self, index):
         return self.callbacks[index]
+
+    def __len__(self):
+        return len(self.callbacks)
