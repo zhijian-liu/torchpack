@@ -17,7 +17,7 @@ class Trainer(object):
     Base class for a trainer.
     """
 
-    is_chief = True
+    is_master = True
     """
     Whether this process is the chief worker in distributed training.
     Certain callbacks will only be run by chief worker.
@@ -38,14 +38,10 @@ class Trainer(object):
         self.callbacks.set_trainer(weakref.proxy(self))
 
     def run_step(self, feed_dict):
-        output_dict = self._run_step(feed_dict)
-        return output_dict
-
-    def _run_step(self, feed_dict):
         """
         Defines what to do in one iteration.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def main_loop(self, steps_per_epoch, starting_epoch, max_epoch):
         """
@@ -110,10 +106,10 @@ class Trainer(object):
 
         self.main_loop(self.steps_per_epoch, self.starting_epoch, self.max_epoch)
 
-    def state_dict(self):
-        return dict()
+    def save_checkpoint(self, filename):
+        pass
 
-    def load_state_dict(self, state_dict):
+    def load_checkpoint(self, filename):
         pass
 
     def __new__(cls, *args, **kwargs):

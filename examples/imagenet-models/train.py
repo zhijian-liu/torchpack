@@ -1,3 +1,4 @@
+import os
 import sys
 
 import torch
@@ -5,38 +6,45 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 
 from torchpack.callbacks import *
+from torchpack.cuda.copy import async_copy_to
 from torchpack.datasets.vision.imagenet import ImageNet
 from torchpack.models.vision.mobilenetv2 import MobileNetV2
-from torchpack.trainer import Trainer
+from torchpack.train import Trainer
 from torchpack.utils.argument import ArgumentParser
-from torchpack.utils.logging import get_logger, auto_set_dir
+from torchpack.utils.logging import get_logger, set_logger_dir
 
 logger = get_logger(__file__)
 
 
-class ClassificationTrainer(Trainer):
-    def run_step(self, fd):
-        inputs, targets = fd['inputs'], fd['targets']
+class Model(nn.Module):
+    def __init__(self, model, criterion):
+        super().__init__()
+        self.model = model
+        self.criterion = criterion
 
+    def forward(self, feed_dict):
+        inputs, targets = feed_dict['inputs'], feed_dict['targets']
         outputs = self.model(inputs)
-        loss = self.criterion(outputs, targets)
-        loss.backward()
-
-        return dict(outputs=outputs, loss=loss)
+        if self.model.training:
+            loss = self.criterion(outputs, targets)
+            return loss, outputs
+        return outputs
 
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--devices', action='set_devices', default='*', help='list of device(s) to use.')
-    args = parser.parse_args()
+    parser.parse_args()
 
-    auto_set_dir()
-    logger.info(sys.argv)
+    dump_dir = os.path.join('runs', 'train')
+    set_logger_dir(dump_dir)
+
+    logger.info(' '.join([sys.executable] + sys.argv))
 
     cudnn.benchmark = True
 
     logger.info('Loading the dataset.')
-    dataset = ImageNet(root='/dataset/imagenet/', num_classes=100, image_size=224)
+    dataset = ImageNet(root='/dataset/imagenet/', num_classes=100, image_size=112)
 
     loaders = dict()
     for split in dataset:
@@ -55,24 +63,51 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=4e-5)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=150)
 
+    class ClassificationTrainer(Trainer):
+        def run_step(self, feed_dict):
+            feed_dict = async_copy_to(feed_dict, device='cuda')
+            inputs, targets = feed_dict['inputs'], feed_dict['targets']
+
+            outputs = model(inputs)
+            output_dict = dict(outputs=outputs)
+
+            if model.training:
+                loss = criterion(outputs, targets)
+
+                output_dict['loss'] = loss.item()
+                self.monitors.add_scalar('loss', loss.item())
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            return async_copy_to(output_dict, device='cpu')
+
+        def save_checkpoint(self, filename):
+            torch.save(dict(model=model.state_dict(), optimizer=optimizer.state_dict()), filename)
+
     trainer = ClassificationTrainer()
     trainer.train(
-        loader=loaders['train'], model=model, criterion=criterion, max_epoch=150,
+        dataflow=loaders['train'],
+        max_epoch=150,
         callbacks=[
-            LambdaCallback(before_step=lambda *_: optimizer.zero_grad(),
-                           after_step=lambda *_: optimizer.step()),
-            LambdaCallback(before_epoch=lambda *_: scheduler.step()),
-            InferenceRunner(loaders['test'], callbacks=[
-                ClassificationError(k=1, summary_name='acc/test-top1'),
-                ClassificationError(k=5, summary_name='acc/test-top5')
-            ]),
-            ModelSaver(checkpoint_dir='runs/'),
-            MaxSaver(monitor_stat='acc/test-top1', checkpoint_dir='runs/'),
+            Saver(max_to_keep=10),
+            LambdaCallback(before_epoch=lambda _: model.train(), after_epoch=lambda _: model.eval()),
+            LambdaCallback(before_epoch=lambda _: scheduler.step()),
+            InferenceRunner(
+                loaders['test'],
+                callbacks=[
+                    ClassificationError(topk=1, logits='outputs', labels='targets', name='error/test-top1'),
+                    ClassificationError(topk=5, logits='outputs', labels='targets', name='error/test-top5')
+                ]
+            ),
+            MinSaver('error/test-top1'),
             ProgressBar(),
             EstimatedTimeLeft()
         ],
         monitors=[
-            TFEventWriter(logdir='runs/'),
+            TFEventWriter(),
+            JSONWriter(),
             ScalarPrinter()
         ]
     )
