@@ -38,21 +38,22 @@ class Saver(Callback):
         regex = re.compile('^step-[0-9]+$')
         for dirname in os.listdir(self.save_path):
             if regex.match(dirname):
-                self._add_checkpoint(os.path.join(self.save_path, dirname))
+                checkpoint = os.path.join(self.save_path, dirname)
+                self._add_checkpoint(checkpoint)
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        save_path = os.path.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
+        checkpoint = os.path.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
         try:
-            os.makedirs(save_path, exist_ok=True)
-            self.trainer.save_checkpoint(save_path)
+            os.makedirs(checkpoint, exist_ok=True)
+            self.trainer.save_checkpoint(checkpoint)
         except (OSError, IOError):
-            logger.exception('Error occurred when saving checkpoint "{}".'.format(save_path))
+            logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint))
         else:
-            logger.info('Checkpoint saved: "{}".'.format(save_path))
-            self._add_checkpoint(save_path)
+            logger.info('Checkpoint saved: "{}".'.format(checkpoint))
+            self._add_checkpoint(checkpoint)
 
 
 class BestSaver(Callback):
@@ -89,14 +90,14 @@ class BestSaver(Callback):
             best = None
 
         if best is None or (self.extreme == 'min' and value < best[1]) or (self.extreme == 'max' and value > best[1]):
-            save_path = os.path.join(self.save_path, self.save_name)
+            checkpoint = os.path.join(self.save_path, self.save_name)
             try:
-                os.makedirs(save_path, exist_ok=True)
-                self.trainer.save_checkpoint(save_path)
+                os.makedirs(checkpoint, exist_ok=True)
+                self.trainer.save_checkpoint(checkpoint)
             except (OSError, IOError):
-                logger.exception('Error occurred when saving checkpoint "{}".'.format(save_path))
+                logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint))
             else:
-                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(save_path, value))
+                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint, value))
                 best = (step, value)
 
         if best is not None:
