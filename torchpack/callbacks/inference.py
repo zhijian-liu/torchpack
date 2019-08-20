@@ -32,7 +32,7 @@ class InferenceRunner(Callback):
         start_time = time.time()
         self.callbacks.before_epoch()
 
-        # TODO: a better way to create train/eval context
+        # TODO: training / evaluation context
         with torch.no_grad():
             for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
                 self.callbacks.before_step(feed_dict)
