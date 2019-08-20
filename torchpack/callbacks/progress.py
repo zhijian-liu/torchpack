@@ -20,7 +20,8 @@ class ProgressBar(Callback):
 
     master_only = True
 
-    def __init__(self, names=None, tqdm_kwargs=None):
+    def __init__(self, regexes=None, tqdm_kwargs=None):
+        self.regexes = regexes
         self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs(leave=True)
 
     def _before_epoch(self):
