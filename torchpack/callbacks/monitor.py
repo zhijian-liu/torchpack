@@ -134,7 +134,7 @@ class ScalarPrinter(Monitor):
     Print scalar data into terminal.
     """
 
-    def __init__(self, trigger_epoch=True, trigger_step=False, whitelist=None, blacklist=None):
+    def __init__(self, whitelist=None, blacklist=None):
         """
         Args:
             enable_step, enable_epoch (bool): whether to print the
@@ -154,23 +154,13 @@ class ScalarPrinter(Monitor):
 
         self.whitelist = compile_regex(whitelist)
         self.blacklist = compile_regex(blacklist)
-        self.enable_epoch = trigger_epoch
-        self.enable_step = trigger_step
         self.scalars = dict()
 
     def _before_train(self):
         self._trigger()
 
-    def _trigger_step(self):
-        if self.enable_step:
-            if self.trainer.local_step != self.trainer.steps_per_epoch - 1:
-                self._trigger()
-            elif not self.enable_epoch:
-                self._trigger()
-
     def _trigger_epoch(self):
-        if self.enable_epoch:
-            self._trigger()
+        self._trigger()
 
     def _trigger(self):
         def match_regex_list(regexs, name):
