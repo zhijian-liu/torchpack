@@ -40,15 +40,15 @@ class JSONWriter(Monitor):
     FILENAME = 'stats.json'
 
     def __init__(self, save_path=None):
-        self.logdir = os.path.normpath(save_path or get_logger_dir())
-        os.makedirs(self.logdir, exist_ok=True)
+        self.save_path = os.path.normpath(save_path or get_logger_dir())
+        os.makedirs(self.save_path, exist_ok=True)
 
     def load_existing_json(self):
         """
         Look for an existing json under :meth:`logger.get_logger_dir()` named "stats.json",
         and return the loaded list of statistics if found. Returns None otherwise.
         """
-        filename = os.path.join(self.logdir, JSONWriter.FILENAME)
+        filename = os.path.join(self.save_path, JSONWriter.FILENAME)
         if os.path.exists(filename):
             with open(filename) as fp:
                 stats = json.load(fp)
@@ -88,7 +88,7 @@ class JSONWriter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        filename = os.path.join(self.logdir, self.FILENAME)
+        filename = os.path.join(self.save_path, self.FILENAME)
         try:
             with open(filename + '.tmp', 'w') as fp:
                 json.dump(self.records, fp)
