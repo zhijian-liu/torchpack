@@ -3,8 +3,9 @@ import os
 import re
 import shutil
 from collections import defaultdict, deque
-import torch
+
 import numpy as np
+import torch
 from tensorboardX import SummaryWriter
 
 from torchpack.callbacks.callback import Callback
@@ -113,11 +114,11 @@ class Monitors(Monitor):
         for monitor in self.monitors:
             monitor.add_image(name, tensor)
 
-    def get_latest(self, name):
-        return self.history[name][-1][1]
-
     def get_history(self, name):
         return self.history[name]
+
+    def get_latest(self, name):
+        return self.history[name][-1][1]
 
     def append(self, monitor):
         self.monitors.append(monitor)

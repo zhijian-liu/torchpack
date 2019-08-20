@@ -19,13 +19,9 @@ class Saver(Callback):
             max_to_keep (int): Maximum number of recent checkpoint files to keep.
             checkpoint_dir (str): Defaults to ``logger.get_logger_dir()``.
         """
-        if checkpoint_dir is None:
-            checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
-        checkpoint_dir = os.path.normpath(checkpoint_dir)
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        self.checkpoint_dir = checkpoint_dir
         self.max_to_keep = max_to_keep
-        self.checkpoints = []
+        self.checkpoint_dir = os.path.normpath(checkpoint_dir or os.path.join(get_logger_dir(), 'checkpoints'))
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
 
     def _add_checkpoint(self, filename):
         heapq.heappush(self.checkpoints, (os.path.getmtime(filename), filename))
@@ -37,6 +33,7 @@ class Saver(Callback):
                 logger.exception('Error occurred when removing checkpoint "{}".'.format(filename))
 
     def _before_train(self):
+        self.checkpoints = list()
         regex = re.compile('^step-[0-9]+.pth$')
         for filename in os.listdir(self.checkpoint_dir):
             if regex.match(filename):
@@ -66,16 +63,13 @@ class BestSaver(Callback):
         """
         Args:
             key (str): the name of the statistics.
-            filename (str): the name for the saved model. Defaults to ``{key}-min.pth``.
+            filename (str): the name for the saved model. Defaults to ``min-{key}.pth``.
             checkpoint_dir (str): the directory containing checkpoints.
         """
-        if checkpoint_dir is None:
-            checkpoint_dir = os.path.join(get_logger_dir(), 'checkpoints')
-        checkpoint_dir = os.path.normpath(checkpoint_dir)
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        self.checkpoint_dir = checkpoint_dir
-        self.filename = filename
         self.key = key
+        self.filename = filename
+        self.checkpoint_dir = os.path.normpath(checkpoint_dir or os.path.join(get_logger_dir(), 'checkpoints'))
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
 
     def _trigger_epoch(self):
         self._trigger()
