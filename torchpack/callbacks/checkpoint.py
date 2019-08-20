@@ -60,15 +60,15 @@ class BestSaver(Callback):
     Save the checkpoint with best value of some statistics.
     """
 
-    def __init__(self, key, name=None, save_path=None):
+    def __init__(self, key, save_name=None, save_path=None):
         """
         Args:
             key (str): the name of the statistics.
-            name (str): the name for the saved model. Defaults to ``min-{key}``.
+            save_name (str): the name for the saved model. Defaults to ``min-{key}``.
             save_path (str): the directory containing checkpoints.
         """
         self.key = key
-        self.name = name
+        self.save_name = save_name
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
         os.makedirs(self.save_path, exist_ok=True)
 
@@ -89,7 +89,7 @@ class BestSaver(Callback):
             best = None
 
         if best is None or (self.extreme == 'min' and value < best[1]) or (self.extreme == 'max' and value > best[1]):
-            save_path = os.path.join(self.save_path, self.name or (self.extreme + '-' + self.key.replace('/', '-')))
+            save_path = os.path.join(self.save_path, self.save_name or self.extreme + '-' + self.key.replace('/', '-'))
             try:
                 os.makedirs(save_path, exist_ok=True)
                 self.trainer.save_checkpoint(save_path)
