@@ -2,8 +2,8 @@ import json
 import os
 import re
 import shutil
-from collections import defaultdict
-
+from collections import defaultdict, deque
+import torch
 import numpy as np
 from tensorboardX import SummaryWriter
 
@@ -25,22 +25,24 @@ class Monitor(Callback):
             scalar = int(scalar)
         if isinstance(scalar, np.floating):
             scalar = float(scalar)
+        assert isinstance(scalar, (int, float)), type(scalar)
         self._add_scalar(name, scalar)
 
     def _add_scalar(self, name, scalar):
         pass
 
     def add_image(self, name, tensor):
-        # TODO: check whether these transforms are correct
+        if isinstance(tensor, torch.Tensor):
+            tensor = tensor.numpy()
         assert isinstance(tensor, np.ndarray), type(tensor)
         if tensor.ndim == 2:
             tensor = tensor[np.newaxis, :, :, np.newaxis]
         elif tensor.ndim == 3:
+            if tensor.shape[0] in [1, 3, 4]:
+                tensor = np.transpose(tensor, (1, 2, 0))
             if tensor.shape[-1] in [1, 3, 4]:
                 tensor = tensor[np.newaxis, ...]
-            else:
-                tensor = tensor[..., np.newaxis]
-        assert tensor.ndim == 4, tensor.shape
+        assert tensor.ndim == 4 and tensor.shape[-1] in [1, 3, 4], tensor.shape
         self._add_image(name, tensor)
 
     def _add_image(self, name, tensor):
@@ -56,7 +58,8 @@ class Monitors(Monitor):
         for monitor in monitors:
             assert isinstance(monitor, Monitor), type(monitor)
         self.monitors = monitors
-        self.scalars = defaultdict(list)
+        # TODO: track scalar & image history separately (with different `maxlen`)
+        self.history = defaultdict(deque)
 
     def _set_trainer(self, trainer):
         for monitor in self.monitors:
@@ -99,20 +102,34 @@ class Monitors(Monitor):
             monitor.after_train()
 
     def _add_scalar(self, name, scalar):
-        # TODO: track scalar/image history in `Monitor.add()`
-        self.scalars[name].append((self.trainer.global_step, scalar))
+        # TODO: track in `Monitor` or by `HistoryTracker` wrapper
+        self.history[name].append((self.trainer.global_step, scalar))
         for monitor in self.monitors:
             monitor.add_scalar(name, scalar)
 
     def _add_image(self, name, tensor):
+        # TODO: track in `Monitor` or by `HistoryTracker` wrapper
+        self.history[name].append((self.trainer.global_step, tensor))
         for monitor in self.monitors:
             monitor.add_image(name, tensor)
 
     def get_latest(self, name):
-        return self.scalars[name][-1][1]
+        return self.history[name][-1][1]
 
     def get_history(self, name):
-        return self.scalars[name]
+        return self.history[name]
+
+    def append(self, monitor):
+        self.monitors.append(monitor)
+
+    def extend(self, monitors):
+        self.monitors.extend(monitors)
+
+    def __getitem__(self, index):
+        return self.monitors[index]
+
+    def __len__(self):
+        return len(self.monitors)
 
 
 class TFEventWriter(Monitor):
@@ -121,9 +138,8 @@ class TFEventWriter(Monitor):
     """
 
     def __init__(self, logdir=None):
-        if logdir is None:
-            logdir = get_logger_dir()
-        self.logdir = logdir
+        self.logdir = os.path.normpath(logdir or get_logger_dir())
+        os.makedirs(self.logdir, exist_ok=True)
 
     def _before_train(self):
         self.writer = SummaryWriter(self.logdir)
@@ -140,16 +156,14 @@ class TFEventWriter(Monitor):
 
 class JSONWriter(Monitor):
     """
-    Write all scalar data to a json file under ``logger.get_logger_dir()``, grouped by their global step.
-    If found an earlier json history file, will append to it.
+    Write scalar summaries to JSON file.
     """
 
     FILENAME = 'stats.json'
 
     def __init__(self, logdir=None):
-        if logdir is None:
-            logdir = get_logger_dir()
-        self.logdir = logdir
+        self.logdir = os.path.normpath(logdir or get_logger_dir())
+        os.makedirs(self.logdir, exist_ok=True)
 
     def load_existing_json(self):
         """
@@ -237,10 +251,7 @@ class ScalarPrinter(Monitor):
             return rs
 
         self.whitelist = compile_regex(whitelist)
-        if blacklist is None:
-            blacklist = []
         self.blacklist = compile_regex(blacklist)
-
         self.enable_epoch = trigger_epoch
         self.enable_step = trigger_step
         self.scalars = dict()
@@ -269,7 +280,7 @@ class ScalarPrinter(Monitor):
         texts = []
         for k, v in sorted(self.scalars.items()):
             if self.whitelist is None or match_regex_list(self.whitelist, k):
-                if not match_regex_list(self.blacklist, k):
+                if self.blacklist is None or not match_regex_list(self.blacklist, k):
                     texts.append('[{}] = {:.5g}'.format(k, v))
         if texts:
             logger.info('\n+ '.join([''] + texts))
