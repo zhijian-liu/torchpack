@@ -25,35 +25,35 @@ class Saver(Callback):
         os.makedirs(self.save_path, exist_ok=True)
         self.checkpoints = list()
 
-    def _add_checkpoint(self, checkpoint):
-        heapq.heappush(self.checkpoints, (os.path.getmtime(checkpoint), checkpoint))
+    def _add_checkpoint(self, checkpoint_path):
+        heapq.heappush(self.checkpoints, (os.path.getmtime(checkpoint_path), checkpoint_path))
         while self.max_to_keep is not None and len(self.checkpoints) > self.max_to_keep:
-            checkpoint = heapq.heappop(self.checkpoints)[1]
+            checkpoint_path = heapq.heappop(self.checkpoints)[1]
             try:
-                shutil.rmtree(checkpoint)
+                shutil.rmtree(checkpoint_path)
             except (OSError, IOError):
-                logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint))
+                logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint_path))
 
     def _before_train(self):
         regex = re.compile('^step-[0-9]+$')
         for dirname in os.listdir(self.save_path):
             if regex.match(dirname):
-                checkpoint = os.path.join(self.save_path, dirname)
-                self._add_checkpoint(checkpoint)
+                checkpoint_path = os.path.join(self.save_path, dirname)
+                self._add_checkpoint(checkpoint_path)
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        checkpoint = os.path.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
+        checkpoint_path = os.path.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
         try:
-            os.makedirs(checkpoint, exist_ok=True)
-            self.trainer.save_checkpoint(checkpoint)
+            os.makedirs(checkpoint_path, exist_ok=True)
+            self.trainer.save_checkpoint(checkpoint_path)
         except (OSError, IOError):
-            logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint))
+            logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
         else:
-            logger.info('Checkpoint saved: "{}".'.format(checkpoint))
-            self._add_checkpoint(checkpoint)
+            logger.info('Checkpoint saved: "{}".'.format(checkpoint_path))
+            self._add_checkpoint(checkpoint_path)
 
 
 class BestSaver(Callback):
@@ -90,14 +90,14 @@ class BestSaver(Callback):
             best = None
 
         if best is None or (self.extreme == 'min' and value < best[1]) or (self.extreme == 'max' and value > best[1]):
-            checkpoint = os.path.join(self.save_path, self.save_name)
+            checkpoint_path = os.path.join(self.save_path, self.save_name)
             try:
-                os.makedirs(checkpoint, exist_ok=True)
-                self.trainer.save_checkpoint(checkpoint)
+                os.makedirs(checkpoint_path, exist_ok=True)
+                self.trainer.save_checkpoint(checkpoint_path)
             except (OSError, IOError):
-                logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint))
+                logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
             else:
-                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint, value))
+                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint_path, value))
                 best = (step, value)
 
         if best is not None:
