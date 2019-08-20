@@ -16,27 +16,12 @@ from torchpack.utils.logging import get_logger, set_logger_dir
 logger = get_logger(__file__)
 
 
-class Model(nn.Module):
-    def __init__(self, model, criterion):
-        super().__init__()
-        self.model = model
-        self.criterion = criterion
-
-    def forward(self, feed_dict):
-        inputs, targets = feed_dict['inputs'], feed_dict['targets']
-        outputs = self.model(inputs)
-        if self.model.training:
-            loss = self.criterion(outputs, targets)
-            return loss, outputs
-        return outputs
-
-
 def main():
     parser = ArgumentParser()
     parser.add_argument('--devices', action='set_devices', default='*', help='list of device(s) to use.')
     parser.parse_args()
 
-    dump_dir = os.path.join('runs', 'train')
+    dump_dir = os.path.join('runs', 'imagenet100')
     set_logger_dir(dump_dir)
 
     logger.info(' '.join([sys.executable] + sys.argv))
@@ -83,25 +68,23 @@ def main():
 
             return async_copy_to(output_dict, device='cpu')
 
-        def save_checkpoint(self, filename):
-            torch.save(dict(model=model.state_dict(), optimizer=optimizer.state_dict()), filename)
+        def save_checkpoint(self, checkpoint_dir):
+            torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'model.pth'))
+            torch.save(optimizer.state_dict(), os.path.join(checkpoint_dir, 'optimizer.pth'))
 
     trainer = ClassificationTrainer()
     trainer.train(
         dataflow=loaders['train'],
         max_epoch=150,
         callbacks=[
-            Saver(max_to_keep=10),
             LambdaCallback(before_epoch=lambda _: model.train(), after_epoch=lambda _: model.eval()),
             LambdaCallback(before_epoch=lambda _: scheduler.step()),
-            InferenceRunner(
-                loaders['test'],
-                callbacks=[
-                    ClassificationError(topk=1, logits='outputs', labels='targets', name='error/test-top1'),
-                    ClassificationError(topk=5, logits='outputs', labels='targets', name='error/test-top5')
-                ]
-            ),
-            MinSaver('error/test-top1'),
+            InferenceRunner(loaders['test'], callbacks=[
+                ClassificationError(topk=1, name='error/top1'),
+                ClassificationError(topk=5, name='error/top5')
+            ]),
+            Saver(),
+            MinSaver('error/top1'),
             ProgressBar(),
             EstimatedTimeLeft()
         ],
