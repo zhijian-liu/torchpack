@@ -15,12 +15,12 @@ class TFEventWriter(Monitor):
     Write summaries to TensorFlow event file.
     """
 
-    def __init__(self, logdir=None):
-        self.logdir = os.path.normpath(logdir or get_logger_dir())
-        os.makedirs(self.logdir, exist_ok=True)
+    def __init__(self, save_path=None):
+        self.save_path = os.path.normpath(save_path or get_logger_dir())
+        os.makedirs(self.save_path, exist_ok=True)
 
     def _before_train(self):
-        self.writer = SummaryWriter(self.logdir)
+        self.writer = SummaryWriter(self.save_path)
 
     def _after_train(self):
         self.writer.close()
@@ -39,8 +39,8 @@ class JSONWriter(Monitor):
 
     FILENAME = 'stats.json'
 
-    def __init__(self, logdir=None):
-        self.logdir = os.path.normpath(logdir or get_logger_dir())
+    def __init__(self, save_path=None):
+        self.logdir = os.path.normpath(save_path or get_logger_dir())
         os.makedirs(self.logdir, exist_ok=True)
 
     def load_existing_json(self):
