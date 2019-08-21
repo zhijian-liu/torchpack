@@ -49,40 +49,33 @@ class Monitors(object):
         for monitor in monitors:
             assert isinstance(monitor, Monitor), type(monitor)
         self.monitors = monitors
+        self.summaries = defaultdict(list)
 
     def set_trainer(self, trainer):
         self.trainer = trainer
-        self._set_trainer(trainer)
-
-    def _set_trainer(self, trainer):
-        # TODO: keep `maxlen` scalars and images
-        self.scalars = defaultdict(list)
-        self.images = defaultdict(list)
 
     def add_scalar(self, name, scalar):
         self._add_scalar(name, scalar)
-        for callback in self.monitors:
-            callback.add_scalar(name, scalar)
+        for monitor in self.monitors:
+            monitor.add_scalar(name, scalar)
 
     def _add_scalar(self, name, scalar):
-        self.scalars[name].append((self.trainer.global_step, scalar))
+        self.summaries[name].append((scalar, self.trainer.global_step))
 
     def add_image(self, name, tensor):
         self._add_image(name, tensor)
-        for callback in self.monitors:
-            callback.add_image(name, tensor)
+        for monitor in self.monitors:
+            monitor.add_image(name, tensor)
 
     def _add_image(self, name, tensor):
-        self.images[name].append((self.trainer.global_step, tensor))
+        # TODO: only keep recent images to prevent memory overflow
+        self.summaries[name].append((tensor, self.trainer.global_step))
 
     def get(self, name):
-        return self.scalars.get(name)
-
-    def keys(self):
-        return self.scalars.keys()
+        return self.summaries[name]
 
     def __contains__(self, name):
-        return name in self.scalars and self.scalars[name]
+        return name in self.summaries and self.summaries[name]
 
     def __getitem__(self, name):
-        return self.scalars[name][-1]
+        return self.summaries[name][-1]
