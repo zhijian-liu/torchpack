@@ -3,44 +3,48 @@ import os
 import re
 import shutil
 
+import six
 from tensorboardX import SummaryWriter
 
-from torchpack.callbacks.callback import Callback
 from torchpack.callbacks.monitor import Monitor
 from torchpack.utils.logging import get_logger_dir
 from torchpack.utils.logging import logger
 
-__all__ = ['TerminalWriter', 'TFEventWriter', 'JSONWriter']
+__all__ = ['ScalarPrinter', 'TFEventWriter', 'JSONWriter']
 
 
-class TerminalWriter(Callback):
+class ScalarPrinter(Monitor):
     """
-    Print scalar data into terminal.
+    Write scalar summaries into terminal.
     """
 
-    def __init__(self, regexes=None, blacklist=None):
+    def __init__(self, regexes=None):
         """
         Args:
-            regex (list[str] or None): A list of regex. Only names
-                matching some regex will be allowed for printing.
-                Defaults to match all names.
-            blacklist (list[str] or None): A list of regex. Names matching
-                any regex will not be printed. Defaults to match no names.
+            regexes: a list of regexes. Defaults to match all names.
         """
+        if regexes is None:
+            regexes = ['.*']
+        elif isinstance(regexes, six.string_types):
+            regexes = [regexes]
         self.regexes = [re.compile(regex) for regex in regexes]
+        self.scalars = dict()
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        texts = []
-        for k in sorted(self.trainer.monitors.keys()):
-            if not any(regex.match(k) for regex in self.regexes):
+        texts = list()
+        for name, scalar in sorted(self.scalars.items()):
+            if not any(regex.match(name) for regex in self.regexes):
                 continue
-            _, v = self.trainer.monitors[k]
-            texts.append('[{}] = {:.5g}'.format(k, v))
+            texts.append('[{}] = {:.5g}'.format(name, scalar))
         if texts:
             logger.info('\n+ '.join([''] + texts))
+        self.scalars.clear()
+
+    def _add_scalar(self, name, scalar):
+        self.scalars[name] = scalar
 
 
 class TFEventWriter(Monitor):
