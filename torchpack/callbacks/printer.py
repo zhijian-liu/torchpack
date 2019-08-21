@@ -27,10 +27,10 @@ class ScalarPrinter(Callback):
 
     def _trigger(self):
         texts = []
-        for k in sorted(self.trainer.summaries.keys()):
+        for k in sorted(self.trainer.monitors.keys()):
             if not any(regex.match(k) for regex in self.regexes):
                 continue
-            _, v = self.trainer.summaries[k]
+            _, v = self.trainer.monitors[k]
             texts.append('[{}] = {:.5g}'.format(k, v))
         if texts:
             logger.info('\n+ '.join([''] + texts))

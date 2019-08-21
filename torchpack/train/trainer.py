@@ -6,8 +6,9 @@ from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.callbacks.callback import Callback, Callbacks
 from torchpack.train.exception import StopTraining
+from torchpack.callbacks.monitor import Monitors
 from torchpack.utils.logging import logger
-from torchpack.train.summary import Summaries
+
 __all__ = ['Trainer']
 
 
@@ -17,18 +18,16 @@ class Trainer(object):
     """
 
     is_master = True
-    """
-    Whether this process is the chief worker in distributed training.
-    Certain callbacks will only be run by chief worker.
-    """
+
+    def __init__(self):
+        self.monitors = Monitors()
+        self.monitors.set_trainer(weakref.proxy(self))
 
     def set_callbacks(self, callbacks):
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
         self.callbacks = Callbacks(callbacks)
         self.callbacks.set_trainer(weakref.proxy(self))
-        self.summaries = Summaries()
-        self.summaries.set_trainer(weakref.proxy(self))
 
     def train(self, dataflow, callbacks=None, starting_epoch=1, max_epoch=9999999):
         self.dataflow = dataflow

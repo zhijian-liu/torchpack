@@ -79,9 +79,9 @@ class BestSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        if self.key not in self.trainer.summaries:
+        if self.key not in self.trainer.monitors:
             return
-        step, value = self.trainer.summaries[self.key]
+        step, value = self.trainer.monitors[self.key]
 
         if self.best is None or \
                 (self.extreme == 'min' and value < self.best[1]) or (self.extreme == 'max' and value > self.best[1]):
@@ -98,7 +98,7 @@ class BestSaver(Callback):
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint_path, value))
 
         if self.best is not None:
-            self.trainer.summaries.add_scalar(self.key + '/' + self.extreme, self.best[1])
+            self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
     def save_checkpoint(self, save_path):
         with open(os.path.join(save_path, 'max-saver.json'), 'w') as fp:
