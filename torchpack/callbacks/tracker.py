@@ -89,7 +89,7 @@ class GPUUtilizationTracker(Callback):
         self.trainer.monitors.add_scalar('utilization/gpu', np.mean(meters))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), meters[k])
+                self.trainer.summaries.add_scalar('utilization/gpu{}'.format(device), meters[k])
 
     def _after_train(self):
         if self.process.is_alive():
@@ -125,6 +125,6 @@ class ThroughputTracker(Callback):
         self.last_step = self.trainer.global_step
 
         if self.samples_per_step is None:
-            self.trainer.monitors.add_scalar('throughput/steps', steps_per_sec)
+            self.trainer.summaries.add_scalar('throughput/steps', steps_per_sec)
         else:
-            self.trainer.monitors.add_scalar('throughput/samples', steps_per_sec * self.samples_per_step)
+            self.trainer.summaries.add_scalar('throughput/samples', steps_per_sec * self.samples_per_step)

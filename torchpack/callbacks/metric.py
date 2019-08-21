@@ -25,4 +25,4 @@ class ClassificationError(Callback):
         self.num_errors += targets.size(0) - masks.sum().item()
 
     def _after_epoch(self):
-        self.trainer.monitors.add_scalar(self.name, self.num_errors / self.num_examples * 100)
+        self.trainer.summaries.add_scalar(self.name, self.num_errors / self.num_examples * 100)

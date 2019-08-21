@@ -1,4 +1,5 @@
 import heapq
+import json
 import os
 import re
 import shutil
@@ -17,7 +18,7 @@ class Saver(Callback):
     def __init__(self, max_to_keep=10, save_path=None):
         """
         Args:
-            max_to_keep (int): Maximum number of recent checkpoint files to keep.
+            max_to_keep (int): maximum number of recent checkpoint files to keep.
             save_path (str): Defaults to ``logger.get_logger_dir()``.
         """
         self.max_to_keep = max_to_keep
@@ -36,9 +37,9 @@ class Saver(Callback):
 
     def _before_train(self):
         regex = re.compile('^step-[0-9]+$')
-        for dirname in os.listdir(self.save_path):
-            if regex.match(dirname):
-                checkpoint_path = os.path.join(self.save_path, dirname)
+        for name in os.listdir(self.save_path):
+            if regex.match(name):
+                checkpoint_path = os.path.join(self.save_path, name)
                 self._add_checkpoint(checkpoint_path)
 
     def _trigger_epoch(self):
@@ -61,47 +62,51 @@ class BestSaver(Callback):
     Save the checkpoint with best value of some statistics.
     """
 
-    def __init__(self, key, save_name=None, save_path=None):
+    def __init__(self, key, save_path=None, save_name=None):
         """
         Args:
             key (str): the name of the statistics.
-            save_name (str): the name for the saved model. Defaults to ``min-{key}``.
-            save_path (str): the directory containing checkpoints.
+            save_path (str): the directory for saving checkpoints.
+            save_name (str): the name for the saved checkpoint. Defaults to ``min-{key}``.
         """
         self.key = key
-        self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
         os.makedirs(self.save_path, exist_ok=True)
+        self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
+        self.best = None
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        # TODO: `self.key in self.train.monitors`
-        try:
-            step, value = self.trainer.monitors.get_history(self.key)[-1]
-        except (KeyError, IndexError):
+        if self.key not in self.trainer.summaries:
             return
+        step, value = self.trainer.summaries[self.key]
 
-        # TODO: `self.key + '/' + self.extreme in self.train.monitors`
-        try:
-            best = self.trainer.monitors.get_history(self.key + '/' + self.extreme)[-1]
-        except (KeyError, IndexError):
-            best = None
-
-        if best is None or (self.extreme == 'min' and value < best[1]) or (self.extreme == 'max' and value > best[1]):
+        if self.best is None or \
+                (self.extreme == 'min' and value < self.best[1]) or (self.extreme == 'max' and value > self.best[1]):
+            self.best = (step, value)
             checkpoint_path = os.path.join(self.save_path, self.save_name)
             try:
                 os.makedirs(checkpoint_path, exist_ok=True)
                 self.trainer.save_checkpoint(checkpoint_path)
+                # TODO: a quick hack, should move this into self.trainer.save_checkpoint
+                self.save_checkpoint(checkpoint_path)
             except (OSError, IOError):
                 logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
             else:
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint_path, value))
-                best = (step, value)
 
-        if best is not None:
-            self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, best[1])
+        if self.best is not None:
+            self.trainer.summaries.add_scalar(self.key + '/' + self.extreme, self.best[1])
+
+    def save_checkpoint(self, save_path):
+        with open(os.path.join(save_path, 'max-saver.json'), 'w') as fp:
+            json.dump(self.best, fp)
+
+    def load_checkpoint(self, resume_path):
+        with open(os.path.join(resume_path, 'max-saver.json'), 'r') as fp:
+            self.best = json.load(fp)
 
 
 class MinSaver(BestSaver):

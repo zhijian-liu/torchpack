@@ -1,13 +1,15 @@
-import re
-from collections import defaultdict, deque
+import json
+import os
+import shutil
 
 import numpy as np
 import torch
+from tensorboardX import SummaryWriter
 
 from torchpack.callbacks.callback import Callback
-from torchpack.utils.logging import logger
+from torchpack.utils.logging import logger, get_logger_dir
 
-__all__ = ['Monitor', 'Monitors', 'ScalarPrinter']
+__all__ = ['Monitor', 'TFEventWriter', 'JSONWriter']
 
 
 class Monitor(Callback):
@@ -46,137 +48,77 @@ class Monitor(Callback):
         pass
 
 
-class Monitors(Monitor):
+class TFEventWriter(Monitor):
     """
-    A container to hold all monitors.
+    Write summaries to TensorFlow event file.
     """
 
-    def __init__(self, monitors):
-        for monitor in monitors:
-            assert isinstance(monitor, Monitor), type(monitor)
-        self.monitors = monitors
-        # TODO: track scalar & image history separately (with different `maxlen`)
-        self.history = defaultdict(deque)
-
-    def _set_trainer(self, trainer):
-        for monitor in self.monitors:
-            monitor.set_trainer(trainer)
+    def __init__(self, save_path=None):
+        self.save_path = os.path.normpath(save_path or get_logger_dir())
+        os.makedirs(self.save_path, exist_ok=True)
 
     def _before_train(self):
-        for monitor in self.monitors:
-            monitor.before_train()
-
-    def _before_epoch(self):
-        for monitor in self.monitors:
-            monitor.before_epoch()
-
-    def _before_step(self, *args, **kwargs):
-        for monitor in self.monitors:
-            monitor.before_step(*args, **kwargs)
-
-    def _after_step(self, *args, **kwargs):
-        for monitor in self.monitors:
-            monitor.after_step(*args, **kwargs)
-
-    def _trigger_step(self):
-        for monitor in self.monitors:
-            monitor.trigger_step()
-
-    def _after_epoch(self):
-        for monitor in self.monitors:
-            monitor.after_epoch()
-
-    def _trigger_epoch(self):
-        for monitor in self.monitors:
-            monitor.trigger_epoch()
-
-    def _trigger(self):
-        for monitor in self.monitors:
-            monitor.trigger()
+        self.writer = SummaryWriter(self.save_path)
 
     def _after_train(self):
-        for monitor in self.monitors:
-            monitor.after_train()
+        self.writer.close()
 
     def _add_scalar(self, name, scalar):
-        # TODO: track in `Monitor` or by `HistoryTracker` wrapper
-        self.history[name].append((self.trainer.global_step, scalar))
-        for monitor in self.monitors:
-            monitor.add_scalar(name, scalar)
+        self.writer.add_scalar(name, scalar, self.trainer.global_step)
 
     def _add_image(self, name, tensor):
-        # TODO: track in `Monitor` or by `HistoryTracker` wrapper
-        self.history[name].append((self.trainer.global_step, tensor))
-        for monitor in self.monitors:
-            monitor.add_image(name, tensor)
-
-    def get_history(self, name):
-        return self.history[name]
-
-    def get_latest(self, name):
-        return self.history[name][-1][1]
-
-    def append(self, monitor):
-        self.monitors.append(monitor)
-
-    def extend(self, monitors):
-        self.monitors.extend(monitors)
-
-    def __getitem__(self, index):
-        return self.monitors[index]
-
-    def __len__(self):
-        return len(self.monitors)
+        self.writer.add_image(name, tensor, self.trainer.global_step)
 
 
-class ScalarPrinter(Monitor):
+class JSONWriter(Monitor):
     """
-    Print scalar data into terminal.
+    Write scalar summaries to JSON file.
     """
 
-    def __init__(self, whitelist=None, blacklist=None):
-        """
-        Args:
-            enable_step, enable_epoch (bool): whether to print the
-                monitor data (if any) between steps or between epochs.
-            whitelist (list[str] or None): A list of regex. Only names
-                matching some regex will be allowed for printing.
-                Defaults to match all names.
-            blacklist (list[str] or None): A list of regex. Names matching
-                any regex will not be printed. Defaults to match no names.
-        """
-
-        def compile_regex(rs):
-            if rs is None:
-                return None
-            rs = set([re.compile(r) for r in rs])
-            return rs
-
-        self.whitelist = compile_regex(whitelist)
-        self.blacklist = compile_regex(blacklist)
-        self.scalars = dict()
+    def __init__(self, save_path=None):
+        self.save_path = os.path.normpath(save_path or get_logger_dir())
+        os.makedirs(self.save_path, exist_ok=True)
 
     def _before_train(self):
-        self._trigger()
+        self.summaries = []
+
+        filename = os.path.join(self.save_path, 'scalars.json')
+        if not os.path.exists(filename):
+            return
+
+        with open(filename) as fp:
+            summaries = json.load(fp)
+        assert isinstance(summaries, list), type(summaries)
+        self.summaries = summaries
+
+        try:
+            epoch = summaries[-1]['epoch_num'] + 1
+        except:
+            return
+        if epoch != self.trainer.starting_epoch:
+            logger.warning('History epoch={} from JSON is not the predecessor of the current starting_epoch={}'.format(
+                epoch - 1, self.trainer.starting_epoch))
+            logger.warning('If you want to resume old training, either use `AutoResumeTrainConfig` '
+                           'or correctly set the new starting_epoch yourself to avoid inconsistency.')
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        def match_regex_list(regexs, name):
-            for r in regexs:
-                if r.search(name) is not None:
-                    return True
-            return False
+        filename = os.path.join(self.save_path, 'scalars.json')
+        try:
+            with open(filename + '.tmp', 'w') as fp:
+                json.dump(self.summaries, fp)
+            shutil.move(filename + '.tmp', filename)
+        except (OSError, IOError):
+            logger.exception('Error occurred when saving JSON file "{}".'.format(filename))
 
-        texts = []
-        for k, v in sorted(self.scalars.items()):
-            if self.whitelist is None or match_regex_list(self.whitelist, k):
-                if self.blacklist is None or not match_regex_list(self.blacklist, k):
-                    texts.append('[{}] = {:.5g}'.format(k, v))
-        if texts:
-            logger.info('\n+ '.join([''] + texts))
-        self.scalars = dict()
+    def _after_train(self):
+        self._trigger()
 
     def _add_scalar(self, name, scalar):
-        self.scalars[name] = scalar
+        self.summaries.append({
+            'epoch-num': self.trainer.epoch_num,
+            'global-step': self.trainer.global_step, 'local-step': self.trainer.local_step,
+            name: scalar
+        })
