@@ -61,7 +61,7 @@ class Monitors(object):
 
     def _add_scalar(self, name, scalar):
         if name not in self.summaries:
-            self.summaries[name] = deque(maxlen=1000)
+            self.summaries[name] = deque(maxlen=65536)
         self.summaries[name].append((scalar, self.trainer.global_step))
 
     def add_image(self, name, tensor):
@@ -71,14 +71,14 @@ class Monitors(object):
 
     def _add_image(self, name, tensor):
         if name not in self.summaries:
-            self.summaries[name] = deque(maxlen=10)
+            self.summaries[name] = deque(maxlen=4)
         self.summaries[name].append((tensor, self.trainer.global_step))
+
+    def get(self, name):
+        return self.summaries.get(name)
 
     def __contains__(self, name):
         return name in self.summaries
 
     def __getitem__(self, name):
-        return self.summaries[name][-1]
-
-    def get(self, name):
-        return self.summaries[name]
+        return self.summaries[name][-1][0]
