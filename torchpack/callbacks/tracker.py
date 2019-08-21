@@ -54,7 +54,8 @@ class GPUUtilizationTracker(Callback):
                     while not event.is_set():
                         time.sleep(1)
                         meters.append([ctx.device(k).utilization()['gpu'] for k in devices])
-                    queue.put(np.mean(meters[:-1], axis=0))
+                    meters = meters[:max(len(meters) - 1, 1)]
+                    queue.put(np.mean(meters, axis=0))
                     event.clear()
         except:
             queue.put(None)
