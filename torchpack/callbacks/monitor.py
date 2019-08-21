@@ -1,10 +1,9 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import numpy as np
 import torch
 
 from torchpack.callbacks.callback import Callback
-
 __all__ = ['Monitor', 'Monitors']
 
 
@@ -49,7 +48,7 @@ class Monitors(object):
         for monitor in monitors:
             assert isinstance(monitor, Monitor), type(monitor)
         self.monitors = monitors
-        self.summaries = defaultdict(list)
+        self.summaries = dict()
 
     def set_trainer(self, trainer):
         self.trainer = trainer
@@ -60,6 +59,8 @@ class Monitors(object):
             monitor.add_scalar(name, scalar)
 
     def _add_scalar(self, name, scalar):
+        if name not in self.summaries:
+            self.summaries[name] = deque(maxlen=1000)
         self.summaries[name].append((scalar, self.trainer.global_step))
 
     def add_image(self, name, tensor):
@@ -68,14 +69,15 @@ class Monitors(object):
             monitor.add_image(name, tensor)
 
     def _add_image(self, name, tensor):
-        # TODO: only keep recent images to prevent memory overflow
+        if name not in self.summaries:
+            self.summaries[name] = deque(maxlen=10)
         self.summaries[name].append((tensor, self.trainer.global_step))
 
-    def get(self, name):
-        return self.summaries[name]
-
     def __contains__(self, name):
-        return name in self.summaries and self.summaries[name]
+        return name in self.summaries
 
     def __getitem__(self, name):
         return self.summaries[name][-1]
+
+    def get(self, name):
+        return self.summaries[name]
