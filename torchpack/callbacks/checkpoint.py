@@ -67,24 +67,33 @@ class BestSaver(Callback):
         Args:
             key (str): the name of the statistics.
             save_path (str): the directory for saving checkpoints.
-            save_name (str): the name for the saved checkpoint. Defaults to ``min-{key}``.
+            save_name (str): the name for the saved checkpoint. Defaults to `min-{key}`.
         """
         self.key = key
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
         os.makedirs(self.save_path, exist_ok=True)
         self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
         self.best = None
+        self.last_step = None
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
         if self.key not in self.trainer.monitors:
+            logger.warning('skipped.')
             return
-        step, value = self.trainer.monitors[self.key]
 
-        if self.best is None or \
-                (self.extreme == 'min' and value < self.best[1]) or (self.extreme == 'max' and value > self.best[1]):
+        step, value = self.trainer.monitors.get(self.key)[-1]
+
+        if self.last_step is not None and step <= self.last_step:
+            logger.warning('skipped.')
+            return
+
+        self.last_step = step
+
+        if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
+                (self.extreme == 'max' and value > self.best[1]):
             self.best = (step, value)
             checkpoint_path = os.path.join(self.save_path, self.save_name)
             try:
