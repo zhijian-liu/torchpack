@@ -86,12 +86,10 @@ def main():
             Saver(),
             MinSaver('error/top1'),
             ProgressBar(),
-            EstimatedTimeLeft()
-        ],
-        monitors=[
+            ScalarPrinter(regexes=['error/', 'loss']),
+            EstimatedTimeLeft(),
             TFEventWriter(),
-            JSONWriter(),
-            ScalarPrinter()
+            JSONWriter()
         ]
     )
 
