@@ -49,14 +49,15 @@ class Monitors(object):
         for monitor in monitors:
             assert isinstance(monitor, Monitor), type(monitor)
         self.monitors = monitors
-        # TODO: keep `maxlen` scalars and images
-        self.scalars = defaultdict(list)
 
     def set_trainer(self, trainer):
+        self.trainer = trainer
         self._set_trainer(trainer)
 
     def _set_trainer(self, trainer):
-        self.trainer = trainer
+        # TODO: keep `maxlen` scalars and images
+        self.scalars = defaultdict(list)
+        self.images = defaultdict(list)
 
     def add_scalar(self, name, scalar):
         self._add_scalar(name, scalar)
@@ -72,8 +73,7 @@ class Monitors(object):
             callback.add_image(name, tensor)
 
     def _add_image(self, name, tensor):
-        # TODO: support images
-        pass
+        self.images[name].append((self.trainer.global_step, tensor))
 
     def get(self, name):
         return self.scalars.get(name)

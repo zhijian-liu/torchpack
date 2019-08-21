@@ -50,7 +50,7 @@ class GPUUtilizationTracker(Callback):
                 while True:
                     event.wait()
                     event.clear()
-                    meters = list()
+                    meters = []
                     while not event.is_set():
                         time.sleep(1)
                         meters.append([ctx.device(k).utilization()['gpu'] for k in devices])

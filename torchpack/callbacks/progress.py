@@ -1,7 +1,9 @@
+import re
 import time
 from collections import deque
 
 import numpy as np
+import six
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs
 from tensorpack.utils.utils import humanize_time_delta
@@ -20,8 +22,11 @@ class ProgressBar(Callback):
 
     master_only = True
 
-    def __init__(self, regex=None, tqdm_kwargs=None):
-        self.regex = regex
+    def __init__(self, regexes=None, tqdm_kwargs=None):
+        regexes = regexes or ['.*']
+        if isinstance(regexes, six.string_types):
+            regexes = [regexes]
+        self.regexes = [re.compile(regex) for regex in regexes]
         self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs(leave=True)
 
     def _before_epoch(self):

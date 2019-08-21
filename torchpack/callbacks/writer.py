@@ -23,9 +23,8 @@ class ScalarPrinter(Monitor):
         Args:
             regexes: a list of regexes. Defaults to match all names.
         """
-        if regexes is None:
-            regexes = ['.*']
-        elif isinstance(regexes, six.string_types):
+        regexes = regexes or ['.*']
+        if isinstance(regexes, six.string_types):
             regexes = [regexes]
         self.regexes = [re.compile(regex) for regex in regexes]
         self.scalars = dict()
@@ -34,7 +33,7 @@ class ScalarPrinter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        texts = list()
+        texts = []
         for name, scalar in sorted(self.scalars.items()):
             if not any(regex.match(name) for regex in self.regexes):
                 continue
