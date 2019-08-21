@@ -1,9 +1,10 @@
-from collections import defaultdict, deque
+from collections import deque
 
 import numpy as np
 import torch
 
 from torchpack.callbacks.callback import Callback
+
 __all__ = ['Monitor', 'Monitors']
 
 
