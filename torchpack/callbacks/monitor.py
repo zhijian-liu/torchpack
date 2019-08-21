@@ -1,4 +1,4 @@
-from collections import defaultdict, deque
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -45,28 +45,34 @@ class Monitor(Callback):
 
 
 class Monitors(object):
-    def __init__(self):
+    def __init__(self, monitors):
+        for monitor in monitors:
+            assert isinstance(monitor, Monitor), type(monitor)
+        self.monitors = monitors
+        # TODO: keep `maxlen` scalars and images
         self.scalars = defaultdict(list)
 
     def set_trainer(self, trainer):
+        self._set_trainer(trainer)
+
+    def _set_trainer(self, trainer):
         self.trainer = trainer
 
     def add_scalar(self, name, scalar):
-        for callback in self.trainer.callbacks:
-            if isinstance(callback, Monitor):
-                callback.add_scalar(name, scalar)
         self._add_scalar(name, scalar)
+        for callback in self.monitors:
+            callback.add_scalar(name, scalar)
 
     def _add_scalar(self, name, scalar):
         self.scalars[name].append((self.trainer.global_step, scalar))
 
     def add_image(self, name, tensor):
-        for callback in self.trainer.callbacks:
-            if isinstance(callback, Monitor):
-                callback.add_image(name, tensor)
         self._add_image(name, tensor)
+        for callback in self.monitors:
+            callback.add_image(name, tensor)
 
     def _add_image(self, name, tensor):
+        # TODO: support images
         pass
 
     def get(self, name):
