@@ -18,13 +18,10 @@ class ScalarPrinter(Monitor):
     Write scalar summaries into terminal.
     """
 
-    def __init__(self, regexes=None):
-        """
-        Args:
-            regexes: a list of regexes. Defaults to match all names.
-        """
-        regexes = regexes or ['.*']
-        if isinstance(regexes, six.string_types):
+    def __init__(self, regexes='.*'):
+        if regexes is None:
+            regexes = []
+        elif isinstance(regexes, six.string_types):
             regexes = [regexes]
         self.regexes = [re.compile(regex) for regex in regexes]
         self.scalars = dict()
@@ -33,17 +30,18 @@ class ScalarPrinter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        texts = []
-        for name, scalar in sorted(self.scalars.items()):
-            if not any(regex.match(name) for regex in self.regexes):
-                continue
-            texts.append('[{}] = {:.5g}'.format(name, scalar))
-        if texts:
-            logger.info('\n+ '.join([''] + texts))
-        self.scalars.clear()
+        if self.regexes:
+            texts = []
+            for name, scalar in sorted(self.scalars.items()):
+                if any(regex.match(name) for regex in self.regexes):
+                    texts.append('[{}] = {:.6g}'.format(name, scalar))
+            if texts:
+                logger.info('\n+ '.join([''] + texts))
+            self.scalars.clear()
 
     def _add_scalar(self, name, scalar):
-        self.scalars[name] = scalar
+        if self.regexes:
+            self.scalars[name] = scalar
 
 
 class TFEventWriter(Monitor):
