@@ -3,11 +3,12 @@ import json
 import os
 import re
 import shutil
+import glob
 
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
 
-__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'Resumer']
+__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'AutoResumer']
 
 
 class Saver(Callback):
@@ -24,7 +25,7 @@ class Saver(Callback):
         self.max_to_keep = max_to_keep
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
         os.makedirs(self.save_path, exist_ok=True)
-        self.checkpoints = list()
+        self.checkpoints = []
 
     def _add_checkpoint(self, checkpoint_path):
         heapq.heappush(self.checkpoints, (os.path.getmtime(checkpoint_path), checkpoint_path))
@@ -36,11 +37,9 @@ class Saver(Callback):
                 logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint_path))
 
     def _before_train(self):
-        regex = re.compile('^step-[0-9]+$')
-        for name in os.listdir(self.save_path):
-            if regex.match(name):
-                checkpoint_path = os.path.join(self.save_path, name)
-                self._add_checkpoint(checkpoint_path)
+        fs = glob.glob(os.path.join(self.save_path, 'step-*'))
+        for checkpoint_path in fs:
+            self._add_checkpoint(checkpoint_path)
 
     def _trigger_epoch(self):
         self._trigger()
@@ -134,10 +133,18 @@ class MaxSaver(BestSaver):
     extreme = 'max'
 
 
-class Resumer(Callback):
+class AutoResumer(Callback):
     def __init__(self, resume_path=None):
         self.resume_path = os.path.normpath(resume_path or os.path.join(get_logger_dir(), 'checkpoints'))
 
     def _before_train(self):
-        self.trainer.load_checkpoint(self.resume_path)
-        logger.info('Checkpoint resumed: "{}"'.format(self.resume_path))
+        if not os.path.exists(self.resume_path):
+            return
+
+        fs = glob.glob(os.path.join(self.resume_path, 'step-*'))
+        if not fs:
+            return
+
+        checkpoint_path = max(fs, key=os.path.getmtime)
+        self.trainer.load_checkpoint(checkpoint_path)
+        logger.info('Checkpoint resumed: "{}".'.format(checkpoint_path))
