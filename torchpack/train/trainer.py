@@ -5,8 +5,8 @@ import weakref
 from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.callbacks.callback import Callback, Callbacks
+from torchpack.callbacks.monitor import Monitor, Monitors
 from torchpack.train.exception import StopTraining
-from torchpack.callbacks.monitor import Monitors
 from torchpack.utils.logging import logger
 
 __all__ = ['Trainer']
@@ -19,15 +19,18 @@ class Trainer(object):
 
     is_master = True
 
-    def __init__(self):
-        self.monitors = Monitors()
-        self.monitors.set_trainer(weakref.proxy(self))
-
     def set_callbacks(self, callbacks):
+        monitors = []
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
+            if isinstance(callback, Monitor):
+                monitors.append(callback)
+        # callbacks
         self.callbacks = Callbacks(callbacks)
         self.callbacks.set_trainer(weakref.proxy(self))
+        # monitors
+        self.monitors = Monitors(monitors)
+        self.monitors.set_trainer(weakref.proxy(self))
 
     def train(self, dataflow, callbacks=None, starting_epoch=1, max_epoch=9999999):
         self.dataflow = dataflow
@@ -51,22 +54,24 @@ class Trainer(object):
         """
 
         self.epoch_num = self.starting_epoch - 1
+        self.global_step = self.epoch_num * self.steps_per_epoch - 1
 
         try:
             train_time = time.time()
             self.callbacks.before_train()
 
-            for self.epoch_num in range(self.starting_epoch, self.max_epoch + 1):
-                self.global_step = self.epoch_num * self.steps_per_epoch - 1
+            while self.epoch_num < self.max_epoch:
+                self.epoch_num += 1
                 self.local_step = -1
+                self.global_step = self.epoch_num * self.steps_per_epoch - 1
 
                 logger.info('Epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
-
                 epoch_time = time.time()
                 self.callbacks.before_epoch()
 
-                for self.local_step, feed_dict in enumerate(self.dataflow):
+                for feed_dict in self.dataflow:
                     self.global_step += 1
+                    self.local_step += 1
 
                     self.callbacks.before_step(feed_dict)
                     output_dict = self.run_step(feed_dict)
@@ -85,7 +90,7 @@ class Trainer(object):
         except StopTraining as e:
             logger.info('Training was stopped by {}.'.format(str(e)))
         except KeyboardInterrupt:
-            logger.info('Detected Ctrl-C and exiting main training loop.')
+            logger.info('Detected Ctrl-C and exiting training loop.')
             raise
         finally:
             # make sure all callbacks are properly finalized
@@ -95,7 +100,7 @@ class Trainer(object):
                 except Exception:
                     traceback.print_exc()
 
-    def save_checkpoint(self, checkpoint_dir):
+    def save(self, checkpoint_dir):
         pass
 
     def load_checkpoint(self, checkpoint_dir):

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -68,28 +69,41 @@ def main():
 
             return async_copy_to(output_dict, device='cpu')
 
-        def save_checkpoint(self, checkpoint_dir):
+        def save(self, checkpoint_dir):
             torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'model.pth'))
             torch.save(optimizer.state_dict(), os.path.join(checkpoint_dir, 'optimizer.pth'))
+            with open(os.path.join(checkpoint_dir, 'loop.json'), 'w') as fp:
+                json.dump({'epoch_num': self.epoch_num}, fp)
+
+        def load_checkpoint(self, checkpoint_dir):
+            model.load_state_dict(torch.load(os.path.join(checkpoint_dir, 'model.pth')))
+            optimizer.load_state_dict(torch.load(os.path.join(checkpoint_dir, 'optimizer.pth')))
+            with open(os.path.join(checkpoint_dir, 'loop.json'), 'r') as fp:
+                self.epoch_num = json.load(fp)['epoch_num']
+                self.global_step = self.epoch_num * self.steps_per_epoch
+
+    def _display(self):
+        scheduler.step(self.trainer.epoch_num - 1)
+        for param_group in optimizer.param_groups:
+            self.trainer.monitors.add_scalar('lr', param_group['lr'])
 
     trainer = ClassificationTrainer()
     trainer.train(
         dataflow=loaders['train'],
         max_epoch=150,
         callbacks=[
-            LambdaCallback(before_epoch=lambda _: model.train(), after_epoch=lambda _: model.eval()),
-            LambdaCallback(before_epoch=lambda _: scheduler.step()),
-            InferenceRunner(loaders['test'], callbacks=[
-                ClassificationError(topk=1, name='error/top1'),
-                ClassificationError(topk=5, name='error/top5')
-            ]),
+            AutoResumer(),
+            LambdaCallback(before_epoch=lambda self: model.train(), after_epoch=lambda self: model.eval()),
+            LambdaCallback(before_epoch=_display),
+            InferenceRunner(loaders['test'], callbacks=[ClassificationError(topk=1, name='error/top1'),
+                                                        ClassificationError(topk=5, name='error/top5')]),
             Saver(),
             MinSaver('error/top1'),
-            ProgressBar(),
-            ScalarPrinter(regexes=['error/', 'loss']),
-            EstimatedTimeLeft(),
+            ScalarPrinter(),
             TFEventWriter(),
-            JSONWriter()
+            JSONWriter(),
+            ProgressBar('*'),
+            EstimatedTimeLeft()
         ]
     )
 

@@ -44,7 +44,7 @@ class Monitor(Callback):
         pass
 
 
-class Monitors(object):
+class Monitors:
     def __init__(self, monitors):
         for monitor in monitors:
             assert isinstance(monitor, Monitor), type(monitor)

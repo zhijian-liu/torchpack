@@ -6,7 +6,7 @@ __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 
 
 @six.add_metaclass(ABCMeta)
-class Callback(object):
+class Callback:
     """
     Base class for all callbacks.
     """
@@ -110,6 +110,12 @@ class Callback(object):
         """
         Called after training.
         """
+        pass
+
+    def save(self, checkpoint_dir):
+        pass
+
+    def load(self, checkpoint_dir):
         pass
 
     def __str__(self):

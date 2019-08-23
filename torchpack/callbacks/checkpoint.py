@@ -1,10 +1,9 @@
-import heapq
+import glob
 import json
 import os
-import re
-import shutil
-import glob
+from collections import deque
 
+import torchpack.utils.fs as fs
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
 
@@ -24,21 +23,21 @@ class Saver(Callback):
         """
         self.max_to_keep = max_to_keep
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
-        os.makedirs(self.save_path, exist_ok=True)
-        self.checkpoints = []
+        fs.mkdir(self.save_path)
+        self.checkpoints = deque()
 
     def _add_checkpoint(self, checkpoint_path):
-        heapq.heappush(self.checkpoints, (os.path.getmtime(checkpoint_path), checkpoint_path))
+        self.checkpoints.append(checkpoint_path)
         while self.max_to_keep is not None and len(self.checkpoints) > self.max_to_keep:
-            checkpoint_path = heapq.heappop(self.checkpoints)[1]
+            checkpoint_path = self.checkpoints.popleft()
             try:
-                shutil.rmtree(checkpoint_path)
+                fs.remove(checkpoint_path)
             except (OSError, IOError):
                 logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint_path))
 
     def _before_train(self):
-        fs = glob.glob(os.path.join(self.save_path, 'step-*'))
-        for checkpoint_path in fs:
+        files = glob.glob(os.path.join(self.save_path, 'step-*'))
+        for checkpoint_path in sorted(files, key=os.path.getmtime):
             self._add_checkpoint(checkpoint_path)
 
     def _trigger_epoch(self):
@@ -47,8 +46,8 @@ class Saver(Callback):
     def _trigger(self):
         checkpoint_path = os.path.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
         try:
-            os.makedirs(checkpoint_path, exist_ok=True)
-            self.trainer.save_checkpoint(checkpoint_path)
+            fs.mkdir(checkpoint_path)
+            self.trainer.save(checkpoint_path)
         except (OSError, IOError):
             logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
         else:
@@ -97,9 +96,9 @@ class BestSaver(Callback):
             checkpoint_path = os.path.join(self.save_path, self.save_name)
             try:
                 os.makedirs(checkpoint_path, exist_ok=True)
-                self.trainer.save_checkpoint(checkpoint_path)
+                self.trainer.save(checkpoint_path)
                 # TODO: a quick hack, should move this into self.trainer.save_checkpoint
-                self.save_checkpoint(checkpoint_path)
+                self.save(checkpoint_path)
             except (OSError, IOError):
                 logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
             else:
@@ -108,11 +107,11 @@ class BestSaver(Callback):
         if self.best is not None:
             self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
-    def save_checkpoint(self, save_path):
+    def save(self, save_path):
         with open(os.path.join(save_path, 'max-saver.json'), 'w') as fp:
             json.dump(self.best, fp)
 
-    def load_checkpoint(self, resume_path):
+    def load(self, resume_path):
         with open(os.path.join(resume_path, 'max-saver.json'), 'r') as fp:
             self.best = json.load(fp)
 
@@ -141,10 +140,14 @@ class AutoResumer(Callback):
         if not os.path.exists(self.resume_path):
             return
 
-        fs = glob.glob(os.path.join(self.resume_path, 'step-*'))
-        if not fs:
+        checkpoints = glob.glob(os.path.join(self.resume_path, 'step-*'))
+        if not checkpoints:
             return
 
-        checkpoint_path = max(fs, key=os.path.getmtime)
-        self.trainer.load_checkpoint(checkpoint_path)
-        logger.info('Checkpoint resumed: "{}".'.format(checkpoint_path))
+        checkpoint_path = max(checkpoints, key=os.path.getmtime)
+        try:
+            self.trainer.load(checkpoint_path)
+        except:
+            pass
+        else:
+            logger.info('Checkpoint resumed: "{}".'.format(checkpoint_path))

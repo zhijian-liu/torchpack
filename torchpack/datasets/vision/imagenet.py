@@ -11,10 +11,20 @@ __all__ = ['ImageNet']
 warnings.filterwarnings('ignore')
 
 
+
+class _ImageNet(datasets.ImageNet):
+    def __init__(self, root, split='train', download=False, **kwargs):
+        super().__init__(root=root, split=split, download=download, **kwargs)
+
+    def __getitem__(self, index):
+        inputs, targets = super().__getitem__(index)
+        return dict(inputs=inputs, targets=targets)
+
+
 class ImageNet(Dataset):
     def __init__(self, root, num_classes, image_size):
         super().__init__({
-            'train': datasets.ImageNet(
+            'train': _ImageNet(
                 root=root, split='train', download=True,
                 transform=transforms.Compose([
                     transforms.RandomResizedCrop(image_size),
@@ -23,7 +33,7 @@ class ImageNet(Dataset):
                     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                 ])
             ),
-            'test': datasets.ImageNet(
+            'test': _ImageNet(
                 root=root, split='val', download=True,
                 transform=transforms.Compose([
                     transforms.Resize(int(image_size / 0.875)),
