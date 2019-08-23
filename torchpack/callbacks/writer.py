@@ -1,9 +1,7 @@
 import json
 import os
-import re
 import shutil
 
-import six
 from tensorboardX import SummaryWriter
 
 from torchpack.callbacks.monitor import Monitor
