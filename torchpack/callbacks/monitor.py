@@ -46,12 +46,14 @@ class Monitors:
         if isinstance(scalar, np.floating):
             scalar = float(scalar)
         assert isinstance(scalar, (int, float)), type(scalar)
+        self._add_scalar(name, scalar)
 
-        for monitor in self.monitors:
-            monitor.add_scalar(name, scalar)
+    def _add_scalar(self, name, scalar):
         if name not in self.summaries:
             self.summaries[name] = deque(maxlen=65536)
         self.summaries[name].append((self.trainer.global_step, scalar))
+        for monitor in self.monitors:
+            monitor.add_scalar(name, scalar)
 
     def add_image(self, name, tensor):
         if isinstance(tensor, torch.Tensor):
@@ -65,12 +67,14 @@ class Monitors:
             if tensor.shape[-1] in [1, 3, 4]:
                 tensor = tensor[np.newaxis, ...]
         assert tensor.ndim == 4 and tensor.shape[-1] in [1, 3, 4], tensor.shape
+        self._add_image(name, tensor)
 
-        for monitor in self.monitors:
-            monitor.add_image(name, tensor)
+    def _add_image(self, name, tensor):
         if name not in self.summaries:
             self.summaries[name] = deque(maxlen=4)
         self.summaries[name].append((self.trainer.global_step, tensor))
+        for monitor in self.monitors:
+            monitor.add_image(name, tensor)
 
     def items(self):
         for name, summary in self.summaries.items():
