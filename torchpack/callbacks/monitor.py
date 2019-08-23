@@ -16,29 +16,15 @@ class Monitor(Callback):
     master_only = True
 
     def add_scalar(self, name, scalar):
-        if isinstance(scalar, np.integer):
-            scalar = int(scalar)
-        if isinstance(scalar, np.floating):
-            scalar = float(scalar)
-        assert isinstance(scalar, (int, float)), type(scalar)
-        self._add_scalar(name, scalar)
+        if self.trainer.is_master or not self.master_only:
+            self._add_scalar(name, scalar)
 
     def _add_scalar(self, name, scalar):
         pass
 
     def add_image(self, name, tensor):
-        if isinstance(tensor, torch.Tensor):
-            tensor = tensor.numpy()
-        assert isinstance(tensor, np.ndarray), type(tensor)
-        if tensor.ndim == 2:
-            tensor = tensor[np.newaxis, :, :, np.newaxis]
-        elif tensor.ndim == 3:
-            if tensor.shape[0] in [1, 3, 4]:
-                tensor = np.transpose(tensor, (1, 2, 0))
-            if tensor.shape[-1] in [1, 3, 4]:
-                tensor = tensor[np.newaxis, ...]
-        assert tensor.ndim == 4 and tensor.shape[-1] in [1, 3, 4], tensor.shape
-        self._add_image(name, tensor)
+        if self.trainer.is_master or not self.master_only:
+            self._add_image(name, tensor)
 
     def _add_image(self, name, tensor):
         pass
@@ -55,30 +41,52 @@ class Monitors:
         self.trainer = trainer
 
     def add_scalar(self, name, scalar):
-        self._add_scalar(name, scalar)
+        if isinstance(scalar, np.integer):
+            scalar = int(scalar)
+        if isinstance(scalar, np.floating):
+            scalar = float(scalar)
+        assert isinstance(scalar, (int, float)), type(scalar)
         for monitor in self.monitors:
             monitor.add_scalar(name, scalar)
-
-    def _add_scalar(self, name, scalar):
         if name not in self.summaries:
             self.summaries[name] = deque(maxlen=65536)
         self.summaries[name].append((self.trainer.global_step, scalar))
 
     def add_image(self, name, tensor):
-        self._add_image(name, tensor)
+        if isinstance(tensor, torch.Tensor):
+            tensor = tensor.numpy()
+        assert isinstance(tensor, np.ndarray), type(tensor)
+        if tensor.ndim == 2:
+            tensor = tensor[np.newaxis, ..., np.newaxis]
+        elif tensor.ndim == 3:
+            if tensor.shape[0] in [1, 3, 4]:
+                tensor = np.transpose(tensor, (1, 2, 0))
+            if tensor.shape[-1] in [1, 3, 4]:
+                tensor = tensor[np.newaxis, ...]
+        assert tensor.ndim == 4 and tensor.shape[-1] in [1, 3, 4], tensor.shape
         for monitor in self.monitors:
             monitor.add_image(name, tensor)
-
-    def _add_image(self, name, tensor):
         if name not in self.summaries:
             self.summaries[name] = deque(maxlen=4)
         self.summaries[name].append((self.trainer.global_step, tensor))
 
+    def items(self):
+        for name, summary in self.summaries.items():
+            yield name, summary[-1]
+
+    def keys(self):
+        for name, summary in self.items():
+            yield name
+
+    def values(self):
+        for name, summary in self.items():
+            yield summary
+
     def get(self, name):
-        return self.summaries.get(name)
+        return self.summaries[name]
+
+    def __getitem__(self, name):
+        return self.summaries[name][-1]
 
     def __contains__(self, name):
         return name in self.summaries
-
-    def __getitem__(self, name):
-        return self.summaries[name][-1][1]
