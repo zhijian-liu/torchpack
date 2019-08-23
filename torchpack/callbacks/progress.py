@@ -23,8 +23,8 @@ class ProgressBar(Monitor):
     master_only = True
 
     def __init__(self, include='*', exclude=None, tqdm_kwargs=None):
-        self.matcher = IENameMatcher(include, exclude)
         self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs()
+        self.matcher = IENameMatcher(include, exclude)
 
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch, **self.tqdm_kwargs)
