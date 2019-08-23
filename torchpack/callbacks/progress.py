@@ -21,12 +21,11 @@ class ProgressBar(Callback):
 
     master_only = True
 
-    def __init__(self, include='*', exclude=None, tqdm_kwargs=None):
+    def __init__(self, include='*', exclude=None):
         self.matcher = IENameMatcher(include, exclude)
-        self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs()
 
     def _before_epoch(self):
-        self.pbar = tqdm.trange(self.trainer.steps_per_epoch, **self.tqdm_kwargs)
+        self.pbar = tqdm.trange(self.trainer.steps_per_epoch, **get_tqdm_kwargs())
 
     def _trigger_step(self):
         texts = []
