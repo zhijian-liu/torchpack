@@ -30,10 +30,11 @@ class ProgressBar(Callback):
 
     def _trigger_step(self):
         texts = []
-        for name in sorted(self.trainer.monitors.keys()):
-            if self.matcher.match(name):
-                step, scalar = self.trainer.monitors.get(name)[-1]
-                if step == self.trainer.global_step:
+        for name, (step, scalar) in sorted(self.trainer.monitors.items()):
+            if step == self.trainer.global_step and self.matcher.match(name):
+                if isinstance(scalar, int):
+                    texts.append('[{}] = {:d}'.format(name, scalar))
+                elif isinstance(scalar, float):
                     texts.append('[{}] = {:.4f}'.format(name, scalar))
         if texts:
             self.pbar.set_description(', '.join(texts))
