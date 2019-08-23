@@ -46,6 +46,7 @@ class Monitors:
         if isinstance(scalar, np.floating):
             scalar = float(scalar)
         assert isinstance(scalar, (int, float)), type(scalar)
+
         for monitor in self.monitors:
             monitor.add_scalar(name, scalar)
         if name not in self.summaries:
@@ -64,6 +65,7 @@ class Monitors:
             if tensor.shape[-1] in [1, 3, 4]:
                 tensor = tensor[np.newaxis, ...]
         assert tensor.ndim == 4 and tensor.shape[-1] in [1, 3, 4], tensor.shape
+
         for monitor in self.monitors:
             monitor.add_image(name, tensor)
         if name not in self.summaries:
