@@ -7,14 +7,13 @@ from tensorpack.utils.utils import get_tqdm_kwargs
 from tensorpack.utils.utils import humanize_time_delta
 
 from torchpack.callbacks.callback import Callback
-from torchpack.callbacks.monitor import Monitor
 from torchpack.utils.logging import logger
 from torchpack.utils.matching import IENameMatcher
 
 __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 
 
-class ProgressBar(Monitor):
+class ProgressBar(Callback):
     """
     A progress bar based on `tqdm`.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
@@ -23,28 +22,25 @@ class ProgressBar(Monitor):
     master_only = True
 
     def __init__(self, include='*', exclude=None, tqdm_kwargs=None):
-        self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs()
         self.matcher = IENameMatcher(include, exclude)
+        self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs()
 
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch, **self.tqdm_kwargs)
-        self.scalars = dict()
 
     def _trigger_step(self):
         texts = []
-        for name, scalar in sorted(self.scalars.items()):
+        for name in sorted(self.trainer.monitors.keys()):
             if self.matcher.match(name):
-                texts.append('[{}] = {:.4f}'.format(name, scalar))
+                step, scalar = self.trainer.monitors.get(name)[-1]
+                if step == self.trainer.global_step:
+                    texts.append('[{}] = {:.4f}'.format(name, scalar))
         if texts:
             self.pbar.set_description(', '.join(texts))
         self.pbar.update()
 
     def _after_epoch(self):
         self.pbar.close()
-
-    def _add_scalar(self, name, scalar):
-        if hasattr(self, 'scalars'):
-            self.scalars[name] = scalar
 
 
 class EstimatedTimeLeft(Callback):
