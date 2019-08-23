@@ -88,11 +88,11 @@ class Monitors:
         for key, value in self.items():
             yield value
 
-    def get(self, name):
-        return self.summaries[name]
+    def __contains__(self, name):
+        return name in self.summaries
 
     def __getitem__(self, name):
         return self.summaries[name][-1]
 
-    def __contains__(self, name):
-        return name in self.summaries
+    def get(self, name):
+        return self.summaries[name]
