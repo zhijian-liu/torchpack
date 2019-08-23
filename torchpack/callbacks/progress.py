@@ -22,13 +22,13 @@ class ProgressBar(Monitor):
 
     master_only = True
 
-    def __init__(self, includes='*', excludes=None, tqdm_kwargs=None):
-        self.matcher = IENameMatcher(includes, excludes)
+    def __init__(self, include='*', exclude=None, tqdm_kwargs=None):
+        self.matcher = IENameMatcher(include, exclude)
         self.tqdm_kwargs = tqdm_kwargs or get_tqdm_kwargs()
-        self.scalars = dict()
 
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch, **self.tqdm_kwargs)
+        self.scalars = dict()
 
     def _trigger_step(self):
         texts = []
@@ -38,13 +38,13 @@ class ProgressBar(Monitor):
         if texts:
             self.pbar.set_description(', '.join(texts))
         self.pbar.update()
-        self.scalars.clear()
 
     def _after_epoch(self):
         self.pbar.close()
 
     def _add_scalar(self, name, scalar):
-        self.scalars[name] = scalar
+        if hasattr(self, 'scalars'):
+            self.scalars[name] = scalar
 
 
 class EstimatedTimeLeft(Callback):
