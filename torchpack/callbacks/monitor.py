@@ -81,12 +81,12 @@ class Monitors:
             yield name, summary[-1]
 
     def keys(self):
-        for name, summary in self.items():
-            yield name
+        for key, value in self.items():
+            yield key
 
     def values(self):
-        for name, summary in self.items():
-            yield summary
+        for key, value in self.items():
+            yield value
 
     def get(self, name):
         return self.summaries[name]
