@@ -1,9 +1,9 @@
 import glob
-import json
 import os
 from collections import deque
 
 import torchpack.utils.fs as fs
+import torchpack.utils.io as io
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
 
@@ -19,7 +19,7 @@ class Saver(Callback):
         """
         Args:
             max_to_keep (int): maximum number of recent checkpoint files to keep.
-            save_path (str): Defaults to ``logger.get_logger_dir()``.
+            save_path (str): Defaults to `logger.get_logger_dir()`.
         """
         self.max_to_keep = max_to_keep
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
@@ -69,7 +69,7 @@ class BestSaver(Callback):
         """
         self.key = key
         self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
-        os.makedirs(self.save_path, exist_ok=True)
+        fs.mkdir(self.save_path)
         self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
         self.best = None
         self.last_step = None
@@ -78,16 +78,15 @@ class BestSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        if self.key not in self.trainer.monitors:
+        if self.key in self.trainer.monitors:
+            step, value = self.trainer.monitors[self.key]
+        else:
             logger.warning('skipped.')
             return
-
-        step, value = self.trainer.monitors.get(self.key)[-1]
 
         if self.last_step is not None and step <= self.last_step:
             logger.warning('skipped.')
             return
-
         self.last_step = step
 
         if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
@@ -95,7 +94,7 @@ class BestSaver(Callback):
             self.best = (step, value)
             checkpoint_path = os.path.join(self.save_path, self.save_name)
             try:
-                os.makedirs(checkpoint_path, exist_ok=True)
+                fs.mkdir(checkpoint_path)
                 self.trainer.save(checkpoint_path)
                 # TODO: a quick hack, should move this into self.trainer.save_checkpoint
                 self.save(checkpoint_path)
@@ -108,12 +107,10 @@ class BestSaver(Callback):
             self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
     def save(self, save_path):
-        with open(os.path.join(save_path, 'max-saver.json'), 'w') as fp:
-            json.dump(self.best, fp)
+        io.dump(os.path.join(save_path, 'max-saver.json'), self.best)
 
     def load(self, resume_path):
-        with open(os.path.join(resume_path, 'max-saver.json'), 'r') as fp:
-            self.best = json.load(fp)
+        self.best = io.load(os.path.join(resume_path, 'max-saver.json'))
 
 
 class MinSaver(BestSaver):
@@ -147,7 +144,7 @@ class AutoResumer(Callback):
         checkpoint_path = max(checkpoints, key=os.path.getmtime)
         try:
             self.trainer.load(checkpoint_path)
-        except:
-            pass
+        except (OSError, IOError):
+            logger.exception('Error occurred when loading checkpoint "{}".'.format(checkpoint_path))
         else:
             logger.info('Checkpoint resumed: "{}".'.format(checkpoint_path))

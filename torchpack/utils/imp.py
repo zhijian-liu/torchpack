@@ -16,4 +16,3 @@ def load_source(filename, name=None):
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)
     return foo
-

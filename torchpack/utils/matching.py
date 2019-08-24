@@ -1,4 +1,5 @@
 import fnmatch
+
 import six
 
 __all__ = ['NameMatcher', 'IENameMatcher']

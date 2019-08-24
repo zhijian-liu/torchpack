@@ -1,23 +1,25 @@
-import json
 import os
-import shutil
 
 from tensorboardX import SummaryWriter
 
+import torchpack.utils.fs as fs
+import torchpack.utils.io as io
 from torchpack.callbacks.monitor import Monitor
 from torchpack.utils.logging import logger, get_logger_dir
 from torchpack.utils.matching import IENameMatcher
 
-__all__ = ['ScalarPrinter', 'TFEventWriter', 'JSONWriter']
+__all__ = ['TerminalWriter', 'TFEventWriter', 'JSONWriter']
 
 
-class ScalarPrinter(Monitor):
+class TerminalWriter(Monitor):
     """
     Write scalar summaries into terminal.
     """
 
-    def __init__(self, includes='*', excludes=None):
-        self.matcher = IENameMatcher(includes, excludes)
+    def __init__(self, include='*', exclude=None):
+        self.matcher = IENameMatcher(include, exclude)
+
+    def _before_train(self):
         self.scalars = dict()
 
     def _trigger_epoch(self):
@@ -27,7 +29,7 @@ class ScalarPrinter(Monitor):
         texts = []
         for name, scalar in sorted(self.scalars.items()):
             if self.matcher.match(name):
-                texts.append('[{}] = {:.6g}'.format(name, scalar))
+                texts.append('[{}] = {:.5g}'.format(name, scalar))
         if texts:
             logger.info('\n+ '.join([''] + texts))
         self.scalars.clear()
@@ -43,7 +45,7 @@ class TFEventWriter(Monitor):
 
     def __init__(self, save_path=None):
         self.save_path = os.path.normpath(save_path or get_logger_dir())
-        os.makedirs(self.save_path, exist_ok=True)
+        fs.mkdir(self.save_path)
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_path)
@@ -65,7 +67,7 @@ class JSONWriter(Monitor):
 
     def __init__(self, save_path=None):
         self.save_path = os.path.normpath(save_path or get_logger_dir())
-        os.makedirs(self.save_path, exist_ok=True)
+        fs.mkdir(self.save_path)
 
     def _before_train(self):
         self.summaries = []
@@ -74,8 +76,7 @@ class JSONWriter(Monitor):
         if not os.path.exists(filename):
             return
 
-        with open(filename) as fp:
-            summaries = json.load(fp)
+        summaries = io.load(filename)
         assert isinstance(summaries, list), type(summaries)
         self.summaries = summaries
 
@@ -95,9 +96,7 @@ class JSONWriter(Monitor):
     def _trigger(self):
         filename = os.path.join(self.save_path, 'scalars.json')
         try:
-            with open(filename + '.tmp', 'w') as fp:
-                json.dump(self.summaries, fp)
-            shutil.move(filename + '.tmp', filename)
+            io.dump(filename)
         except (OSError, IOError):
             logger.exception('Error occurred when saving JSON file "{}".'.format(filename))
 

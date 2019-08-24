@@ -1,7 +1,11 @@
 import os
 import shutil
 
-__all__ = ['remove']
+__all__ = ['mkdir', 'remove']
+
+
+def mkdir(dirname):
+    os.makedirs(dirname, exist_ok=True)
 
 
 def remove(file):
@@ -10,7 +14,3 @@ def remove(file):
             shutil.rmtree(file, ignore_errors=True)
         if os.path.isfile(file):
             os.remove(file)
-
-
-def mkdir(dirname):
-    os.makedirs(dirname, exist_ok=True)
