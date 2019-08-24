@@ -1,4 +1,4 @@
-import os
+import os.path as osp
 
 from tensorboardX import SummaryWriter
 
@@ -44,8 +44,7 @@ class TFEventWriter(Monitor):
     """
 
     def __init__(self, save_path=None):
-        self.save_path = os.path.normpath(save_path or get_logger_dir())
-        fs.mkdir(self.save_path)
+        self.save_path = fs.mkdir(save_path or get_logger_dir())
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_path)
@@ -66,14 +65,13 @@ class JSONWriter(Monitor):
     """
 
     def __init__(self, save_path=None):
-        self.save_path = os.path.normpath(save_path or get_logger_dir())
-        fs.mkdir(self.save_path)
+        self.save_path = fs.mkdir(save_path or get_logger_dir())
 
     def _before_train(self):
         self.summaries = []
 
-        filename = os.path.join(self.save_path, 'scalars.json')
-        if not os.path.exists(filename):
+        filename = osp.join(self.save_path, 'scalars.json')
+        if not osp.exists(filename):
             return
 
         summaries = io.load(filename)
@@ -94,7 +92,7 @@ class JSONWriter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        filename = os.path.join(self.save_path, 'scalars.json')
+        filename = osp.join(self.save_path, 'scalars.json')
         try:
             io.dump(filename)
         except (OSError, IOError):

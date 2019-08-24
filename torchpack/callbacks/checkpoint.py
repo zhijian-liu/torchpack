@@ -1,5 +1,5 @@
 import glob
-import os
+import os.path as osp
 from collections import deque
 
 import torchpack.utils.fs as fs
@@ -22,8 +22,7 @@ class Saver(Callback):
             save_path (str): Defaults to `logger.get_logger_dir()`.
         """
         self.max_to_keep = max_to_keep
-        self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
-        fs.mkdir(self.save_path)
+        self.save_path = fs.mkdir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
         self.checkpoints = deque()
 
     def _add_checkpoint(self, checkpoint_path):
@@ -36,15 +35,15 @@ class Saver(Callback):
                 logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint_path))
 
     def _before_train(self):
-        files = glob.glob(os.path.join(self.save_path, 'step-*'))
-        for checkpoint_path in sorted(files, key=os.path.getmtime):
+        files = glob.glob(osp.join(self.save_path, 'step-*'))
+        for checkpoint_path in sorted(files, key=osp.getmtime):
             self._add_checkpoint(checkpoint_path)
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        checkpoint_path = os.path.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
+        checkpoint_path = osp.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
         try:
             fs.mkdir(checkpoint_path)
             self.trainer.save(checkpoint_path)
@@ -68,8 +67,7 @@ class BestSaver(Callback):
             save_name (str): the name for the saved checkpoint. Defaults to `min-{key}`.
         """
         self.key = key
-        self.save_path = os.path.normpath(save_path or os.path.join(get_logger_dir(), 'checkpoints'))
-        fs.mkdir(self.save_path)
+        self.save_path = fs.mkdir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
         self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
         self.best = None
         self.last_step = None
@@ -92,7 +90,7 @@ class BestSaver(Callback):
         if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
                 (self.extreme == 'max' and value > self.best[1]):
             self.best = (step, value)
-            checkpoint_path = os.path.join(self.save_path, self.save_name)
+            checkpoint_path = osp.join(self.save_path, self.save_name)
             try:
                 fs.mkdir(checkpoint_path)
                 self.trainer.save(checkpoint_path)
@@ -107,10 +105,10 @@ class BestSaver(Callback):
             self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
     def save(self, save_path):
-        io.dump(os.path.join(save_path, 'max-saver.json'), self.best)
+        io.dump(osp.join(save_path, 'max-saver.json'), self.best)
 
     def load(self, resume_path):
-        self.best = io.load(os.path.join(resume_path, 'max-saver.json'))
+        self.best = io.load(osp.join(resume_path, 'max-saver.json'))
 
 
 class MinSaver(BestSaver):
@@ -131,17 +129,17 @@ class MaxSaver(BestSaver):
 
 class AutoResumer(Callback):
     def __init__(self, resume_path=None):
-        self.resume_path = os.path.normpath(resume_path or os.path.join(get_logger_dir(), 'checkpoints'))
+        self.resume_path = osp.normpath(resume_path or osp.join(get_logger_dir(), 'checkpoints'))
 
     def _before_train(self):
-        if not os.path.exists(self.resume_path):
+        if not osp.exists(self.resume_path):
             return
 
-        checkpoints = glob.glob(os.path.join(self.resume_path, 'step-*'))
+        checkpoints = glob.glob(osp.join(self.resume_path, 'step-*'))
         if not checkpoints:
             return
 
-        checkpoint_path = max(checkpoints, key=os.path.getmtime)
+        checkpoint_path = max(checkpoints, key=osp.getmtime)
         try:
             self.trainer.load(checkpoint_path)
         except (OSError, IOError):
