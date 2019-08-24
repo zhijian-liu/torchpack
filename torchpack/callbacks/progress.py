@@ -31,7 +31,7 @@ class ProgressBar(Callback):
         texts = []
         for name, (step, scalar) in sorted(self.trainer.monitors.items()):
             if step == self.trainer.global_step and isinstance(scalar, (int, float)) and self.matcher.match(name):
-                texts.append('[{}] = {:.4g}'.format(name, scalar))
+                texts.append('[{}] = {:.3g}'.format(name, scalar))
         if texts:
             self.pbar.set_description(', '.join(texts))
         self.pbar.update()
