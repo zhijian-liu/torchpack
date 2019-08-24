@@ -22,36 +22,35 @@ class Saver(Callback):
             save_path (str): Defaults to `logger.get_logger_dir()`.
         """
         self.max_to_keep = max_to_keep
-        self.save_path = fs.mkdir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
+        self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
         self.checkpoints = deque()
 
-    def _add_checkpoint(self, checkpoint_path):
-        self.checkpoints.append(checkpoint_path)
+    def _add_checkpoint(self, checkpoint):
+        self.checkpoints.append(checkpoint)
         while self.max_to_keep is not None and len(self.checkpoints) > self.max_to_keep:
-            checkpoint_path = self.checkpoints.popleft()
+            checkpoint = self.checkpoints.popleft()
             try:
-                fs.remove(checkpoint_path)
+                fs.remove(checkpoint)
             except (OSError, IOError):
-                logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint_path))
+                logger.exception('Error occurred when removing checkpoint "{}".'.format(checkpoint))
 
     def _before_train(self):
-        files = glob.glob(osp.join(self.save_path, 'step-*'))
-        for checkpoint_path in sorted(files, key=osp.getmtime):
-            self._add_checkpoint(checkpoint_path)
+        checkpoints = glob.glob(osp.join(self.save_path, 'step-*'))
+        for checkpoint in sorted(checkpoints, key=osp.getmtime):
+            self._add_checkpoint(checkpoint)
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        checkpoint_path = osp.join(self.save_path, 'step-{}'.format(self.trainer.global_step))
+        checkpoint = fs.makedir(osp.join(self.save_path, 'step-{}'.format(self.trainer.global_step)))
         try:
-            fs.mkdir(checkpoint_path)
-            self.trainer.save(checkpoint_path)
+            self.trainer.save(checkpoint)
         except (OSError, IOError):
-            logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
+            logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint))
         else:
-            logger.info('Checkpoint saved: "{}".'.format(checkpoint_path))
-            self._add_checkpoint(checkpoint_path)
+            logger.info('Checkpoint saved: "{}".'.format(checkpoint))
+            self._add_checkpoint(checkpoint)
 
 
 class BestSaver(Callback):
@@ -67,7 +66,7 @@ class BestSaver(Callback):
             save_name (str): the name for the saved checkpoint. Defaults to `min-{key}`.
         """
         self.key = key
-        self.save_path = fs.mkdir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
+        self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
         self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
         self.best = None
         self.last_step = None
@@ -79,36 +78,33 @@ class BestSaver(Callback):
         if self.key in self.trainer.monitors:
             step, value = self.trainer.monitors[self.key]
         else:
-            logger.warning('skipped.')
+            logger.warning('Skipped.')
             return
 
         if self.last_step is not None and step <= self.last_step:
-            logger.warning('skipped.')
+            logger.warning('Skipped.')
             return
         self.last_step = step
 
         if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
                 (self.extreme == 'max' and value > self.best[1]):
-            self.best = (step, value)
-            checkpoint_path = osp.join(self.save_path, self.save_name)
+            checkpoint = fs.makedir(osp.join(self.save_path, self.save_name))
             try:
-                fs.mkdir(checkpoint_path)
-                self.trainer.save(checkpoint_path)
-                # TODO: a quick hack, should move this into self.trainer.save_checkpoint
-                self.save(checkpoint_path)
+                self.trainer.save(checkpoint)
             except (OSError, IOError):
-                logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint_path))
+                logger.exception('Error occurred when saving checkpoint "{}".'.format(checkpoint))
             else:
-                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint_path, value))
+                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(checkpoint, value))
+                self.best = (step, value)
 
         if self.best is not None:
             self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
 
-    def save(self, save_path):
-        io.dump(osp.join(save_path, 'max-saver.json'), self.best)
-
-    def load(self, resume_path):
-        self.best = io.load(osp.join(resume_path, 'max-saver.json'))
+    # def save(self, save_path):
+    #     io.save(self.best, osp.join(save_path, 'max-saver.json'))
+    #
+    # def load(self, resume_path):
+    #     self.best = io.load(osp.join(resume_path, 'max-saver.json'))
 
 
 class MinSaver(BestSaver):
@@ -132,17 +128,15 @@ class AutoResumer(Callback):
         self.resume_path = osp.normpath(resume_path or osp.join(get_logger_dir(), 'checkpoints'))
 
     def _before_train(self):
-        if not osp.exists(self.resume_path):
-            return
-
         checkpoints = glob.glob(osp.join(self.resume_path, 'step-*'))
         if not checkpoints:
+            logger.warning('Skipped.')
             return
 
-        checkpoint_path = max(checkpoints, key=osp.getmtime)
+        checkpoint = max(checkpoints, key=osp.getmtime)
         try:
-            self.trainer.load(checkpoint_path)
+            self.trainer.load(checkpoint)
         except (OSError, IOError):
-            logger.exception('Error occurred when loading checkpoint "{}".'.format(checkpoint_path))
+            logger.exception('Error occurred when loading checkpoint "{}".'.format(checkpoint))
         else:
-            logger.info('Checkpoint resumed: "{}".'.format(checkpoint_path))
+            logger.info('Checkpoint resumed: "{}".'.format(checkpoint))
