@@ -5,16 +5,16 @@ import shutil
 __all__ = ['mkdir', 'remove']
 
 
-def mkdir(dirname):
-    dirname = osp.normpath(dirname)
-    os.makedirs(dirname, exist_ok=True)
-    return dirname
+def mkdir(path):
+    path = osp.normpath(path)
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
-def remove(file):
-    if osp.exists(file):
-        if osp.isdir(file):
-            return shutil.rmtree(file, ignore_errors=True)
-        if osp.isfile(file):
-            return os.remove(file)
+def remove(path):
+    if osp.exists(path):
+        if osp.isdir(path):
+            return shutil.rmtree(path, ignore_errors=True)
+        if osp.isfile(path):
+            return os.remove(path)
     return None
