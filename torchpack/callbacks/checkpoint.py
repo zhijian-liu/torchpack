@@ -3,11 +3,10 @@ import os.path as osp
 from collections import deque
 
 import torchpack.utils.fs as fs
-import torchpack.utils.io as io
 from torchpack.callbacks.callback import Callback
 from torchpack.utils.logging import logger, get_logger_dir
 
-__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'AutoResumer']
+__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'Resumer']
 
 
 class Saver(Callback):
@@ -18,7 +17,7 @@ class Saver(Callback):
     def __init__(self, max_to_keep=10, save_path=None):
         """
         Args:
-            max_to_keep (int): maximum number of recent checkpoint files to keep.
+            max_to_keep (int): Maximum number of recent checkpoints to keep.
             save_path (str): Defaults to `logger.get_logger_dir()`.
         """
         self.max_to_keep = max_to_keep
@@ -55,32 +54,32 @@ class Saver(Callback):
 
 class BestSaver(Callback):
     """
-    Save the checkpoint with best value of some statistics.
+    Save the checkpoint with best value of some scalar.
     """
 
-    def __init__(self, key, save_path=None, save_name=None):
+    def __init__(self, scalar_name, save_path=None, save_name=None):
         """
         Args:
-            key (str): the name of the statistics.
-            save_path (str): the directory for saving checkpoints.
-            save_name (str): the name for the saved checkpoint. Defaults to `min-{key}`.
+            scalar_name (str): Name of scalar to monitor.
+            save_path (str): Directory to save checkpoints.
+            save_name (str): Name for checkpoint. Defaults to `min/max-{key}`.
         """
-        self.key = key
+        self.scalar_name = scalar_name
         self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
-        self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
-        self.step, self.best = None, None
+        self.save_name = save_name or (self.extreme + '-' + scalar_name.replace('/', '-'))
+        self.best, self.step = None, None
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        if self.key not in self.trainer.monitors:
-            logger.warning('`{}` has not been added to `trainer.monitors` yet.'.format(self.key))
+        if self.scalar_name not in self.trainer.monitors:
+            logger.warning('Scalar `{}` has not been added to `trainer.monitors` yet.'.format(self.scalar_name))
             return
-        step, value = self.trainer.monitors[self.key]
+        step, value = self.trainer.monitors[self.scalar_name]
 
         if self.step is not None and step <= self.step:
-            logger.warning('`{}` has not been updated since the last trigger at step {}.'.format(self.key, self.step))
+            logger.warning('Scalar `{}` has not been updated since the last trigger.'.format(self.scalar_name))
             return
         self.step = step
 
@@ -97,12 +96,12 @@ class BestSaver(Callback):
                 self.best = (step, value)
 
         if self.best is not None:
-            self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
+            self.trainer.monitors.add_scalar(self.scalar_name + '/' + self.extreme, self.best[1])
 
 
 class MinSaver(BestSaver):
     """
-    Save the checkpoint with minimum value of some statistics.
+    Save the checkpoint with minimum value of some scalar.
     """
 
     extreme = 'min'
@@ -110,13 +109,13 @@ class MinSaver(BestSaver):
 
 class MaxSaver(BestSaver):
     """
-    Save the checkpoint with maximum value of some statistics.
+    Save the checkpoint with maximum value of some scalar.
     """
 
     extreme = 'max'
 
 
-class AutoResumer(Callback):
+class Resumer(Callback):
     def __init__(self, resume_path=None):
         self.resume_path = osp.normpath(resume_path or osp.join(get_logger_dir(), 'checkpoints'))
 
