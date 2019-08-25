@@ -1,11 +1,6 @@
-from abc import ABCMeta
-
-import six
-
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 
 
-@six.add_metaclass(ABCMeta)
 class Callback:
     """
     Base class for all callbacks.
