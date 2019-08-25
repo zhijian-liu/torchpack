@@ -112,12 +112,6 @@ class Callback:
         """
         pass
 
-    def save(self, checkpoint_dir):
-        pass
-
-    def load(self, checkpoint_dir):
-        pass
-
     def __str__(self):
         return type(self).__name__
 
