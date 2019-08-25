@@ -68,25 +68,24 @@ class BestSaver(Callback):
         self.key = key
         self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'checkpoints'))
         self.save_name = save_name or (self.extreme + '-' + key.replace('/', '-'))
-        self.best = None
-        self.last_step = None
+        self.step, self.best = None, None
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        if self.key in self.trainer.monitors:
-            step, value = self.trainer.monitors[self.key]
-        else:
-            logger.warning('Skipped.')
+        if self.key not in self.trainer.monitors:
+            logger.warning('`{}` has not been added to `trainer.monitors` yet.'.format(self.key))
             return
+        step, value = self.trainer.monitors[self.key]
 
-        if self.last_step is not None and step <= self.last_step:
-            logger.warning('Skipped.')
+        if self.step is not None and step <= self.step:
+            logger.warning('`{}` has not been updated since the last trigger at step {}.'.format(self.key, self.step))
             return
-        self.last_step = step
+        self.step = step
 
-        if self.best is None or (self.extreme == 'min' and value < self.best[1]) or \
+        if self.best is None or \
+                (self.extreme == 'min' and value < self.best[1]) or \
                 (self.extreme == 'max' and value > self.best[1]):
             checkpoint = fs.makedir(osp.join(self.save_path, self.save_name))
             try:
@@ -99,12 +98,6 @@ class BestSaver(Callback):
 
         if self.best is not None:
             self.trainer.monitors.add_scalar(self.key + '/' + self.extreme, self.best[1])
-
-    # def save(self, save_path):
-    #     io.save(self.best, osp.join(save_path, 'max-saver.json'))
-    #
-    # def load(self, resume_path):
-    #     self.best = io.load(osp.join(resume_path, 'max-saver.json'))
 
 
 class MinSaver(BestSaver):
@@ -130,7 +123,7 @@ class AutoResumer(Callback):
     def _before_train(self):
         checkpoints = glob.glob(osp.join(self.resume_path, 'step-*'))
         if not checkpoints:
-            logger.warning('Skipped.')
+            logger.warning('No checkpoints found: "{}".'.format(self.resume_path))
             return
 
         checkpoint = max(checkpoints, key=osp.getmtime)
