@@ -11,8 +11,8 @@ class EnableCallbackIf(ProxyCallback):
     def __init__(self, callback, predicate):
         """
         Args:
-            callback (Callback): a Callback instance.
-            predicate (self -> bool): a predicate, which has to be a pure function.
+            callback (Callback): A Callback instance.
+            predicate (self -> bool): A predicate, which has to be a pure function.
                 The callback is disabled unless this predicate returns True.
         """
         super().__init__(callback)
@@ -54,9 +54,9 @@ class PeriodicTrigger(ProxyCallback):
     def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
         """
         Args:
-            callback (Callback): a Callback instance.
-            every_k_epochs (int): trigger the callback every k epochs.
-            every_k_steps (int): trigger the callback every k steps.
+            callback (Callback): A Callback instance.
+            every_k_epochs (int): Trigger the callback every k epochs.
+            every_k_steps (int): Trigger the callback every k steps.
         """
         super().__init__(callback)
         assert (every_k_epochs is not None) or (every_k_steps is not None), \
@@ -85,9 +85,9 @@ class PeriodicCallback(EnableCallbackIf):
     def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
         """
         Args:
-            callback (Callback): a Callback instance.
-            every_k_epochs (int): enable the callback every k epochs.
-            every_k_steps (int): enable the callback every k steps.
+            callback (Callback): A Callback instance.
+            every_k_epochs (int): Enable the callback every k epochs.
+            every_k_steps (int): Enable the callback every k steps.
         """
         super().__init__(callback, PeriodicCallback.predicate)
         assert (every_k_epochs is not None) or (every_k_steps is not None), \

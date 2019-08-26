@@ -27,7 +27,7 @@ class GPUUtilizationTracker(Callback):
     def __init__(self, devices=None):
         """
         Args:
-            devices: list of physical GPU IDs. If None, will use `CUDA_VISIBLE_DEVICES`.
+            devices: List of physical GPU IDs. If None, will use `CUDA_VISIBLE_DEVICES`.
         """
         if devices is not None:
             self.devices = devices
@@ -107,7 +107,7 @@ class ThroughputTracker(Callback):
     def __init__(self, samples_per_step=None):
         """
         Args:
-            samples_per_step: number of samples processed in each step.
+            samples_per_step: Number of samples processed in each step.
                 If not provided, this callback will track `steps/sec` instead of `samples/sec`.
         """
         self.samples_per_step = samples_per_step
