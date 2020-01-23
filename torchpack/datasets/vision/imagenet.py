@@ -16,8 +16,8 @@ class ImageNetDataset(datasets.ImageNet):
         super().__init__(root=root, split=split, **kwargs)
 
     def __getitem__(self, index):
-        inputs, targets = super().__getitem__(index)
-        return dict(inputs=inputs, targets=targets)
+        images, labels = super().__getitem__(index)
+        return dict(images=images, labels=labels)
 
 
 class ImageNet(Dataset):
