@@ -1,2 +1,2 @@
-from .cifar import *
-from .imagenet import *
+from .cifar import CIFAR
+from .imagenet import ImageNet
