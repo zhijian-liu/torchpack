@@ -4,7 +4,7 @@ __all__ = ['ClassificationError']
 
 
 class ClassificationError(Callback):
-    def __init__(self, topk=1, output_tensor='outputs', target_tensor='targets', name='error'):
+    def __init__(self, topk=1, output_tensor='outputs', target_tensor='labels', name='error'):
         self.topk = topk
         self.output_tensor = output_tensor
         self.target_tensor = target_tensor
