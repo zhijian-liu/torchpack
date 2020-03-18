@@ -1,11 +1,13 @@
 import json
+import pickle
+from contextlib import contextmanager
 
 import numpy as np
-import six
 import torch
 
 __all__ = [
     'load', 'save',
+    'load_txt', 'save_txt',
     'load_json', 'save_json',
     'load_npy', 'save_npy',
     'load_npz', 'save_npz',
@@ -13,27 +15,60 @@ __all__ = [
 ]
 
 
+@contextmanager
 def file_descriptor(f, mode='r'):
-    if isinstance(f, six.string_types):
-        f = open(f, mode)
-    return f
+    new_fp = False
+    try:
+        if isinstance(f, str):
+            # or isinstance(f, pathlib.Path)
+            new_fp = True
+            f = open(f, mode)
+        yield f
+    finally:
+        if new_fp:
+            f.close()
+
+
+def load_txt(f, **kwargs):
+    with file_descriptor(f, 'r') as fd:
+        return fd.readlines(**kwargs)
+
+
+def save_txt(file, obj, **kwargs):
+    with file_descriptor(file, 'w') as fd:
+        raise NotImplementedError
 
 
 def load_json(f, **kwargs):
-    with file_descriptor(f, 'r') as fp:
-        return json.load(fp, **kwargs)
+    with file_descriptor(f, 'r') as fd:
+        return json.load(fd, **kwargs)
 
 
-def save_json(obj, f, **kwargs):
-    with file_descriptor(f, 'w') as fp:
-        return json.dump(obj, fp, **kwargs)
+def save_json(f, obj, **kwargs):
+    with file_descriptor(f, 'w') as fd:
+        return json.dump(obj, fd, **kwargs)
+
+
+def load_pkl(f, **kwargs):
+    with file_descriptor(f, 'rb') as fd:
+        try:
+            return pickle.load(fd, **kwargs)
+        except UnicodeDecodeError:
+            if 'encoding' in kwargs:
+                raise
+            return pickle.load(fd, encoding='latin1', **kwargs)
+
+
+def save_pkl(f, obj, **kwargs):
+    with file_descriptor(f, 'wb') as fd:
+        return pickle.dump(obj, fd, **kwargs)
 
 
 def load_npy(f, **kwargs):
     return np.load(f, **kwargs)
 
 
-def save_npy(obj, f, **kwargs):
+def save_npy(f, obj, **kwargs):
     return np.save(f, obj, **kwargs)
 
 
@@ -41,7 +76,7 @@ def load_npz(f, **kwargs):
     return np.load(f, **kwargs)
 
 
-def save_npz(obj, f, **kwargs):
+def save_npz(f, obj, **kwargs):
     return np.savez(f, obj, **kwargs)
 
 
@@ -49,30 +84,27 @@ def load_pth(f, **kwargs):
     return torch.load(f, **kwargs)
 
 
-def save_pth(obj, f, **kwargs):
+def save_pth(f, obj, **kwargs):
     return torch.save(obj, f, **kwargs)
 
 
-funcs = {
-    '.json': dict(load_func=load_json, save_func=save_json),
-    '.npy': dict(load_func=load_npy, save_func=save_npy),
-    '.npz': dict(load_func=load_npz, save_func=save_npz),
-    '.pth': dict(load_func=load_pth, save_func=save_pth),
-    '.pth.tar': dict(load_func=load_pth, save_func=save_pth)
-}
+load_funcs = {'.txt': load_txt, '.json': load_json, '.pkl': load_pkl,
+              '.npy': load_npy, '.npz': load_npz, '.pth': load_pth, '.pth.tar': load_pth}
+save_funcs = {'.txt': load_txt, '.json': save_json, '.pkl': save_pkl,
+              '.npy': save_npy, '.npz': save_npz, '.pth': save_pth, '.pth.tar': save_pth}
 
 
-def load(filename, **kwargs):
-    for suffix in sorted(funcs.keys(), key=len, reverse=True):
-        if filename.endswith(suffix):
-            load_func = funcs[suffix]['load_func']
-            return load_func(filename, **kwargs)
+def load(f, **kwargs):
+    assert isinstance(f, str), type(f)
+    for extension in sorted(load_funcs.keys(), key=len, reverse=True):
+        if f.endswith(extension):
+            return load_funcs[extension](f, **kwargs)
     raise NotImplementedError
 
 
-def save(obj, filename, **kwargs):
-    for suffix in sorted(funcs.keys(), key=len, reverse=True):
-        if filename.endswith(suffix):
-            save_func = funcs[suffix]['save_func']
-            return save_func(obj, filename, **kwargs)
+def save(f, obj, **kwargs):
+    assert isinstance(f, str), type(f)
+    for extension in sorted(save_funcs.keys(), key=len, reverse=True):
+        if f.endswith(extension):
+            return save_funcs[extension](f, obj, **kwargs)
     raise NotImplementedError

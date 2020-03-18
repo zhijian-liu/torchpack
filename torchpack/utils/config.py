@@ -1,7 +1,4 @@
-import collections
 from collections import deque
-
-import six
 
 from .container import G
 
@@ -14,7 +11,7 @@ class Config(G):
 
         if func is not None and not callable(func):
             raise TypeError('func "{}" is not a callable function or class'.format(repr(func)))
-        if args is not None and not isinstance(args, (collections.Sequence, collections.UserList)):
+        if args is not None and not isinstance(args, (list, tuple)):
             raise TypeError('args "{}" is not an iterable tuple or list'.format(repr(args)))
 
         self._func_ = func
@@ -22,17 +19,17 @@ class Config(G):
         self._detach_ = detach
 
     def items(self):
-        for k, v in super().items():
-            if k not in ['_func_', '_args_', '_detach_']:
-                yield k, v
+        for key, value in super().items():
+            if key not in ['_func_', '_args_', '_detach_']:
+                yield key, value
 
     def keys(self):
-        for k, v in self.items():
-            yield k
+        for key, value in self.items():
+            yield key
 
     def values(self):
-        for k, v in self.items():
-            yield v
+        for key, value in self.items():
+            yield value
 
     def __call__(self, *args, **kwargs):
         if self._func_ is None:
@@ -45,29 +42,29 @@ class Config(G):
             args = list(self._args_)
 
         # override kwargs
-        for k, v in self.items():
-            kwargs.setdefault(k, v)
+        for key, value in self.items():
+            kwargs.setdefault(key, value)
 
         # recursively call non-detached funcs
         queue = deque([args, kwargs])
         while queue:
             x = queue.popleft()
 
-            if isinstance(x, (collections.Sequence, collections.UserList)) and not isinstance(x, six.string_types):
+            if isinstance(x, (list, tuple)):
                 items = enumerate(x)
-            elif isinstance(x, (collections.Mapping, collections.UserDict)):
+            elif isinstance(x, dict):
                 items = x.items()
             else:
                 items = []
 
-            for k, v in items:
-                if isinstance(v, tuple):
-                    v = x[k] = list(v)
-                elif isinstance(v, Config):
-                    if v._detach_:
+            for key, value in items:
+                if isinstance(value, tuple):
+                    value = x[key] = list(value)
+                elif isinstance(value, Config):
+                    if value._detach_:
                         continue
-                    v = x[k] = v()
-                queue.append(v)
+                    value = x[key] = value()
+                queue.append(value)
 
         return self._func_(*args, **kwargs)
 
@@ -79,15 +76,15 @@ class Config(G):
                 text += '(detach=' + str(self._detach_) + ')'
             text += '\n'
             if self._args_:
-                for k, v in enumerate(self._args_):
-                    text += ' ' * indent + '[args:' + str(k) + '] = ' + str(v) + '\n'
+                for key, value in enumerate(self._args_):
+                    text += ' ' * indent + '[args:' + str(key) + '] = ' + str(value) + '\n'
 
-        for k, v in self.items():
-            text += ' ' * indent + '[' + str(k) + ']'
-            if isinstance(v, Config):
-                text += '\n' + v.__str__(indent + 2)
+        for key, value in self.items():
+            text += ' ' * indent + '[' + str(key) + ']'
+            if isinstance(value, Config):
+                text += '\n' + value.__str__(indent + 2)
             else:
-                text += ' = ' + str(v)
+                text += ' = ' + str(value)
             text += '\n'
 
         while text and text[-1] == '\n':

@@ -1,7 +1,5 @@
 import fnmatch
 
-import six
-
 __all__ = ['NameMatcher', 'IENameMatcher']
 
 
@@ -9,7 +7,7 @@ class NameMatcher:
     def __init__(self, patterns):
         if patterns is None:
             patterns = []
-        elif isinstance(patterns, six.string_types):
+        elif isinstance(patterns, str):
             patterns = [patterns]
         self.patterns = patterns
 

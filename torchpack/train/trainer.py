@@ -12,7 +12,7 @@ from torchpack.utils.logging import logger
 __all__ = ['Trainer']
 
 
-class Trainer(object):
+class Trainer:
     """
     Base class for a trainer.
     """
@@ -49,12 +49,8 @@ class Trainer(object):
         raise NotImplementedError
 
     def main_loop(self):
-        """
-        Run the main training loop.
-        """
-
         self.epoch_num = self.starting_epoch - 1
-        self.global_step = self.epoch_num * self.steps_per_epoch - 1
+        self.global_step = self.epoch_num * self.steps_per_epoch
 
         try:
             train_time = time.time()
@@ -62,16 +58,15 @@ class Trainer(object):
 
             while self.epoch_num < self.max_epoch:
                 self.epoch_num += 1
-                self.local_step = -1
-                self.global_step = self.epoch_num * self.steps_per_epoch - 1
+                self.local_step = 0
 
                 logger.info('Epoch {}/{} started.'.format(self.epoch_num, self.max_epoch))
                 epoch_time = time.time()
                 self.callbacks.before_epoch()
 
                 for feed_dict in self.dataflow:
-                    self.global_step += 1
                     self.local_step += 1
+                    self.global_step += 1
 
                     self.callbacks.before_step(feed_dict)
                     output_dict = self.run_step(feed_dict)
@@ -103,5 +98,5 @@ class Trainer(object):
     def save(self, checkpoint_dir):
         pass
 
-    def load_checkpoint(self, checkpoint_dir):
+    def load(self, checkpoint_dir):
         pass

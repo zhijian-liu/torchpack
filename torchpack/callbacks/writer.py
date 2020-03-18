@@ -8,12 +8,13 @@ from torchpack.callbacks.monitor import Monitor
 from torchpack.utils.logging import logger, get_logger_dir
 from torchpack.utils.matching import IENameMatcher
 
-__all__ = ['TerminalWriter', 'TFEventWriter', 'JSONWriter']
+__all__ = ['ConsoleWriter', 'TFEventWriter', 'JSONWriter']
 
 
-class TerminalWriter(Monitor):
+class ConsoleWriter(Monitor):
     """
     Write scalar summaries into terminal.
+    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
     def __init__(self, include='*', exclude=None):
@@ -41,10 +42,11 @@ class TerminalWriter(Monitor):
 class TFEventWriter(Monitor):
     """
     Write summaries to TensorFlow event file.
+    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
     def __init__(self, save_path=None):
-        self.save_path = fs.mkdir(save_path or get_logger_dir())
+        self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'tfevents'))
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_path)
@@ -62,10 +64,11 @@ class TFEventWriter(Monitor):
 class JSONWriter(Monitor):
     """
     Write scalar summaries to JSON file.
+    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
 
     def __init__(self, save_path=None):
-        self.save_path = fs.mkdir(save_path or get_logger_dir())
+        self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'summaries'))
 
     def _before_train(self):
         self.summaries = []
@@ -74,12 +77,9 @@ class JSONWriter(Monitor):
         if not osp.exists(filename):
             return
 
-        summaries = io.load(filename)
-        assert isinstance(summaries, list), type(summaries)
-        self.summaries = summaries
-
+        self.summaries = io.load(filename)
         try:
-            epoch = summaries[-1]['epoch_num'] + 1
+            epoch = self.summaries[-1]['epoch_num'] + 1
         except:
             return
         if epoch != self.trainer.starting_epoch:
@@ -94,7 +94,7 @@ class JSONWriter(Monitor):
     def _trigger(self):
         filename = osp.join(self.save_path, 'scalars.json')
         try:
-            io.dump(filename)
+            io.save(filename, self.summaries)
         except (OSError, IOError):
             logger.exception('Error occurred when saving JSON file "{}".'.format(filename))
 

@@ -35,6 +35,7 @@ class ProgressBar(Callback):
         if texts:
             self.pbar.set_description(', '.join(texts))
         self.pbar.update()
+        # print('\r' + ', '.join(texts), end='')
 
     def _after_epoch(self):
         self.pbar.close()
