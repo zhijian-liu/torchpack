@@ -56,9 +56,10 @@ class MobileNetV2(nn.Module):
 
     def __init__(self, num_classes, width_multiplier=1.0):
         super().__init__()
-        input_channels = make_divisible(self.blocks[0] * width_multiplier, 8)
-        last_channels = make_divisible(self.blocks[-1] * width_multiplier, 8, \
-                                       min_value=1280)
+        input_channels = make_divisible(self.blocks[0] * width_multiplier,
+                                        divisor=8)
+        last_channels = make_divisible(self.blocks[-1] * width_multiplier, \
+                                       divisor=8, min_value=1280)
 
         layers = [
             nn.Sequential(
@@ -72,7 +73,7 @@ class MobileNetV2(nn.Module):
         for expand_ratio, output_channels, num_blocks, strides in \
                 self.blocks[1:-1]:
             output_channels = make_divisible(output_channels * width_multiplier, \
-                                             8)
+                                             divisor=8)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(MobileBlockV2(input_channels, output_channels, 3, \
                                             stride, expand_ratio))
