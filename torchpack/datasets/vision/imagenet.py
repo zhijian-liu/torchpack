@@ -21,13 +21,13 @@ class ImageNetDataset(datasets.ImageNet):
 
 
 class ImageNet(Dataset):
-    def __init__(self, root, num_classes, image_size):
+    def __init__(self, root, num_classes=1000, image_size=224, transform=None):
         super().__init__({
             'train':
             ImageNetDataset(
                 root=root,
                 split='train',
-                transform=transforms.Compose([
+                transform=transform or transforms.Compose([
                     transforms.RandomResizedCrop(image_size),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
@@ -41,7 +41,7 @@ class ImageNet(Dataset):
             ImageNetDataset(
                 root=root,
                 split='val',
-                transform=transforms.Compose([
+                transform=transform or transforms.Compose([
                     transforms.Resize(int(image_size / 0.875)),
                     transforms.CenterCrop(image_size),
                     transforms.ToTensor(),
