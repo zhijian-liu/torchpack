@@ -16,7 +16,6 @@ class ConsoleWriter(Monitor):
     Write scalar summaries into terminal.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-
     def __init__(self, include='*', exclude=None):
         self.matcher = IENameMatcher(include, exclude)
 
@@ -44,9 +43,11 @@ class TFEventWriter(Monitor):
     Write summaries to TensorFlow event file.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-
     def __init__(self, save_path=None):
-        self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'tfevents'))
+        self.save_path = fs.makedir(save_path or osp.join(
+            get_logger_dir(),
+            'tf-events',
+        ))
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_path)
@@ -66,9 +67,11 @@ class JSONWriter(Monitor):
     Write scalar summaries to JSON file.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-
     def __init__(self, save_path=None):
-        self.save_path = fs.makedir(save_path or osp.join(get_logger_dir(), 'summaries'))
+        self.save_path = fs.makedir(save_path or osp.join(
+            get_logger_dir(),
+            'summaries',
+        ))
 
     def _before_train(self):
         self.summaries = []
@@ -83,10 +86,13 @@ class JSONWriter(Monitor):
         except:
             return
         if epoch != self.trainer.starting_epoch:
-            logger.warning('History epoch={} from JSON is not the predecessor of the current starting_epoch={}'.format(
-                epoch - 1, self.trainer.starting_epoch))
-            logger.warning('If you want to resume old training, either use `AutoResumeTrainConfig` '
-                           'or correctly set the new starting_epoch yourself to avoid inconsistency.')
+            logger.warning(
+                'History epoch={} from JSON is not the predecessor of the current starting_epoch={}'
+                .format(epoch - 1, self.trainer.starting_epoch))
+            logger.warning(
+                'If you want to resume old training, either use `AutoResumeTrainConfig` '
+                'or correctly set the new starting_epoch yourself to avoid inconsistency.'
+            )
 
     def _trigger_epoch(self):
         self._trigger()
@@ -96,7 +102,8 @@ class JSONWriter(Monitor):
         try:
             io.save(filename, self.summaries)
         except (OSError, IOError):
-            logger.exception('Error occurred when saving JSON file "{}".'.format(filename))
+            logger.exception(
+                'Error occurred when saving JSON file "{}".'.format(filename))
 
     def _after_train(self):
         self._trigger()
