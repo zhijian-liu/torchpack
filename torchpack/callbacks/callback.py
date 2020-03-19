@@ -115,9 +115,17 @@ class LambdaCallback(Callback):
     """
     A callback created with lambda functions.
     """
-
-    def __init__(self, before_train=None, before_epoch=None, before_step=None, after_step=None, trigger_step=None,
-                 after_epoch=None, trigger_epoch=None, trigger=None, after_train=None, master_only=False):
+    def __init__(self,
+                 before_train=None,
+                 before_epoch=None,
+                 before_step=None,
+                 after_step=None,
+                 trigger_step=None,
+                 after_epoch=None,
+                 trigger_epoch=None,
+                 trigger=None,
+                 after_train=None,
+                 master_only=False):
         self.before_train_func = before_train
         self.before_epoch_func = before_epoch
         self.before_step_func = before_step
@@ -170,7 +178,6 @@ class ProxyCallback(Callback):
     """
     A callback which proxy all methods to another callback.
     """
-
     def __init__(self, callback):
         assert isinstance(callback, Callback), type(callback)
         self.callback = callback
@@ -213,7 +220,6 @@ class Callbacks(Callback):
     """
     A container to hold callbacks.
     """
-
     def __init__(self, callbacks):
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
