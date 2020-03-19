@@ -6,8 +6,8 @@ __all__ = ['MobileNetV2', 'MobileBlockV2']
 
 
 class MobileBlockV2(nn.Module):
-    def __init__(self, input_channels, output_channels, kernel_size, stride,
-                 expand_ratio):
+    def __init__(self, input_channels, output_channels, kernel_size, \
+                 stride, expand_ratio):
         super().__init__()
         self.input_channels = input_channels
         self.output_channels = output_channels
@@ -17,13 +17,9 @@ class MobileBlockV2(nn.Module):
 
         if expand_ratio == 1:
             self.layers = nn.Sequential(
-                nn.Conv2d(input_channels,
-                          input_channels,
-                          kernel_size,
-                          stride=stride,
-                          padding=kernel_size // 2,
-                          groups=input_channels,
-                          bias=False),
+                nn.Conv2d(input_channels, input_channels, kernel_size, \
+                          stride=stride, padding=kernel_size // 2, \
+                          groups=input_channels, bias=False),
                 nn.BatchNorm2d(input_channels),
                 nn.ReLU6(inplace=True),
                 nn.Conv2d(input_channels, output_channels, 1, bias=False),
@@ -36,13 +32,9 @@ class MobileBlockV2(nn.Module):
                 nn.Conv2d(input_channels, expand_channels, 1, bias=False),
                 nn.BatchNorm2d(expand_channels),
                 nn.ReLU6(inplace=True),
-                nn.Conv2d(expand_channels,
-                          expand_channels,
-                          kernel_size,
-                          stride=stride,
-                          padding=kernel_size // 2,
-                          groups=expand_channels,
-                          bias=False),
+                nn.Conv2d(expand_channels, expand_channels, kernel_size, \
+                          stride=stride, padding=kernel_size // 2, \
+                          groups=expand_channels, bias=False),
                 nn.BatchNorm2d(expand_channels),
                 nn.ReLU6(inplace=True),
                 nn.Conv2d(expand_channels, output_channels, 1, bias=False),
@@ -70,12 +62,8 @@ class MobileNetV2(nn.Module):
 
         layers = [
             nn.Sequential(
-                nn.Conv2d(3,
-                          input_channels,
-                          3,
-                          stride=2,
-                          padding=1,
-                          bias=False),
+                nn.Conv2d(3, input_channels, 3, \
+                          stride=2, padding=1, bias=False),
                 nn.BatchNorm2d(input_channels),
                 nn.ReLU6(inplace=True),
             )
@@ -103,8 +91,7 @@ class MobileNetV2(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight,
-                                        mode='fan_out',
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', \
                                         nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)

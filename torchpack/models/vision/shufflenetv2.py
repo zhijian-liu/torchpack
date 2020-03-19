@@ -24,13 +24,9 @@ class ShuffleBlockV2(nn.Module):
 
         if stride != 1:
             self.branch1 = nn.Sequential(
-                nn.Conv2d(input_channels,
-                          input_channels,
-                          kernel_size,
-                          stride=stride,
-                          padding=kernel_size // 2,
-                          groups=input_channels,
-                          bias=False),
+                nn.Conv2d(input_channels, input_channels, kernel_size, \
+                          stride=stride, padding=kernel_size // 2, \
+                          groups=input_channels, bias=False),
                 nn.BatchNorm2d(input_channels),
                 nn.Conv2d(input_channels, output_channels, 1, bias=False),
                 nn.BatchNorm2d(output_channels),
@@ -41,13 +37,9 @@ class ShuffleBlockV2(nn.Module):
             nn.Conv2d(input_channels, output_channels, 1, bias=False),
             nn.BatchNorm2d(output_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(output_channels,
-                      output_channels,
-                      kernel_size,
-                      stride=stride,
-                      padding=kernel_size // 2,
-                      groups=output_channels,
-                      bias=False),
+            nn.Conv2d(output_channels, output_channels, kernel_size, \
+                      stride=stride, padding=kernel_size // 2, \
+                      groups=output_channels, bias=False),
             nn.BatchNorm2d(output_channels),
             nn.Conv2d(output_channels, output_channels, 1, bias=False),
             nn.BatchNorm2d(output_channels),
@@ -81,12 +73,8 @@ class ShuffleNetV2(nn.Module):
 
         layers = [
             nn.Sequential(
-                nn.Conv2d(3,
-                          input_channels,
-                          3,
-                          stride=2,
-                          padding=1,
-                          bias=False),
+                nn.Conv2d(3, input_channels, 3, \
+                          stride=2, padding=1, bias=False),
                 nn.BatchNorm2d(input_channels),
                 nn.ReLU(inplace=True),
             )
@@ -111,8 +99,7 @@ class ShuffleNetV2(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight,
-                                        mode='fan_out',
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', \
                                         nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)

@@ -21,7 +21,8 @@ class ImageNetDataset(datasets.ImageNet):
 
 
 class ImageNet(Dataset):
-    def __init__(self, root, num_classes, image_size=224, transforms=None):
+    def __init__(self, root, num_classes=1000, \
+                 transforms=None, image_size=224):
         if transforms is None:
             transforms = dict()
         if 'train' not in transforms:
@@ -42,14 +43,10 @@ class ImageNet(Dataset):
             ])
 
         super().__init__({
-            'train':
-            ImageNetDataset(root=root,
-                            split='train',
-                            transform=transforms['train']),
-            'test':
-            ImageNetDataset(root=root,
-                            split='val',
-                            transform=transforms['test'])
+            'train': ImageNetDataset(root=root, split='train', \
+                                     transform=transforms['train']),
+            'test': ImageNetDataset(root=root, split='val', \
+                                    transform=transforms['test'])
         })
 
         # sample classes by strided indexing
@@ -59,11 +56,12 @@ class ImageNet(Dataset):
 
         # reduce dataset to sampled classes
         # FIXME: update wnids and wnid_to_idx accordingly
-        for d in self.values():
-            d.samples = [(x, classes[c]) for x, c in d.samples if c in classes]
-            d.targets = [classes[c] for c in d.targets if c in classes]
-            d.classes = [x for c, x in enumerate(d.classes) if c in classes]
-            d.class_to_idx = {
-                x: c
-                for x, c in d.class_to_idx.items() if c in classes
-            }
+        for dataset in self.values():
+            dataset.samples = [(x, classes[c]) for x, c in dataset.samples \
+                               if c in classes]
+            dataset.targets = [classes[c] for c in dataset.targets \
+                               if c in classes]
+            dataset.classes = [x for c, x in enumerate(dataset.classes) \
+                               if c in classes]
+            dataset.class_to_idx = {x: c for x, c in dataset.class_to_idx.items() \
+                                    if c in classes}
