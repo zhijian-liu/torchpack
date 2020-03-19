@@ -84,9 +84,7 @@ class MobileNetV2(nn.Module):
         for expand_ratio, output_channels, num_blocks, strides in \
                 self.blocks[1:-1]:
             output_channels = make_divisible(
-                output_channels * width_multiplier,
-                divisor=8,
-            )
+                output_channels * width_multiplier, 8)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
                     MobileBlockV2(input_channels, output_channels, 3, stride,
