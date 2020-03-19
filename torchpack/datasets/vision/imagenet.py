@@ -21,11 +21,9 @@ class ImageNetDataset(datasets.ImageNet):
 
 
 class ImageNet(Dataset):
-    def __init__(self, root, transforms=None, image_size=224,
-                 num_classes=1000):
+    def __init__(self, root, num_classes, image_size=224, transforms=None):
         if transforms is None:
             transforms = dict()
-
         if 'train' not in transforms:
             transforms['train'] = Compose([
                 RandomResizedCrop(image_size),
@@ -34,7 +32,6 @@ class ImageNet(Dataset):
                 Normalize(mean=[0.485, 0.456, 0.406],
                           std=[0.229, 0.224, 0.225])
             ])
-
         if 'test' not in transforms:
             transforms['test'] = Compose([
                 Resize(int(image_size / 0.875)),

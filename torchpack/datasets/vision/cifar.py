@@ -1,5 +1,5 @@
 import torchvision.datasets as datasets
-import torchvision.transforms as transforms
+from torchvision.transforms import *
 
 from torchpack.datasets.dataset import Dataset
 
@@ -13,13 +13,11 @@ class CIFAR10Dataset(datasets.CIFAR10):
                  transform=None,
                  target_transform=None,
                  download=False):
-        super().__init__(
-            root=root,
-            train=train,
-            transform=transform,
-            target_transform=target_transform,
-            download=download,
-        )
+        super().__init__(root=root,
+                         train=train,
+                         transform=transform,
+                         target_transform=target_transform,
+                         download=download)
 
     def __getitem__(self, index):
         images, labels = super().__getitem__(index)
@@ -33,13 +31,11 @@ class CIFAR100Dataset(datasets.CIFAR100):
                  transform=None,
                  target_transform=None,
                  download=False):
-        super().__init__(
-            root=root,
-            train=train,
-            transform=transform,
-            target_transform=target_transform,
-            download=download,
-        )
+        super().__init__(root=root,
+                         train=train,
+                         transform=transform,
+                         target_transform=target_transform,
+                         download=download)
 
     def __getitem__(self, index):
         images, labels = super().__getitem__(index)
@@ -47,7 +43,7 @@ class CIFAR100Dataset(datasets.CIFAR100):
 
 
 class CIFAR(Dataset):
-    def __init__(self, root, num_classes, image_size):
+    def __init__(self, root, num_classes, image_size=32, transforms=None):
         if num_classes == 10:
             CIFARDataset = CIFAR10Dataset
         elif num_classes == 100:
@@ -55,34 +51,33 @@ class CIFAR(Dataset):
         else:
             raise NotImplementedError('only support CIFAR10/100 for now')
 
+        if transforms is None:
+            transforms = dict()
+        if 'train' not in transforms:
+            transforms['train'] = Compose([
+                RandomCrop(image_size, padding=4),
+                RandomHorizontalFlip(),
+                ToTensor(),
+                Normalize(mean=[0.4914, 0.4822, 0.4465],
+                          std=[0.2023, 0.1994, 0.2010])
+            ])
+        if 'test' not in transforms:
+            transforms['test'] = Compose([
+                Resize(image_size),
+                ToTensor(),
+                Normalize(mean=[0.4914, 0.4822, 0.4465],
+                          std=[0.2023, 0.1994, 0.2010])
+            ])
+
         super().__init__({
             'train':
-            CIFARDataset(
-                root=root,
-                train=True,
-                download=True,
-                transform=transforms.Compose([
-                    transforms.RandomCrop(image_size, padding=4),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.4914, 0.4822, 0.4465],
-                        std=[0.2023, 0.1994, 0.2010],
-                    ),
-                ]),
-            ),
+            CIFARDataset(root=root,
+                         train=True,
+                         download=True,
+                         transform=transforms['train']),
             'test':
-            CIFARDataset(
-                root=root,
-                train=False,
-                download=True,
-                transform=transforms.Compose([
-                    transforms.Resize(image_size),
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.4914, 0.4822, 0.4465],
-                        std=[0.2023, 0.1994, 0.2010],
-                    ),
-                ]),
-            )
+            CIFARDataset(root=root,
+                         train=False,
+                         download=True,
+                         transform=transforms['test'])
         })
