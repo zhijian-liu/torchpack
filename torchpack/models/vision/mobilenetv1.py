@@ -43,11 +43,11 @@ class MobileNetV1(nn.Module):
         ]
 
         for output_channels, num_blocks, strides in self.blocks[1:]:
-            output_channels = make_divisible(
-                output_channels * width_multiplier, 8)
+            output_channels = make_divisible(output_channels * width_multiplier, \
+                                             8)
             for stride in [strides] + [1] * (num_blocks - 1):
-                layers.append(
-                    MobileBlockV1(input_channels, output_channels, 3, stride))
+                layers.append(MobileBlockV1(input_channels, output_channels, 3, \
+                                            stride))
                 input_channels = output_channels
 
         self.features = nn.Sequential(*layers)

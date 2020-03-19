@@ -83,8 +83,8 @@ class ShuffleNetV2(nn.Module):
         for output_channels, num_blocks, strides in \
                 self.blocks[width_multiplier][1:-1]:
             for stride in [strides] + [1] * (num_blocks - 1):
-                layers.append(
-                    ShuffleBlockV2(input_channels, output_channels, 3, stride))
+                layers.append(ShuffleBlockV2(input_channels, output_channels, 3, \
+                                             stride))
                 input_channels = output_channels
 
         layers.append(
