@@ -5,11 +5,12 @@ from queue import Empty
 
 import numpy as np
 import torch
-from tensorpack.utils.concurrency import ensure_proc_terminate, start_proc_mask_signal
+from tensorpack.utils.concurrency import (ensure_proc_terminate,
+                                          start_proc_mask_signal)
 from tensorpack.utils.nvml import NVMLContext
 
 from torchpack.callbacks.callback import Callback
-from torchpack.utils.logging import logger
+from torchpack.logging import logger
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 
@@ -27,7 +28,7 @@ class GPUUtilizationTracker(Callback):
     def __init__(self, devices=None):
         """
         Args:
-            devices: List of physical GPU IDs. If None, will use `CUDA_VISIBLE_DEVICES`.
+            devices: List of GPU devices. If None, will use `CUDA_VISIBLE_DEVICES`.
         """
         if devices is not None:
             self.devices = devices
@@ -38,8 +39,10 @@ class GPUUtilizationTracker(Callback):
             elif env is None:
                 self.devices = list(range(torch.cuda.device_count()))
                 if len(self.devices) > 1:
-                    logger.warning('Neither `devices` nor `CUDA_VISIBLE_DEVICES` is set! '
-                                   'All {} visible GPUs will be monitored.'.format(len(self.devices)))
+                    logger.warning(
+                        'Neither `devices` nor `CUDA_VISIBLE_DEVICES` is set! '
+                        'All {} visible GPUs will be monitored.' \
+                            .format(len(self.devices)))
             else:
                 raise RuntimeError('No GPU device is specified!')
 
@@ -53,7 +56,9 @@ class GPUUtilizationTracker(Callback):
                     meters = []
                     while not event.is_set():
                         time.sleep(1)
-                        meters.append([ctx.device(k).utilization()['gpu'] for k in devices])
+                        meters.append([
+                            ctx.device(k).utilization()['gpu'] for k in devices
+                        ])
                     meters = meters[:max(len(meters) - 1, 1)]
                     queue.put(np.mean(meters, axis=0))
                     event.clear()
@@ -63,7 +68,8 @@ class GPUUtilizationTracker(Callback):
     def _before_train(self):
         self.queue = mp.Queue()
         self.event = mp.Event()
-        self.process = mp.Process(target=self._worker, args=(self.devices, self.queue, self.event))
+        self.process = mp.Process(target=self._worker,
+                                  args=(self.devices, self.queue, self.event))
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
@@ -84,13 +90,14 @@ class GPUUtilizationTracker(Callback):
             meters = None
 
         if meters is None:
-            logger.exception('Error occurred in `GPUUtilizationTracker` worker.')
+            logger.exception('Error in `GPUUtilizationTracker` worker.')
             return
 
         self.trainer.monitors.add_scalar('utilization/gpu', np.mean(meters))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), meters[k])
+                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), \
+                                                 meters[k])
 
     def _after_train(self):
         if self.process.is_alive():
@@ -122,10 +129,13 @@ class ThroughputTracker(Callback):
         self.end_time = time.time()
 
     def _trigger_epoch(self):
-        steps_per_sec = (self.trainer.global_step - self.last_step) / (self.end_time - self.start_time)
+        steps_per_sec = (self.trainer.global_step - self.last_step) / \
+                        (self.end_time - self.start_time)
         self.last_step = self.trainer.global_step
 
         if self.samples_per_step is None:
-            self.trainer.monitors.add_scalar('throughput/steps', steps_per_sec)
+            self.trainer.monitors.add_scalar('throughput/steps_per_sec', \
+                                             steps_per_sec)
         else:
-            self.trainer.monitors.add_scalar('throughput/samples', steps_per_sec * self.samples_per_step)
+            self.trainer.monitors.add_scalar('throughput/samples_per_sec', \
+                                             steps_per_sec * self.samples_per_step)
