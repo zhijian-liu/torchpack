@@ -2,11 +2,10 @@ import time
 
 import torch
 import tqdm
-from tensorpack.utils.utils import get_tqdm_kwargs
-from tensorpack.utils.utils import humanize_time_delta
+from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
 
 from torchpack.callbacks.callback import Callback, Callbacks
-from torchpack.utils.logging import logger
+from torchpack.logging import logger
 
 __all__ = ['InferenceRunner']
 
@@ -15,7 +14,6 @@ class InferenceRunner(Callback):
     """
     A callback that runs inference with a list of :class:`Callback`.
     """
-
     def __init__(self, dataflow, callbacks):
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
@@ -36,8 +34,9 @@ class InferenceRunner(Callback):
         with torch.no_grad():
             for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
                 self.callbacks.before_step(feed_dict)
-                output_dict = self.trainer.run_step(feed_dict)
-                self.callbacks.after_step(feed_dict, output_dict)
+                self.trainer.run_step(feed_dict)
+                self.callbacks.after_step(feed_dict)
 
         self.callbacks.after_epoch()
-        logger.info('Inference finished in {}.'.format(humanize_time_delta(time.time() - start_time)))
+        logger.info('Inference finished in {}.'.format(
+            humanize_time_delta(time.time() - start_time)))
