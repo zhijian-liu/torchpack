@@ -67,7 +67,7 @@ class EstimatedTimeLeft(Callback):
 
         epoch_time = np.median(self.times) if self.median else \
                      np.mean(self.times)
-        time_left = (self.trainer.max_epoch - self.trainer.epoch_num) \
-                    * epoch_time
+        time_left = epoch_time * (self.trainer.max_epoch -
+                                  self.trainer.epoch_num)
         logger.info('Estimated time left: {}.'.format(
             humanize_time_delta(time_left)))
