@@ -19,7 +19,7 @@ def get_default_dir():
 def set_default_dir(dirname):
     global _default_dir
     _default_dir = fs.makedir(dirname)
-    set_logger_dir(osp.join(_default_dir, 'logs'))
+    set_logger_dir(osp.join(_default_dir, 'logging'))
 
 
 def get_logger_dir():
@@ -29,7 +29,7 @@ def get_logger_dir():
 def set_logger_dir(dirname):
     global _logger_dir
     _logger_dir = fs.makedir(dirname)
-    set_handler(osp.join(_logger_dir, time.strftime('%Y%m%d%H%M%S') + '.log'))
+    set_handler(osp.join(_logger_dir, time.strftime('%Y%m%d-%H%M%S') + '.log'))
 
 
 # TODO: implement auto_set_dir

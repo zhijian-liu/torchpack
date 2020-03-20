@@ -5,7 +5,8 @@ from tensorboardX import SummaryWriter
 import torchpack.utils.fs as fs
 import torchpack.utils.io as io
 from torchpack.callbacks.monitor import Monitor
-from torchpack.utils.logging import logger, get_logger_dir
+from torchpack.environ import get_default_dir
+from torchpack.logging import logger
 from torchpack.utils.matching import IENameMatcher
 
 __all__ = ['ConsoleWriter', 'TFEventWriter', 'JSONWriter']
@@ -43,14 +44,12 @@ class TFEventWriter(Monitor):
     Write summaries to TensorFlow event file.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-    def __init__(self, save_path=None):
-        self.save_path = fs.makedir(save_path or osp.join(
-            get_logger_dir(),
-            'tf-events',
-        ))
+    def __init__(self, save_dir=None):
+        self.save_dir = fs.makedir(save_dir or \
+                                   osp.join(get_default_dir(), 'tensorboard'))
 
     def _before_train(self):
-        self.writer = SummaryWriter(self.save_path)
+        self.writer = SummaryWriter(self.save_dir)
 
     def _after_train(self):
         self.writer.close()
@@ -67,16 +66,14 @@ class JSONWriter(Monitor):
     Write scalar summaries to JSON file.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-    def __init__(self, save_path=None):
-        self.save_path = fs.makedir(save_path or osp.join(
-            get_logger_dir(),
-            'summaries',
-        ))
+    def __init__(self, save_dir=None):
+        self.save_dir = fs.makedir(save_dir or \
+                                   osp.join(get_default_dir(), 'summaries'))
 
     def _before_train(self):
         self.summaries = []
 
-        filename = osp.join(self.save_path, 'scalars.json')
+        filename = osp.join(self.save_dir, 'scalars.json')
         if not osp.exists(filename):
             return
 
@@ -98,7 +95,7 @@ class JSONWriter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        filename = osp.join(self.save_path, 'scalars.json')
+        filename = osp.join(self.save_dir, 'scalars.json')
         try:
             io.save(filename, self.summaries)
         except (OSError, IOError):
