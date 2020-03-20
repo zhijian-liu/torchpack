@@ -7,7 +7,6 @@ class EnableCallbackIf(ProxyCallback):
     """
     Enable the callback only if some condition holds.
     """
-
     def __init__(self, callback, predicate):
         """
         Args:
@@ -50,7 +49,6 @@ class PeriodicTrigger(ProxyCallback):
     """
     Trigger the callback every k steps or every k epochs.
     """
-
     def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
         """
         Args:
@@ -81,7 +79,6 @@ class PeriodicCallback(EnableCallbackIf):
     Enable the callback every k steps or every k epochs.
     Note that this can only make a callback less frequent.
     """
-
     def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
         """
         Args:

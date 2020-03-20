@@ -1,7 +1,9 @@
 import warnings
 
 import torchvision.datasets as datasets
-from torchvision.transforms import *
+from torchvision.transforms import (CenterCrop, Compose, Normalize,
+                                    RandomHorizontalFlip, RandomResizedCrop,
+                                    Resize, ToTensor)
 
 from torchpack.datasets.dataset import Dataset
 

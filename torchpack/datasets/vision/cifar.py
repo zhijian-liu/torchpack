@@ -1,5 +1,6 @@
 import torchvision.datasets as datasets
-from torchvision.transforms import *
+from torchvision.transforms import (Compose, Normalize, RandomCrop,
+                                    RandomHorizontalFlip, Resize, ToTensor)
 
 from torchpack.datasets.dataset import Dataset
 

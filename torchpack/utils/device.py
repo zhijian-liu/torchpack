@@ -6,21 +6,21 @@ __all__ = ['parse_devices', 'set_cuda_visible_devices']
 
 
 def parse_devices(devs):
-    gpus = []
     if devs == '*':
-        gpus += range(torch.cuda.device_count())
-    else:
-        for dev in devs.split(','):
-            dev = dev.strip().lower()
-            if dev == 'cpu':
-                continue
-            if dev.startswith('gpu'):
-                dev = dev[3:]
-            if '-' in dev:
-                l, r = dev.split('-')
-                gpus += range(int(l), int(r) + 1)
-            else:
-                gpus += [int(dev)]
+        return range(torch.cuda.device_count())
+
+    gpus = []
+    for dev in devs.split(','):
+        dev = dev.strip().lower()
+        if dev == 'cpu':
+            continue
+        if dev.startswith('gpu'):
+            dev = dev[3:]
+        if '-' in dev:
+            l, r = dev.split('-')
+            gpus += range(int(l), int(r) + 1)
+        else:
+            gpus += [int(dev)]
     return gpus
 
 
