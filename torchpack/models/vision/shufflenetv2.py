@@ -135,11 +135,6 @@ class ShuffleNetV2(nn.Module):
                                         nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
-
-            if isinstance(m, nn.BatchNorm2d):
-                nn.init.ones_(m.weight)
-                nn.init.zeros_(m.bias)
-
             if isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
