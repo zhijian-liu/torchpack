@@ -20,7 +20,7 @@ class ImageNetDataset(datasets.ImageNet):
                  transform=None,
                  target_transform=None):
         super().__init__(root=root,
-                         split=split,
+                         split=('train' if split == 'train' else 'val'),
                          transform=transform,
                          target_transform=target_transform)
 
@@ -52,21 +52,17 @@ class ImageNet(Dataset):
             ])
 
         super().__init__({
-            'train':
-            ImageNetDataset(root=root,
-                            split='train',
-                            transform=transforms['train']),
-            'test':
-            ImageNetDataset(root=root,
-                            split='val',
-                            transform=transforms['test'])
+            split: ImageNetDataset(root=root,
+                                   split=split,
+                                   transform=transforms[split])
+            for split in ['train', 'test']
         })
 
         indices = dict()
         for k in range(num_classes):
             indices[k * (1000 // num_classes)] = k
 
-        for dataset in self.values():
+        for split, dataset in self.items():
             samples = []
             for x, c in dataset.samples:
                 if c in indices:

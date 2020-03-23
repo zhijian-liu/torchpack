@@ -71,8 +71,8 @@ class CIFAR(Dataset):
             ])
 
         super().__init__({
-            'train':
-            CIFARDataset(root=root, train=True, transform=transforms['train']),
-            'test':
-            CIFARDataset(root=root, train=False, transform=transforms['test'])
+            split: CIFARDataset(root=root,
+                                train=(split == 'train'),
+                                transform=transforms[split])
+            for split in ['train', 'test']
         })

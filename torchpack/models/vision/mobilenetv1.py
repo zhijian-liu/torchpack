@@ -39,8 +39,7 @@ class MobileNetV1(nn.Module):
     def __init__(self, input_channels=3, num_classes=1000, width_multiplier=1):
         super().__init__()
 
-        output_channels = make_divisible(self.blocks[0] * width_multiplier,
-                                         divisor=8)
+        output_channels = make_divisible(self.blocks[0] * width_multiplier, 8)
         layers = [
             nn.Sequential(
                 nn.Conv2d(input_channels,
@@ -56,9 +55,8 @@ class MobileNetV1(nn.Module):
         input_channels = output_channels
 
         for output_channels, num_blocks, strides in self.blocks[1:]:
-            output_channels = make_divisible(output_channels *
-                                             width_multiplier,
-                                             divisor=8)
+            output_channels = make_divisible(
+                output_channels * width_multiplier, 8)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
                     MobileBlockV1(input_channels,
@@ -83,7 +81,7 @@ class MobileNetV1(nn.Module):
                 nn.init.zeros_(m.bias)
 
             if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0, std=0.01)
+                nn.init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 

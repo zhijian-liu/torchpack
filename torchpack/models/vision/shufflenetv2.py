@@ -103,8 +103,8 @@ class ShuffleNetV2(nn.Module):
         ]
         input_channels = output_channels
 
-        for output_channels, num_blocks, strides in self.blocks[
-                width_multiplier][1:-1]:
+        for output_channels, num_blocks, strides in \
+                self.blocks[width_multiplier][1:-1]:
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
                     ShuffleBlockV2(input_channels,
@@ -141,7 +141,7 @@ class ShuffleNetV2(nn.Module):
                 nn.init.zeros_(m.bias)
 
             if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0, std=0.01)
+                nn.init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 

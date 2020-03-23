@@ -11,15 +11,15 @@ class MobileBlockV2(nn.Module):
                  output_channels,
                  kernel_size,
                  stride=1,
-                 expension=1):
+                 expansion=1):
         super().__init__()
         self.input_channels = input_channels
         self.output_channels = output_channels
         self.kernel_size = kernel_size
         self.stride = stride
-        self.expension = expension
+        self.expansion = expansion
 
-        if expension == 1:
+        if expansion == 1:
             self.layers = nn.Sequential(
                 nn.Conv2d(input_channels,
                           input_channels,
@@ -37,24 +37,24 @@ class MobileBlockV2(nn.Module):
                 nn.BatchNorm2d(output_channels),
             )
         else:
-            middle_channels = round(input_channels * expension)
+            expansion_channels = round(input_channels * expansion)
             self.layers = nn.Sequential(
                 nn.Conv2d(input_channels,
-                          middle_channels,
+                          expansion_channels,
                           kernel_size=1,
                           bias=False),
-                nn.BatchNorm2d(middle_channels),
+                nn.BatchNorm2d(expansion_channels),
                 nn.ReLU6(inplace=True),
-                nn.Conv2d(middle_channels,
-                          middle_channels,
+                nn.Conv2d(expansion_channels,
+                          expansion_channels,
                           kernel_size=kernel_size,
                           stride=stride,
                           padding=kernel_size // 2,
-                          groups=middle_channels,
+                          groups=expansion_channels,
                           bias=False),
-                nn.BatchNorm2d(middle_channels),
+                nn.BatchNorm2d(expansion_channels),
                 nn.ReLU6(inplace=True),
-                nn.Conv2d(middle_channels,
+                nn.Conv2d(expansion_channels,
                           output_channels,
                           kernel_size=1,
                           bias=False),
@@ -77,8 +77,7 @@ class MobileNetV2(nn.Module):
     def __init__(self, input_channels=3, num_classes=1000, width_multiplier=1):
         super().__init__()
 
-        output_channels = make_divisible(self.blocks[0] * width_multiplier,
-                                         divisor=8)
+        output_channels = make_divisible(self.blocks[0] * width_multiplier, 8)
         layers = [
             nn.Sequential(
                 nn.Conv2d(input_channels,
@@ -93,22 +92,20 @@ class MobileNetV2(nn.Module):
         ]
         input_channels = output_channels
 
-        for expension, output_channels, num_blocks, strides in self.blocks[1:
-                                                                           -1]:
-            output_channels = make_divisible(output_channels *
-                                             width_multiplier,
-                                             divisor=8)
+        for expansion, output_channels, num_blocks, strides in \
+                self.blocks[1:-1]:
+            output_channels = make_divisible(
+                output_channels * width_multiplier, 8)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
                     MobileBlockV2(input_channels,
                                   output_channels,
                                   kernel_size=3,
                                   stride=stride,
-                                  expension=expension))
+                                  expansion=expansion))
                 input_channels = output_channels
 
-        output_channels = make_divisible(self.blocks[-1] * width_multiplier,
-                                         divisor=8,
+        output_channels = make_divisible(self.blocks[-1] * width_multiplier, 8, \
                                          min_value=1280)
         layers.append(
             nn.Sequential(
@@ -137,7 +134,7 @@ class MobileNetV2(nn.Module):
                 nn.init.zeros_(m.bias)
 
             if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0, std=0.01)
+                nn.init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
