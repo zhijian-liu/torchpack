@@ -4,6 +4,6 @@ from .inference import *
 from .metrics import *
 from .monitor import *
 from .progress import *
-from .tracker import *
-from .trigger import *
-from .writer import *
+from .trackers import *
+from .triggers import *
+from .writers import *

@@ -28,8 +28,9 @@ def get_logger(name=None, formatter=Formatter):
 
 
 def set_handler(filename):
-    handler = logging.FileHandler(filename=filename, \
-                                  encoding='utf-8', mode='w')
+    handler = logging.FileHandler(filename=filename,
+                                  encoding='utf-8',
+                                  mode='w')
     handler.setFormatter(Formatter(datefmt='%m/%d %H:%M:%S'))
 
     global _handler

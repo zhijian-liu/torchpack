@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 from torchpack import __version__
 
@@ -13,6 +13,6 @@ setup(
         'termcolor>=1.1',
         'torch>=1.4',
         'torchvision>=0.5',
-        'tqdm>=4.31.0'
-    ]
+        'tqdm>=4.31.0',
+    ],
 )

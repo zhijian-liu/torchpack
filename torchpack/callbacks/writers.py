@@ -7,7 +7,7 @@ import torchpack.utils.io as io
 from torchpack.callbacks.monitor import Monitor
 from torchpack.environ import get_default_dir
 from torchpack.logging import logger
-from torchpack.utils.matching import IENameMatcher
+from torchpack.utils.matching import NameMatcher
 
 __all__ = ['ConsoleWriter', 'TFEventWriter', 'JSONWriter']
 
@@ -17,8 +17,8 @@ class ConsoleWriter(Monitor):
     Write scalar summaries into terminal.
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-    def __init__(self, include='*', exclude=None):
-        self.matcher = IENameMatcher(include, exclude)
+    def __init__(self, patterns='*'):
+        self.matcher = NameMatcher(patterns)
 
     def _before_train(self):
         self.scalars = dict()
@@ -45,8 +45,8 @@ class TFEventWriter(Monitor):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
     def __init__(self, save_dir=None):
-        self.save_dir = fs.makedir(save_dir or \
-                                   osp.join(get_default_dir(), 'tensorboard'))
+        self.save_dir = fs.makedir(
+            save_dir or osp.join(get_default_dir(), 'tensorboard'))
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_dir)
@@ -67,8 +67,8 @@ class JSONWriter(Monitor):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
     def __init__(self, save_dir=None):
-        self.save_dir = fs.makedir(save_dir or \
-                                   osp.join(get_default_dir(), 'summaries'))
+        self.save_dir = fs.makedir(save_dir
+                                   or osp.join(get_default_dir(), 'summaries'))
 
     def _before_train(self):
         self.summaries = []
@@ -107,8 +107,8 @@ class JSONWriter(Monitor):
 
     def _add_scalar(self, name, scalar):
         self.summaries.append({
-            'epoch-num': self.trainer.epoch_num,
-            'global-step': self.trainer.global_step,
-            'local-step': self.trainer.local_step,
+            'epoch_num': self.trainer.epoch_num,
+            'global_step': self.trainer.global_step,
+            'local_step': self.trainer.local_step,
             name: scalar
         })

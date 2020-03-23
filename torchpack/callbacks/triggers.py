@@ -57,7 +57,7 @@ class PeriodicTrigger(ProxyCallback):
             every_k_steps (int): Trigger the callback every k steps.
         """
         super().__init__(callback)
-        assert (every_k_epochs is not None) or (every_k_steps is not None), \
+        assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'
         self.every_k_epochs = every_k_epochs
         self.every_k_steps = every_k_steps
@@ -87,7 +87,7 @@ class PeriodicCallback(EnableCallbackIf):
             every_k_steps (int): Enable the callback every k steps.
         """
         super().__init__(callback, PeriodicCallback.predicate)
-        assert (every_k_epochs is not None) or (every_k_steps is not None), \
+        assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'
         self.every_k_epochs = every_k_epochs
         self.every_k_steps = every_k_steps

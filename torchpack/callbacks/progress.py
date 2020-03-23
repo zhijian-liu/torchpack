@@ -7,7 +7,7 @@ from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
 
 from torchpack.callbacks.callback import Callback
 from torchpack.logging import logger
-from torchpack.utils.matching import IENameMatcher
+from torchpack.utils.matching import NameMatcher
 
 __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 
@@ -20,8 +20,8 @@ class ProgressBar(Callback):
 
     master_only = True
 
-    def __init__(self, includes='*', excludes=None):
-        self.matcher = IENameMatcher(includes, excludes)
+    def __init__(self, patterns='*'):
+        self.matcher = NameMatcher(patterns)
 
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch,
@@ -30,9 +30,8 @@ class ProgressBar(Callback):
     def _trigger_step(self):
         texts = []
         for name, (step, scalar) in sorted(self.trainer.monitors.items()):
-            if step == self.trainer.global_step and \
-                    isinstance(scalar, (int, float)) and \
-                    self.matcher.match(name):
+            if step == self.trainer.global_step and isinstance(
+                    scalar, (int, float)) and self.matcher.match(name):
                 texts.append('[{}] = {:.3g}'.format(name, scalar))
         if texts:
             self.pbar.set_description(', '.join(texts))
@@ -50,9 +49,8 @@ class EstimatedTimeLeft(Callback):
 
     master_only = True
 
-    def __init__(self, last_k_epochs=5, median=True):
+    def __init__(self, last_k_epochs=5):
         self.last_k_epochs = last_k_epochs
-        self.median = median
 
     def _before_train(self):
         self.times = deque(maxlen=self.last_k_epochs)
@@ -65,9 +63,7 @@ class EstimatedTimeLeft(Callback):
         self.times.append(time.time() - self.last_time)
         self.last_time = time.time()
 
-        epoch_time = np.median(self.times) if self.median else \
-                     np.mean(self.times)
-        time_left = epoch_time * (self.trainer.max_epoch -
-                                  self.trainer.epoch_num)
+        estimated_time = (self.trainer.max_epoch -
+                          self.trainer.epoch_num) * np.mean(self.times)
         logger.info('Estimated time left: {}.'.format(
-            humanize_time_delta(time_left)))
+            humanize_time_delta(estimated_time)))

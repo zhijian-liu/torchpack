@@ -41,8 +41,8 @@ class GPUUtilizationTracker(Callback):
                 if len(self.devices) > 1:
                     logger.warning(
                         'Neither `devices` nor `CUDA_VISIBLE_DEVICES` is set! '
-                        'All {} visible GPUs will be monitored.' \
-                            .format(len(self.devices)))
+                        'All {} visible GPUs will be monitored.'.format(
+                            len(self.devices)))
             else:
                 raise RuntimeError('No GPU device is specified!')
 
@@ -96,8 +96,8 @@ class GPUUtilizationTracker(Callback):
         self.trainer.monitors.add_scalar('utilization/gpu', np.mean(meters))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar('utilization/gpu{}'.format(device), \
-                                                 meters[k])
+                self.trainer.monitors.add_scalar(
+                    'utilization/gpu{}'.format(device), meters[k])
 
     def _after_train(self):
         if self.process.is_alive():
@@ -129,13 +129,14 @@ class ThroughputTracker(Callback):
         self.end_time = time.time()
 
     def _trigger_epoch(self):
-        steps_per_sec = (self.trainer.global_step - self.last_step) / \
-                        (self.end_time - self.start_time)
+        steps_per_sec = (self.trainer.global_step -
+                         self.last_step) / (self.end_time - self.start_time)
         self.last_step = self.trainer.global_step
 
         if self.samples_per_step is None:
-            self.trainer.monitors.add_scalar('throughput/steps_per_sec', \
+            self.trainer.monitors.add_scalar('throughput/steps_per_sec',
                                              steps_per_sec)
         else:
-            self.trainer.monitors.add_scalar('throughput/samples_per_sec', \
-                                             steps_per_sec * self.samples_per_step)
+            samples_per_sec = steps_per_sec * self.samples_per_step
+            self.trainer.monitors.add_scalar('throughput/samples_per_sec',
+                                             samples_per_sec)
