@@ -14,8 +14,15 @@ warnings.filterwarnings('ignore')
 
 
 class ImageNetDataset(datasets.ImageNet):
-    def __init__(self, root, split, **kwargs):
-        super().__init__(root=root, split=split, **kwargs)
+    def __init__(self,
+                 root,
+                 split='train',
+                 transform=None,
+                 target_transform=None):
+        super().__init__(root=root,
+                         split=split,
+                         transform=transform,
+                         target_transform=target_transform)
 
     def __getitem__(self, index):
         images, classes = super().__getitem__(index)
