@@ -14,17 +14,17 @@ warnings.filterwarnings('ignore')
 
 
 class ImageNetDataset(datasets.ImageNet):
-    def __init__(self, root, split='train', **kwargs):
+    def __init__(self, root, split, **kwargs):
         super().__init__(root=root, split=split, **kwargs)
 
     def __getitem__(self, index):
-        images, labels = super().__getitem__(index)
-        return dict(images=images, labels=labels)
+        images, classes = super().__getitem__(index)
+        return dict(images=images, classes=classes)
 
 
 class ImageNet(Dataset):
-    def __init__(self, root, num_classes=1000, \
-                 transforms=None, image_size=224):
+    def __init__(self, root, num_classes=1000, image_size=224,
+                 transforms=None):
         if transforms is None:
             transforms = dict()
         if 'train' not in transforms:
@@ -45,25 +45,41 @@ class ImageNet(Dataset):
             ])
 
         super().__init__({
-            'train': ImageNetDataset(root=root, split='train', \
-                                     transform=transforms['train']),
-            'test': ImageNetDataset(root=root, split='val', \
-                                    transform=transforms['test'])
+            'train':
+            ImageNetDataset(root=root,
+                            split='train',
+                            transform=transforms['train']),
+            'test':
+            ImageNetDataset(root=root,
+                            split='val',
+                            transform=transforms['test'])
         })
 
-        # sample classes by strided indexing
-        classes = dict()
+        indices = dict()
         for k in range(num_classes):
-            classes[k * (1000 // num_classes)] = k
+            indices[k * (1000 // num_classes)] = k
 
-        # reduce dataset to sampled classes
-        # FIXME: update wnids and wnid_to_idx accordingly
         for dataset in self.values():
-            dataset.samples = [(x, classes[c]) for x, c in dataset.samples \
-                               if c in classes]
-            dataset.targets = [classes[c] for c in dataset.targets \
-                               if c in classes]
-            dataset.classes = [x for c, x in enumerate(dataset.classes) \
-                               if c in classes]
-            dataset.class_to_idx = {x: c for x, c in dataset.class_to_idx.items() \
-                                    if c in classes}
+            samples = []
+            for x, c in dataset.samples:
+                if c in indices:
+                    samples.append((x, indices[c]))
+            dataset.samples = samples
+
+            targets = []
+            for c in dataset.targets:
+                if c in indices:
+                    targets.append(indices[c])
+            dataset.targets = targets
+
+            classes = []
+            for c, x in enumerate(dataset.classes):
+                if c in indices:
+                    classes.append(x)
+            dataset.classes = classes
+
+            class_to_idx = {}
+            for x, c in dataset.class_to_idx.items():
+                if c in indices:
+                    class_to_idx[x] = c
+            dataset.class_to_idx = class_to_idx

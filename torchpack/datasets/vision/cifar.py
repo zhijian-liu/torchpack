@@ -8,36 +8,49 @@ __all__ = ['CIFAR']
 
 
 class CIFAR10Dataset(datasets.CIFAR10):
-    def __init__(self, root, train=True,  transform=None, \
-                 target_transform=None, download=False):
-        super().__init__(root=root, train=train, transform=transform, \
-                         target_transform=target_transform, download=download)
+    def __init__(self,
+                 root,
+                 train=True,
+                 transform=None,
+                 target_transform=None,
+                 download=True):
+        super().__init__(root=root,
+                         train=train,
+                         transform=transform,
+                         target_transform=target_transform,
+                         download=download)
 
     def __getitem__(self, index):
-        images, labels = super().__getitem__(index)
-        return dict(images=images, labels=labels)
+        images, classes = super().__getitem__(index)
+        return dict(images=images, classes=classes)
 
 
 class CIFAR100Dataset(datasets.CIFAR100):
-    def __init__(self, root, train=True,  transform=None, \
-                 target_transform=None, download=False):
-        super().__init__(root=root, train=train, transform=transform, \
-                         target_transform=target_transform, download=download)
+    def __init__(self,
+                 root,
+                 train,
+                 transform=None,
+                 target_transform=None,
+                 download=True):
+        super().__init__(root=root,
+                         train=train,
+                         transform=transform,
+                         target_transform=target_transform,
+                         download=download)
 
     def __getitem__(self, index):
-        images, labels = super().__getitem__(index)
-        return dict(images=images, labels=labels)
+        images, classes = super().__getitem__(index)
+        return dict(images=images, classes=classes)
 
 
 class CIFAR(Dataset):
-    def __init__(self, root, num_classes=10, \
-                 transforms=None, image_size=32):
+    def __init__(self, root, num_classes=10, image_size=32, transforms=None):
         if num_classes == 10:
             CIFARDataset = CIFAR10Dataset
         elif num_classes == 100:
             CIFARDataset = CIFAR100Dataset
         else:
-            raise NotImplementedError('only support CIFAR10/100 for now')
+            raise NotImplementedError('only CIFAR-10/100 are supported')
 
         if transforms is None:
             transforms = dict()
@@ -58,8 +71,8 @@ class CIFAR(Dataset):
             ])
 
         super().__init__({
-            'train': CIFARDataset(root=root, train=True, download=True, \
-                                  transform=transforms['train']),
-            'test': CIFARDataset(root=root, train=False, download=True, \
-                                 transform=transforms['test'])
+            'train':
+            CIFARDataset(root=root, train=True, transform=transforms['train']),
+            'test':
+            CIFARDataset(root=root, train=False, transform=transforms['test'])
         })
