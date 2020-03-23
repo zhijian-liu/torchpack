@@ -86,7 +86,7 @@ class MobileNetV2(nn.Module):
                           stride=2,
                           padding=1,
                           bias=False),
-                nn.BatchNorm2d(input_channels),
+                nn.BatchNorm2d(output_channels),
                 nn.ReLU6(inplace=True),
             )
         ]
