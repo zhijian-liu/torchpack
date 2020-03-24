@@ -13,6 +13,6 @@ def load_source(filename, name=None):
 
     # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
     spec = importlib.util.spec_from_file_location(name, filename)
-    foo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(foo)
-    return foo
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
