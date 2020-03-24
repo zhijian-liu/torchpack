@@ -2,29 +2,30 @@ import os
 
 import torch
 
-__all__ = ['parse_devices', 'set_cuda_visible_devices']
+__all__ = ['parse_cuda_devices', 'set_cuda_visible_devices']
 
 
-def parse_devices(devs):
-    if devs == '*':
+def parse_cuda_devices(text):
+    if text == '*':
         return range(torch.cuda.device_count())
 
-    gpus = []
-    for dev in devs.split(','):
-        dev = dev.strip().lower()
-        if dev == 'cpu':
+    devices = []
+    for device in text.split(','):
+        device = device.strip().lower()
+        if device == 'cpu':
             continue
-        if dev.startswith('gpu'):
-            dev = dev[3:]
-        if '-' in dev:
-            l, r = dev.split('-')
-            gpus += range(int(l), int(r) + 1)
+        if device.startswith('gpu'):
+            device = device[3:]
+        if '-' in device:
+            l, r = device.split('-')
+            devices.extend(range(int(l), int(r) + 1))
         else:
-            gpus += [int(dev)]
-    return gpus
+            devices.append(int(device))
+    return devices
 
 
-def set_cuda_visible_devices(devs, env=os.environ):
-    devs = parse_devices(devs)
-    env['CUDA_VISIBLE_DEVICES'] = ','.join([str(dev) for dev in devs])
-    return devs
+def set_cuda_visible_devices(devices, environ=os.environ):
+    if isinstance(devices, str):
+        devices = parse_cuda_devices(devices)
+    environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, devices))
+    return devices
