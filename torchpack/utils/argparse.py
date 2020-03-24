@@ -6,7 +6,7 @@ __all__ = ['ArgumentParser']
 
 
 # from https://github.com/vacancy/Jacinle/blob/master/jacinle/cli/argument.py
-class SetDevices(argparse.Action):
+class SetDevicesAction(argparse.Action):
     def __init__(self,
                  option_strings,
                  dest,
@@ -36,4 +36,4 @@ class SetDevices(argparse.Action):
 class ArgumentParser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.register('action', 'set_devices', SetDevices)
+        self.register('action', 'set_devices', SetDevicesAction)
