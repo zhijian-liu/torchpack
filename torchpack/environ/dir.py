@@ -4,22 +4,20 @@ import time
 import torchpack.utils.fs as fs
 from torchpack.logging import set_handler
 
-__all__ = [
-    'get_default_dir', 'set_default_dir', 'get_logger_dir', 'set_logger_dir'
-]
+__all__ = ['get_run_dir', 'set_run_dir', 'get_logger_dir', 'set_logger_dir']
 
-_default_dir = None
+_run_dir = None
 _logger_dir = None
 
 
-def get_default_dir():
-    return _default_dir
+def get_run_dir():
+    return _run_dir
 
 
-def set_default_dir(dirname):
-    global _default_dir
-    _default_dir = fs.makedir(dirname)
-    set_logger_dir(osp.join(_default_dir, 'logging'))
+def set_run_dir(dirname):
+    global _run_dir
+    _run_dir = fs.makedir(dirname)
+    set_logger_dir(osp.join(_run_dir, 'logging'))
 
 
 def get_logger_dir():

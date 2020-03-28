@@ -5,7 +5,7 @@ from tensorboardX import SummaryWriter
 import torchpack.utils.fs as fs
 import torchpack.utils.io as io
 from torchpack.callbacks.monitor import Monitor
-from torchpack.environ import get_default_dir
+from torchpack.environ import get_run_dir
 from torchpack.logging import logger
 from torchpack.utils.matching import NameMatcher
 
@@ -45,8 +45,8 @@ class TFEventWriter(Monitor):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
     def __init__(self, save_dir=None):
-        self.save_dir = fs.makedir(
-            save_dir or osp.join(get_default_dir(), 'tensorboard'))
+        self.save_dir = save_dir or osp.join(get_run_dir(), 'tensorboard')
+        self.save_dir = fs.makedir(self.save_dir)
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_dir)
@@ -67,8 +67,8 @@ class JSONWriter(Monitor):
     This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
     def __init__(self, save_dir=None):
-        self.save_dir = fs.makedir(save_dir
-                                   or osp.join(get_default_dir(), 'summaries'))
+        self.save_dir = save_dir or osp.join(get_run_dir(), 'summaries')
+        self.save_dir = fs.makedir(self.save_dir)
 
     def _before_train(self):
         self.summaries = []
