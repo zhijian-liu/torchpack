@@ -8,12 +8,6 @@ class EnableCallbackIf(ProxyCallback):
     Enable the callback only if some condition holds.
     """
     def __init__(self, callback, predicate):
-        """
-        Args:
-            callback (Callback): A Callback instance.
-            predicate (self -> bool): A predicate, which has to be a pure function.
-                The callback is disabled unless this predicate returns True.
-        """
         super().__init__(callback)
         self.predicate = predicate
 
@@ -50,12 +44,6 @@ class PeriodicTrigger(ProxyCallback):
     Trigger the callback every k steps or every k epochs.
     """
     def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
-        """
-        Args:
-            callback (Callback): A Callback instance.
-            every_k_epochs (int): Trigger the callback every k epochs.
-            every_k_steps (int): Trigger the callback every k steps.
-        """
         super().__init__(callback)
         assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'
@@ -80,12 +68,6 @@ class PeriodicCallback(EnableCallbackIf):
     Note that this can only make a callback less frequent.
     """
     def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
-        """
-        Args:
-            callback (Callback): A Callback instance.
-            every_k_epochs (int): Enable the callback every k epochs.
-            every_k_steps (int): Enable the callback every k steps.
-        """
         super().__init__(callback, PeriodicCallback.predicate)
         assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'
