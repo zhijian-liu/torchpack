@@ -32,11 +32,19 @@ class Trainer:
         self.monitors = Monitors(monitors)
         self.monitors.set_trainer(weakref.proxy(self))
 
-    def run_step(self, feed_dict):
-        """
-        Defines what to do in one iteration.
-        """
-        raise NotImplementedError
+    def train(self,
+              dataflow,
+              callbacks=None,
+              starting_epoch=1,
+              max_epoch=9999999):
+        self.dataflow = dataflow
+        self.set_callbacks(callbacks)
+
+        self.steps_per_epoch = len(self.dataflow)
+        self.starting_epoch = starting_epoch
+        self.max_epoch = max_epoch
+
+        self.run()
 
     def run(self):
         self.epoch_num = self.starting_epoch - 1
@@ -89,22 +97,23 @@ class Trainer:
                 except Exception:
                     traceback.print_exc()
 
-    def train(self,
-              dataflow,
-              callbacks=None,
-              starting_epoch=1,
-              max_epoch=9999999):
-        self.dataflow = dataflow
-        self.set_callbacks(callbacks)
+    def run_step(self, feed_dict):
+        self._run_step(feed_dict)
 
-        self.steps_per_epoch = len(self.dataflow)
-        self.starting_epoch = starting_epoch
-        self.max_epoch = max_epoch
+    def _run_step(self, feed_dict):
+        """
+        Defines what to do in one iteration.
+        """
+        raise NotImplementedError
 
-        self.run()
+    def save_checkpoint(self, save_dir):
+        self._save_checkpoint(save_dir)
 
-    def save(self, checkpoint_dir):
+    def _save_checkpoint(self, save_dir):
         pass
 
-    def load(self, checkpoint_dir):
+    def load_checkpoint(self, load_dir):
+        self._load_checkpoint(load_dir)
+
+    def _load_checkpoint(self, load_dir):
         pass

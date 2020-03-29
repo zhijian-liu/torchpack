@@ -41,18 +41,17 @@ class Saver(Callback):
         self._trigger()
 
     def _trigger(self):
-        checkpoint = fs.makedir(
+        save_dir = fs.makedir(
             osp.join(self.save_dir,
                      'step-{}'.format(self.trainer.global_step)))
         try:
-            self.trainer.save(checkpoint)
+            self.trainer.save_checkpoint(save_dir)
         except (OSError, IOError):
             logger.exception(
-                'Error occurred when saving checkpoint "{}".'.format(
-                    checkpoint))
+                'Error occurred when saving checkpoint "{}".'.format(save_dir))
         else:
-            logger.info('Checkpoint saved: "{}".'.format(checkpoint))
-            self._add_checkpoint(checkpoint)
+            logger.info('Checkpoint saved: "{}".'.format(save_dir))
+            self._add_checkpoint(save_dir)
 
 
 class BestSaver(Callback):
@@ -88,16 +87,16 @@ class BestSaver(Callback):
         if self.best is None or \
                 (self.extreme == 'min' and value < self.best[1]) or \
                 (self.extreme == 'max' and value > self.best[1]):
-            checkpoint = fs.makedir(osp.join(self.save_dir, self.save_name))
+            save_dir = fs.makedir(osp.join(self.save_dir, self.save_name))
             try:
-                self.trainer.save(checkpoint)
+                self.trainer.save_checkpoint(save_dir)
             except (OSError, IOError):
                 logger.exception(
                     'Error occurred when saving checkpoint "{}".'.format(
-                        checkpoint))
+                        save_dir))
             else:
                 logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(
-                    checkpoint, value))
+                    save_dir, value))
                 self.best = (step, value)
 
         if self.best is not None:
@@ -132,12 +131,12 @@ class Resumer(Callback):
             logger.warning('No checkpoints found: "{}".'.format(self.load_dir))
             return
 
-        checkpoint = max(checkpoints, key=osp.getmtime)
+        load_dir = max(checkpoints, key=osp.getmtime)
         try:
-            self.trainer.load(checkpoint)
+            self.trainer.load_checkpoint(load_dir)
         except (OSError, IOError):
             logger.exception(
                 'Error occurred when loading checkpoint "{}".'.format(
-                    checkpoint))
+                    load_dir))
         else:
-            logger.info('Checkpoint resumed: "{}".'.format(checkpoint))
+            logger.info('Checkpoint resumed: "{}".'.format(load_dir))
