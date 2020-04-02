@@ -20,7 +20,6 @@ def file_descriptor(f, mode='r'):
     new_fp = False
     try:
         if isinstance(f, str):
-            # or isinstance(f, pathlib.Path)
             new_fp = True
             f = open(f, mode)
         yield f
@@ -34,9 +33,9 @@ def load_txt(f, **kwargs):
         return fd.readlines(**kwargs)
 
 
-def save_txt(file, obj, **kwargs):
-    with file_descriptor(file, 'w') as fd:
-        raise NotImplementedError
+def save_txt(f, obj, **kwargs):
+    with file_descriptor(f, 'w') as fd:
+        raise NotImplementedError()
 
 
 def load_json(f, **kwargs):
@@ -94,17 +93,17 @@ save_funcs = {'.txt': load_txt, '.json': save_json, '.pkl': save_pkl,
               '.npy': save_npy, '.npz': save_npz, '.pth': save_pth, '.pth.tar': save_pth}
 
 
-def load(f, **kwargs):
-    assert isinstance(f, str), type(f)
+def load(fpath, **kwargs):
+    assert isinstance(fpath, str), type(fpath)
     for extension in sorted(load_funcs.keys(), key=len, reverse=True):
-        if f.endswith(extension):
-            return load_funcs[extension](f, **kwargs)
-    raise NotImplementedError
+        if fpath.endswith(extension):
+            return load_funcs[extension](fpath, **kwargs)
+    raise NotImplementedError()
 
 
-def save(f, obj, **kwargs):
-    assert isinstance(f, str), type(f)
-    for extension in sorted(save_funcs.keys(), key=len, reverse=True):
-        if f.endswith(extension):
-            return save_funcs[extension](f, obj, **kwargs)
-    raise NotImplementedError
+def save(fname, obj, **kwargs):
+    assert isinstance(fname, str), type(fname)
+    for ext in sorted(save_funcs.keys(), key=len, reverse=True):
+        if fname.endswith(ext):
+            return save_funcs[ext](fname, obj, **kwargs)
+    raise NotImplementedError()
