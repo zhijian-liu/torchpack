@@ -16,99 +16,101 @@ class Saver(Callback):
     """
     def __init__(self, max_to_keep=10, save_dir=None):
         self.max_to_keep = max_to_keep
-        self.save_dir = save_dir or osp.join(get_run_dir(), 'checkpoints')
-        self.save_dir = fs.makedir(self.save_dir)
-        self.checkpoints = deque()
-
-    def _add_checkpoint(self, checkpoint):
-        self.checkpoints.append(checkpoint)
-        while self.max_to_keep is not None and len(
-                self.checkpoints) > self.max_to_keep:
-            checkpoint = self.checkpoints.popleft()
-            try:
-                fs.remove(checkpoint)
-            except (OSError, IOError):
-                logger.exception(
-                    'Error occurred when removing checkpoint "{}".' \
-                        .format(checkpoint))
+        if save_dir is None:
+            save_dir = osp.join(get_run_dir(), 'checkpoints')
+        self.save_dir = osp.normpath(save_dir)
+        fs.makedir(self.save_dir)
 
     def _before_train(self):
+        self.checkpoints = deque()
         checkpoints = glob.glob(osp.join(self.save_dir, 'step-*'))
-        for checkpoint in sorted(checkpoints, key=osp.getmtime):
-            self._add_checkpoint(checkpoint)
+        for dirpath in sorted(checkpoints, key=osp.getmtime):
+            self._add_checkpoint(dirpath)
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        save_dir = fs.makedir(
-            osp.join(self.save_dir,
-                     'step-{}'.format(self.trainer.global_step)))
+        save_dir = osp.join(self.save_dir, f'step-{self.trainer.global_step}')
         try:
             self.trainer.save_checkpoint(save_dir)
         except (OSError, IOError):
             logger.exception(
-                'Error occurred when saving checkpoint "{}".'.format(save_dir))
+                f'Error occurred when saving checkpoint "{save_dir}".')
         else:
-            logger.info('Checkpoint saved: "{}".'.format(save_dir))
+            logger.info(f'Checkpoint saved: "{save_dir}".')
             self._add_checkpoint(save_dir)
+
+    def _add_checkpoint(self, dirpath):
+        self.checkpoints.append(dirpath)
+        if self.max_to_keep is None:
+            return
+        while len(self.checkpoints) > self.max_to_keep:
+            dirpath = self.checkpoints.popleft()
+            try:
+                fs.remove(dirpath)
+            except (OSError, IOError):
+                logger.exception(
+                    f'Error occurred when removing checkpoint "{dirpath}".')
 
 
 class BestSaver(Callback):
     """
     Save the checkpoint with best value of some scalar.
     """
-    def __init__(self, scalar_name, save_dir=None, save_name=None):
-        self.scalar_name = scalar_name
-        self.save_dir = save_dir or osp.join(get_run_dir(), 'checkpoints')
-        self.save_dir = fs.makedir(self.save_dir)
-        self.save_name = save_name or (self.extreme + '-' +
-                                       scalar_name.replace('/', '-'))
-        self.best, self.step = None, None
+    extreme = None
+
+    def __init__(self, scalar, save_dir=None, name=None):
+        self.scalar = scalar
+        if save_dir is None:
+            save_dir = osp.join(get_run_dir(), 'checkpoints')
+        self.save_dir = osp.normpath(save_dir)
+        fs.makedir(self.save_dir)
+        if name is None:
+            name = self.extreme + '-' + scalar.replace('/', '-')
+        self.name = name
+
+    def _before_train(self):
+        self.step = None
+        self.best = None
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        if self.scalar_name not in self.trainer.monitors:
+        if self.scalar not in self.trainer.monitors:
             logger.warning(
-                'Scalar `{}` has not been added to `trainer.monitors` yet.'.
-                format(self.scalar_name))
+                f'`{self.scalar}` has not been added to `trainer.monitors`.')
             return
-        step, value = self.trainer.monitors[self.scalar_name]
+        step, value = self.trainer.monitors[self.scalar]
 
         if self.step is not None and step <= self.step:
             logger.warning(
-                'Scalar `{}` has not been updated since the last trigger.'.
-                format(self.scalar_name))
+                f'`{self.scalar}` has not been updated since last trigger.')
             return
         self.step = step
 
-        if self.best is None or \
-                (self.extreme == 'min' and value < self.best[1]) or \
-                (self.extreme == 'max' and value > self.best[1]):
-            save_dir = fs.makedir(osp.join(self.save_dir, self.save_name))
+        if self.best is None or (self.extreme == 'min' and value < self.best[1]) \
+                             or (self.extreme == 'max' and value > self.best[1]):
+            save_dir = osp.join(self.save_dir, self.name)
             try:
                 self.trainer.save_checkpoint(save_dir)
             except (OSError, IOError):
                 logger.exception(
-                    'Error occurred when saving checkpoint "{}".'.format(
-                        save_dir))
+                    f'Error occurred when saving checkpoint "{save_dir}".')
             else:
-                logger.info('Checkpoint saved: "{}" ({:.5g}).'.format(
-                    save_dir, value))
+                logger.info(f'Checkpoint saved: "{save_dir}" ({value:.5g}).')
                 self.best = (step, value)
 
         if self.best is not None:
-            self.trainer.monitors.add_scalar(
-                self.scalar_name + '/' + self.extreme, self.best[1])
+            self.trainer.monitors.add_scalar(self.scalar + '/' + self.extreme,
+                                             self.best[1])
 
 
 class MinSaver(BestSaver):
     """
     Save the checkpoint with minimum value of some scalar.
     """
-
     extreme = 'min'
 
 
@@ -116,19 +118,19 @@ class MaxSaver(BestSaver):
     """
     Save the checkpoint with maximum value of some scalar.
     """
-
     extreme = 'max'
 
 
 class Resumer(Callback):
     def __init__(self, load_dir=None):
-        self.load_dir = load_dir or osp.join(get_run_dir(), 'checkpoints')
-        self.load_dir = osp.normpath(self.load_dir)
+        if load_dir is None:
+            load_dir = osp.join(get_run_dir(), 'checkpoints')
+        self.load_dir = osp.normpath(load_dir)
 
     def _before_train(self):
         checkpoints = glob.glob(osp.join(self.load_dir, 'step-*'))
         if not checkpoints:
-            logger.warning('No checkpoints found: "{}".'.format(self.load_dir))
+            logger.warning(f'No checkpoints found: "{self.load_dir}".')
             return
 
         load_dir = max(checkpoints, key=osp.getmtime)
@@ -136,7 +138,6 @@ class Resumer(Callback):
             self.trainer.load_checkpoint(load_dir)
         except (OSError, IOError):
             logger.exception(
-                'Error occurred when loading checkpoint "{}".'.format(
-                    load_dir))
+                f'Error occurred when loading checkpoint "{load_dir}".')
         else:
-            logger.info('Checkpoint resumed: "{}".'.format(load_dir))
+            logger.info(f'Checkpoint loaded: "{load_dir}".')
