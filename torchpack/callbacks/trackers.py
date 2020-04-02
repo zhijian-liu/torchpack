@@ -22,7 +22,6 @@ class GPUUtilizationTracker(Callback):
     every second within the epoch (the time of `trigger_epoch` is not included).
     This callback creates a process, therefore it is not safe to be used with MPI.
     """
-
     master_only = True
 
     def __init__(self, devices=None):
@@ -108,7 +107,6 @@ class ThroughputTracker(Callback):
     """
     Track the throughput within an epoch (the time of `trigger_epoch` is not included).
     """
-
     master_only = True
 
     def __init__(self, samples_per_step=None):
