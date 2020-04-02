@@ -1,3 +1,7 @@
+import os.path as osp
+
+import torchpack.utils.fs as fs
+
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 
 
@@ -5,7 +9,6 @@ class Callback:
     """
     Base class for all callbacks.
     """
-
     master_only = False
 
     def set_trainer(self, trainer):
@@ -35,21 +38,21 @@ class Callback:
         """
         pass
 
-    def before_step(self, *args, **kwargs):
+    def before_step(self, feed_dict):
         if self.trainer.is_master or not self.master_only:
-            self._before_step(*args, **kwargs)
+            self._before_step(feed_dict)
 
-    def _before_step(self, *args, **kwargs):
+    def _before_step(self, feed_dict):
         """
         Called before every step.
         """
         pass
 
-    def after_step(self, *args, **kwargs):
+    def after_step(self, feed_dict):
         if self.trainer.is_master or not self.master_only:
-            self._after_step(*args, **kwargs)
+            self._after_step(feed_dict)
 
-    def _after_step(self, *args, **kwargs):
+    def _after_step(self, feed_dict):
         """
         Called after every step.
         """
@@ -107,6 +110,18 @@ class Callback:
         """
         pass
 
+    def save_checkpoint(self, save_dir):
+        self._save_checkpoint(save_dir)
+
+    def _save_checkpoint(self, save_dir):
+        pass
+
+    def load_checkpoint(self, load_dir):
+        self._load_checkpoint(load_dir)
+
+    def _load_checkpoint(self, load_dir):
+        pass
+
     def __str__(self):
         return type(self).__name__
 
@@ -125,53 +140,65 @@ class LambdaCallback(Callback):
                  trigger_epoch=None,
                  trigger=None,
                  after_train=None,
+                 save_checkpoint=None,
+                 load_checkpoint=None,
                  master_only=False):
-        self.before_train_func = before_train
-        self.before_epoch_func = before_epoch
-        self.before_step_func = before_step
-        self.after_step_func = after_step
-        self.trigger_step_func = trigger_step
-        self.after_epoch_func = after_epoch
-        self.trigger_epoch_func = trigger_epoch
-        self.trigger_func = trigger
-        self.after_train_func = after_train
+        self.before_train_fn = before_train
+        self.before_epoch_fn = before_epoch
+        self.before_step_fn = before_step
+        self.after_step_fn = after_step
+        self.trigger_step_fn = trigger_step
+        self.after_epoch_fn = after_epoch
+        self.trigger_epoch_fn = trigger_epoch
+        self.trigger_fn = trigger
+        self.after_train_fn = after_train
+        self.save_checkpoint_fn = save_checkpoint
+        self.load_checkpoint_fn = load_checkpoint
         self.master_only = master_only
 
     def _before_train(self):
-        if self.before_train_func:
-            self.before_train_func(self)
+        if self.before_train_fn:
+            self.before_train_fn(self)
 
     def _before_epoch(self):
-        if self.before_epoch_func:
-            self.before_epoch_func(self)
+        if self.before_epoch_fn:
+            self.before_epoch_fn(self)
 
-    def _before_step(self, *args, **kwargs):
-        if self.before_step_func:
-            self.before_step_func(self, *args, **kwargs)
+    def _before_step(self, feed_dict):
+        if self.before_step_fn:
+            self.before_step_fn(self, feed_dict)
 
-    def _after_step(self, *args, **kwargs):
-        if self.after_step_func:
-            self.after_step_func(self, *args, **kwargs)
+    def _after_step(self, feed_dict):
+        if self.after_step_fn:
+            self.after_step_fn(self, feed_dict)
 
     def _trigger_step(self):
-        if self.trigger_step_func:
-            self.trigger_step_func(self)
+        if self.trigger_step_fn:
+            self.trigger_step_fn(self)
 
     def _after_epoch(self):
-        if self.after_epoch_func:
-            self.after_epoch_func(self)
+        if self.after_epoch_fn:
+            self.after_epoch_fn(self)
 
     def _trigger_epoch(self):
-        if self.trigger_epoch_func:
-            self.trigger_epoch_func(self)
+        if self.trigger_epoch_fn:
+            self.trigger_epoch_fn(self)
 
     def _trigger(self):
-        if self.trigger_func:
-            self.trigger_func(self)
+        if self.trigger_fn:
+            self.trigger_fn(self)
 
     def _after_train(self):
-        if self.after_train_func:
-            self.after_train_func(self)
+        if self.after_train_fn:
+            self.after_train_fn(self)
+
+    def _save_checkpoint(self, save_dir):
+        if self.save_checkpoint_fn:
+            self.save_checkpoint_fn(self, save_dir)
+
+    def _load_checkpoint(self, load_dir):
+        if self.load_checkpoint_fn:
+            self.load_checkpoint_fn(self, load_dir)
 
 
 class ProxyCallback(Callback):
@@ -191,11 +218,11 @@ class ProxyCallback(Callback):
     def _before_epoch(self):
         self.callback.before_epoch()
 
-    def _before_step(self, *args, **kwargs):
-        self.callback.before_step(*args, **kwargs)
+    def _before_step(self, feed_dict):
+        self.callback.before_step(feed_dict)
 
-    def _after_step(self, *args, **kwargs):
-        self.callback.after_step(*args, **kwargs)
+    def _after_step(self, feed_dict):
+        self.callback.after_step(feed_dict)
 
     def _trigger_step(self):
         self.callback.trigger_step()
@@ -211,6 +238,12 @@ class ProxyCallback(Callback):
 
     def _after_train(self):
         self.callback.after_train()
+
+    def _save_checkpoint(self, save_dir):
+        self.callback.save_checkpoint(save_dir)
+
+    def _load_checkpoint(self, load_dir):
+        self.callback.load_checkpoint(load_dir)
 
     def __str__(self):
         return 'Proxy-' + str(self.callback)
@@ -237,13 +270,13 @@ class Callbacks(Callback):
         for callback in self.callbacks:
             callback.before_epoch()
 
-    def _before_step(self, *args, **kwargs):
+    def _before_step(self, feed_dict):
         for callback in self.callbacks:
-            callback.before_step(*args, **kwargs)
+            callback.before_step(feed_dict)
 
-    def _after_step(self, *args, **kwargs):
+    def _after_step(self, feed_dict):
         for callback in self.callbacks:
-            callback.after_step(*args, **kwargs)
+            callback.after_step(feed_dict)
 
     def _trigger_step(self):
         for callback in self.callbacks:
@@ -264,6 +297,14 @@ class Callbacks(Callback):
     def _after_train(self):
         for callback in self.callbacks:
             callback.after_train()
+
+    def _save_checkpoint(self, save_dir):
+        for callback in self.callbacks:
+            callback.save_checkpoint(save_dir)
+
+    def _load_checkpoint(self, load_dir):
+        for callback in self.callbacks:
+            callback.load_checkpoint(load_dir)
 
     def append(self, callback):
         self.callbacks.append(callback)
