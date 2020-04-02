@@ -13,7 +13,8 @@ class Callback:
 
     def set_trainer(self, trainer):
         self.trainer = trainer
-        self._set_trainer(trainer)
+        if self.trainer.is_master or not self.master_only:
+            self._set_trainer(trainer)
 
     def _set_trainer(self, trainer):
         pass
@@ -111,13 +112,17 @@ class Callback:
         pass
 
     def save_checkpoint(self, save_dir):
-        self._save_checkpoint(save_dir)
+        save_dir = osp.normpath(save_dir)
+        if self.trainer.is_master or not self.master_only:
+            self._save_checkpoint(save_dir)
 
     def _save_checkpoint(self, save_dir):
         pass
 
     def load_checkpoint(self, load_dir):
-        self._load_checkpoint(load_dir)
+        load_dir = osp.normpath(load_dir)
+        if self.trainer.is_master or not self.master_only:
+            self._load_checkpoint(load_dir)
 
     def _load_checkpoint(self, load_dir):
         pass
