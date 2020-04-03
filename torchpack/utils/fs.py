@@ -1,25 +1,32 @@
 import os
 import os.path as osp
 import shutil
+from urllib.parse import urlparse, urlunparse
 
-__all__ = ['makedir', 'remove']
+__all__ = ['normpath', 'makedir', 'remove']
+
+
+def normpath(path):
+    if '://' in path:
+        scheme, netloc, path, params, query, fragment = urlparse(path)
+        return urlunparse((scheme, netloc, osp.normpath(path), params, query, fragment))
+    else:
+        return osp.normpath(path)
 
 
 def makedir(dirpath):
-    dirpath = osp.normpath(dirpath)
+    dirpath = normpath(dirpath)
     os.makedirs(dirpath, exist_ok=True)
-    # TODO: update the error information
     if not osp.isdir(dirpath):
-        raise IOError()
+        raise OSError(f'"{dirpath}" cannot be created.')
 
 
 def remove(path):
-    path = osp.normpath(path)
+    path = normpath(path)
     if osp.exists(path):
         if osp.isdir(path):
             shutil.rmtree(path, ignore_errors=True)
         elif osp.isfile(path):
             os.remove(path)
-    # TODO: update the error information
     if osp.exists(path):
-        raise IOError()
+        raise OSError(f'"{path}" cannot be removed.')

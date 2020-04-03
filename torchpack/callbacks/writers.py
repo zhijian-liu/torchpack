@@ -15,10 +15,9 @@ __all__ = ['ConsoleWriter', 'TFEventWriter', 'JSONWriter']
 class ConsoleWriter(Monitor):
     """
     Write scalar summaries into terminal.
-    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-    def __init__(self, patterns='*'):
-        self.matcher = NameMatcher(patterns)
+    def __init__(self, scalars='*'):
+        self.matcher = NameMatcher(scalars)
 
     def _before_train(self):
         self.scalars = dict()
@@ -42,11 +41,12 @@ class ConsoleWriter(Monitor):
 class TFEventWriter(Monitor):
     """
     Write summaries to TensorFlow event file.
-    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
     def __init__(self, save_dir=None):
-        self.save_dir = save_dir or osp.join(get_run_dir(), 'tensorboard')
-        self.save_dir = fs.makedir(self.save_dir)
+        if save_dir is None:
+            save_dir = osp.join(get_run_dir(), 'tensorboard')
+        self.save_dir = fs.normpath(save_dir)
+        fs.makedir(self.save_dir)
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_dir)
@@ -64,20 +64,21 @@ class TFEventWriter(Monitor):
 class JSONWriter(Monitor):
     """
     Write scalar summaries to JSON file.
-    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
     def __init__(self, save_dir=None):
-        self.save_dir = save_dir or osp.join(get_run_dir(), 'summaries')
-        self.save_dir = fs.makedir(self.save_dir)
+        if save_dir is None:
+            save_dir = osp.join(get_run_dir(), 'summaries')
+        self.save_dir = osp.normpath(save_dir)
+        fs.makedir(self.save_dir)
+        self.save_fname = osp.join(fs.makedir(save_dir), 'scalars.json')
 
     def _before_train(self):
         self.summaries = []
 
-        filename = osp.join(self.save_dir, 'scalars.json')
-        if not osp.exists(filename):
+        if not osp.exists(self.save_fname):
             return
 
-        self.summaries = io.load(filename)
+        self.summaries = io.load(self.save_fname)
         try:
             epoch = self.summaries[-1]['epoch_num'] + 1
         except:
@@ -95,12 +96,12 @@ class JSONWriter(Monitor):
         self._trigger()
 
     def _trigger(self):
-        filename = osp.join(self.save_dir, 'scalars.json')
         try:
-            io.save(filename, self.summaries)
+            io.save(self.save_fname, self.summaries)
         except (OSError, IOError):
             logger.exception(
-                'Error occurred when saving JSON file "{}".'.format(filename))
+                'Error occurred when saving JSON file "{}".'.format(
+                    self.save_fname))
 
     def _after_train(self):
         self._trigger()

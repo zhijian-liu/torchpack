@@ -136,29 +136,29 @@ class LambdaCallback(Callback):
     A callback created with lambda functions.
     """
     def __init__(self,
-                 before_train=None,
-                 before_epoch=None,
-                 before_step=None,
-                 after_step=None,
-                 trigger_step=None,
-                 after_epoch=None,
-                 trigger_epoch=None,
-                 trigger=None,
-                 after_train=None,
-                 save_checkpoint=None,
-                 load_checkpoint=None,
+                 before_train_fn=None,
+                 before_epoch_fn=None,
+                 before_step_fn=None,
+                 after_step_fn=None,
+                 trigger_step_fn=None,
+                 after_epoch_fn=None,
+                 trigger_epoch_fn=None,
+                 trigger_fn=None,
+                 after_train_fn=None,
+                 save_checkpoint_fn=None,
+                 load_checkpoint_fn=None,
                  master_only=False):
-        self.before_train_fn = before_train
-        self.before_epoch_fn = before_epoch
-        self.before_step_fn = before_step
-        self.after_step_fn = after_step
-        self.trigger_step_fn = trigger_step
-        self.after_epoch_fn = after_epoch
-        self.trigger_epoch_fn = trigger_epoch
-        self.trigger_fn = trigger
-        self.after_train_fn = after_train
-        self.save_checkpoint_fn = save_checkpoint
-        self.load_checkpoint_fn = load_checkpoint
+        self.before_train_fn = before_train_fn
+        self.before_epoch_fn = before_epoch_fn
+        self.before_step_fn = before_step_fn
+        self.after_step_fn = after_step_fn
+        self.trigger_step_fn = trigger_step_fn
+        self.after_epoch_fn = after_epoch_fn
+        self.trigger_epoch_fn = trigger_epoch_fn
+        self.trigger_fn = trigger_fn
+        self.after_train_fn = after_train_fn
+        self.save_checkpoint_fn = save_checkpoint_fn
+        self.load_checkpoint_fn = load_checkpoint_fn
         self.master_only = master_only
 
     def _before_train(self):

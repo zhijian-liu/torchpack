@@ -12,7 +12,6 @@ class Monitor(Callback):
     """
     Base class for all monitors.
     """
-
     master_only = True
 
     def add_scalar(self, name, scalar):

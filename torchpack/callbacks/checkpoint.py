@@ -7,7 +7,7 @@ from torchpack.callbacks.callback import Callback
 from torchpack.environ import get_run_dir
 from torchpack.logging import logger
 
-__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'Resumer']
+__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'AutoResumer']
 
 
 class Saver(Callback):
@@ -18,7 +18,7 @@ class Saver(Callback):
         self.max_to_keep = max_to_keep
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
-        self.save_dir = osp.normpath(save_dir)
+        self.save_dir = fs.normpath(save_dir)
         fs.makedir(self.save_dir)
 
     def _before_train(self):
@@ -34,7 +34,7 @@ class Saver(Callback):
         save_dir = osp.join(self.save_dir, f'step-{self.trainer.global_step}')
         try:
             self.trainer.save_checkpoint(save_dir)
-        except (OSError, IOError):
+        except OSError:
             logger.exception(
                 f'Error occurred when saving checkpoint "{save_dir}".')
         else:
@@ -49,7 +49,7 @@ class Saver(Callback):
             dirpath = self.checkpoints.popleft()
             try:
                 fs.remove(dirpath)
-            except (OSError, IOError):
+            except OSError:
                 logger.exception(
                     f'Error occurred when removing checkpoint "{dirpath}".')
 
@@ -64,7 +64,7 @@ class BestSaver(Callback):
         self.scalar = scalar
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
-        self.save_dir = osp.normpath(save_dir)
+        self.save_dir = fs.normpath(save_dir)
         fs.makedir(self.save_dir)
         if name is None:
             name = self.extreme + '-' + scalar.replace('/', '-')
@@ -121,11 +121,11 @@ class MaxSaver(BestSaver):
     extreme = 'max'
 
 
-class Resumer(Callback):
+class AutoResumer(Callback):
     def __init__(self, load_dir=None):
         if load_dir is None:
             load_dir = osp.join(get_run_dir(), 'checkpoints')
-        self.load_dir = osp.normpath(load_dir)
+        self.load_dir = fs.normpath(load_dir)
 
     def _before_train(self):
         checkpoints = glob.glob(osp.join(self.load_dir, 'step-*'))

@@ -15,13 +15,11 @@ __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 class ProgressBar(Callback):
     """
     A progress bar based on `tqdm`.
-    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-
     master_only = True
 
-    def __init__(self, patterns='*'):
-        self.matcher = NameMatcher(patterns)
+    def __init__(self, scalars='*'):
+        self.matcher = NameMatcher(patterns=scalars)
 
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch,
@@ -44,9 +42,7 @@ class ProgressBar(Callback):
 class EstimatedTimeLeft(Callback):
     """
     Estimate the time left until completion.
-    This callback is one of the :func:`DEFAULT_CALLBACKS()`.
     """
-
     master_only = True
 
     def __init__(self, last_k_epochs=5):

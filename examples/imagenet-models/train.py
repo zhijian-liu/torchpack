@@ -1,46 +1,80 @@
 import json
 import os
+import os.path as osp
 import sys
 
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
-import os.path as osp
+
+import torchpack.utils.argparse as argparse
 import torchpack.utils.io as io
-from torchpack.callbacks import *
+from torchpack.callbacks import (AutoResumer, InferenceRunner, LambdaCallback,
+                                 MaxSaver, Saver)
+from torchpack.callbacks.metrics import TopKCategoricalAccuracy
 from torchpack.cuda.copy import async_copy_to
-from torchpack.datasets.vision.imagenet import ImageNet
-from torchpack.models.vision.mobilenetv2 import MobileNetV2
+from torchpack.datasets.vision import ImageNet
+from torchpack.environ import get_run_dir, set_run_dir
+from torchpack.logging import get_logger
+from torchpack.models.vision import MobileNetV2
 from torchpack.train import Trainer
-from torchpack.utils.argument import ArgumentParser
-from torchpack.utils.logging import get_logger, set_logger_dir
 
 logger = get_logger(__file__)
 
 
+class ClassificationTrainer(Trainer):
+    def __init__(self, model, criterion, optimizer, scheduler):
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+
+    def _run_step(self, feed_dict):
+        inputs = async_copy_to(feed_dict['images'], device='cuda')
+        targets = async_copy_to(feed_dict['classes'], device='cuda')
+
+        outputs = self.model(inputs)
+
+        if self.model.training:
+            loss = self.criterion(outputs, targets)
+            self.monitors.add_scalar('loss', loss.item())
+
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+        return dict(outputs=outputs, targets=targets)
+
+    def _save_checkpoint(self, save_dir):
+        io.save(osp.join(save_dir, 'model.pth'), self.model.state_dict())
+        io.save(osp.join(save_dir, 'optimizer.pth'),
+                self.optimizer.state_dict())
+        io.save(osp.join(save_dir, 'scheduler.pth'),
+                self.scheduler.state_dict())
+
+    def _load_checkpoint(self, load_dir):
+        self.model.load_state_dict(io.load(osp.join(load_dir, 'model.pth')))
+        self.optimizer.load_state_dict(
+            io.load(osp.join(load_dir, 'optimizer.pth')))
+        self.scheduler.load_state_dict(
+            io.load(osp.join(load_dir, 'scheduler.pth')))
+
+
 def main():
-    parser = ArgumentParser()
-    parser.add_argument(
-        '--devices',
-        action='set_devices',
-        default='*',
-        help='list of device(s) to use.',
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--devices', action='set_device', default='*')
     parser.parse_args()
 
-    dump_dir = osp.join('runs', 'imagenet100.mobilenetv2.size=112')
-    set_logger_dir(dump_dir)
+    set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
 
     logger.info(' '.join([sys.executable] + sys.argv))
 
     cudnn.benchmark = True
 
     logger.info('Loading the dataset.')
-    dataset = ImageNet(
-        root='/dataset/imagenet/',
-        num_classes=100,
-        image_size=112,
-    )
+    dataset = ImageNet(root='/dataset/imagenet/',
+                       num_classes=100,
+                       image_size=112)
 
     dataflow = dict()
     for split in dataset:
@@ -49,86 +83,37 @@ def main():
             shuffle=(split == 'train'),
             batch_size=256,
             num_workers=16,
-            pin_memory=True,
-        )
+            pin_memory=True)
 
     model = MobileNetV2(num_classes=100)
     model = nn.DataParallel(model.cuda())
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(
-        model.parameters(),
-        lr=0.05,
-        momentum=0.9,
-        weight_decay=4e-5,
-    )
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer,
-        T_max=150,
-    )
-
-    class ClassificationTrainer(Trainer):
-        def run_step(self, feed_dict):
-            feed_dict = async_copy_to(feed_dict, device='cuda')
-            inputs, targets = feed_dict['images'], feed_dict['labels']
-
-            outputs = model(inputs)
-            output_dict = dict(outputs=outputs)
-
-            if model.training:
-                loss = criterion(outputs, targets)
-
-                output_dict['loss'] = loss.item()
-                self.monitors.add_scalar('loss', loss.item())
-
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-            return async_copy_to(output_dict, device='cpu')
-
-        def save(self, checkpoint_dir):
-            io.save(osp.join(checkpoint_dir, 'model.pth'), model.state_dict())
-            io.save(osp.join(checkpoint_dir, 'optimizer.pth'),
-                    optimizer.state_dict())
-            io.save(osp.join(checkpoint_dir, 'loop.json'),
-                    dict(epoch_num=self.epoch_num))
-
-        def load(self, checkpoint_dir):
-            model.load_state_dict(
-                io.load(osp.join(checkpoint_dir, 'model.pth')))
-            optimizer.load_state_dict(
-                io.load(osp.join(checkpoint_dir, 'optimizer.pth')))
-            self.epoch_num = io.load(osp.join(checkpoint_dir,
-                                              'loop.json'))['epoch_num']
-            self.global_step = self.epoch_num * self.steps_per_epoch
-
-    trainer = ClassificationTrainer()
-    trainer.train(
+    optimizer = torch.optim.SGD(model.parameters(),
+                                lr=0.05,
+                                momentum=0.9,
+                                weight_decay=4e-5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                           T_max=150)
+    trainer = ClassificationTrainer(model=model,
+                                    criterion=criterion,
+                                    optimizer=optimizer,
+                                    scheduler=scheduler)
+    trainer.train_with_defaults(
         dataflow=dataflow['train'],
         max_epoch=150,
         callbacks=[
-            Resumer(),
-            LambdaCallback(
-                before_epoch=lambda self: model.train(),
-                after_epoch=lambda self: model.eval(),
-            ),
-            LambdaCallback(before_epoch=lambda self: scheduler.step(
-                self.trainer.epoch_num - 1)),
-            InferenceRunner(
-                dataflow['test'],
-                callbacks=[
-                    ClassificationError(topk=1, name='error/top1'),
-                    ClassificationError(topk=5, name='error/top5')
-                ],
-            ),
+            AutoResumer(),
+            LambdaCallback(before_epoch_fn=lambda self: model.train(),
+                           after_epoch_fn=lambda self: model.eval()),
+            LambdaCallback(before_epoch_fn=lambda self: scheduler.step()),
+            InferenceRunner(dataflow['test'],
+                            callbacks=[
+                                TopKCategoricalAccuracy(k=1, name='acc/top1'),
+                                TopKCategoricalAccuracy(k=5, name='acc/top5')
+                            ]),
             Saver(),
-            MinSaver('error/top1'),
-            ConsoleWriter(),
-            TFEventWriter(),
-            JSONWriter(),
-            ProgressBar(),
-            EstimatedTimeLeft(),
+            MaxSaver('acc/top1')
         ],
     )
 
