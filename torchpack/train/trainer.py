@@ -1,9 +1,14 @@
+import os.path as osp
 import time
 import traceback
 import weakref
 
 from tensorpack.utils.utils import humanize_time_delta
 
+import torchpack.utils.fs as fs
+import torchpack.utils.io as io
+from torchpack.callbacks import (ConsoleWriter, EstimatedTimeLeft, ProgressBar,
+                                 TFEventWriter)
 from torchpack.callbacks.callback import Callback, Callbacks
 from torchpack.callbacks.monitor import Monitor, Monitors
 from torchpack.logging import logger
@@ -16,7 +21,6 @@ class Trainer:
     """
     Base class for a trainer.
     """
-
     is_master = True
 
     def set_callbacks(self, callbacks):
@@ -46,6 +50,23 @@ class Trainer:
 
         self.run()
 
+    def train_with_defaults(self,
+                            dataflow,
+                            callbacks=None,
+                            starting_epoch=1,
+                            max_epoch=9999999):
+        callbacks += [
+            ConsoleWriter(),
+            TFEventWriter(),
+            # JSONWriter(),
+            ProgressBar(),
+            EstimatedTimeLeft()
+        ]
+        self.train(dataflow=dataflow,
+                   callbacks=callbacks,
+                   starting_epoch=starting_epoch,
+                   max_epoch=max_epoch)
+
     def run(self):
         self.epoch_num = self.starting_epoch - 1
         self.global_step = self.epoch_num * self.steps_per_epoch
@@ -68,7 +89,7 @@ class Trainer:
                     self.global_step += 1
 
                     self.callbacks.before_step(feed_dict)
-                    self.run_step(feed_dict)
+                    feed_dict = self.run_step(feed_dict)
                     self.callbacks.after_step(feed_dict)
 
                     self.callbacks.trigger_step()
@@ -90,7 +111,6 @@ class Trainer:
             logger.info('Detected Ctrl-C and exiting training loop.')
             raise
         finally:
-            # make sure all callbacks are properly finalized
             for callback in self.callbacks:
                 try:
                     callback.after_train()
@@ -98,7 +118,7 @@ class Trainer:
                     traceback.print_exc()
 
     def run_step(self, feed_dict):
-        self._run_step(feed_dict)
+        return self._run_step(feed_dict)
 
     def _run_step(self, feed_dict):
         """
@@ -107,12 +127,26 @@ class Trainer:
         raise NotImplementedError
 
     def save_checkpoint(self, save_dir):
+        save_dir = osp.normpath(save_dir)
+        fs.makedir(save_dir)
+        io.save(
+            osp.join(save_dir, 'loop.json'), {
+                'epoch_num': self.epoch_num,
+                'global_step': self.global_step,
+                'local_step': self.local_step
+            })
         self._save_checkpoint(save_dir)
 
     def _save_checkpoint(self, save_dir):
         pass
 
     def load_checkpoint(self, load_dir):
+        load_dir = osp.normpath(load_dir)
+
+        loop = io.load(osp.join(load_dir, 'loop.json'))
+        self.epoch_num = loop['epoch_num']
+        self.global_step = self.epoch_num * self.steps_per_epoch
+
         self._load_checkpoint(load_dir)
 
     def _load_checkpoint(self, load_dir):

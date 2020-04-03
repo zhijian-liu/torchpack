@@ -6,12 +6,12 @@ __all__ = ['TopKCategoricalAccuracy', 'CategoricalAccuracy']
 class TopKCategoricalAccuracy(Callback):
     def __init__(self,
                  k=1,
-                 output_tensor='outputs',
-                 target_tensor='classes',
+                 output_tensor_name='outputs',
+                 target_tensor_name='targets',
                  name='accuracy'):
         self.k = k
-        self.output_tensor = output_tensor
-        self.target_tensor = target_tensor
+        self.output_tensor_name = output_tensor_name
+        self.target_tensor_name = target_tensor_name
         self.name = name
 
     def _before_epoch(self):
@@ -19,8 +19,8 @@ class TopKCategoricalAccuracy(Callback):
         self.num_corrects = 0
 
     def _after_step(self, feed_dict):
-        outputs = feed_dict[self.output_tensor]
-        targets = feed_dict[self.target_tensor]
+        outputs = feed_dict[self.output_tensor_name]
+        targets = feed_dict[self.target_tensor_name]
 
         _, indices = outputs.topk(self.k, dim=1)
         masks = indices.eq(targets.view(-1, 1).expand_as(indices))
@@ -35,10 +35,10 @@ class TopKCategoricalAccuracy(Callback):
 
 class CategoricalAccuracy(TopKCategoricalAccuracy):
     def __init__(self,
-                 output_tensor='outputs',
-                 target_tensor='classes',
+                 output_tensor_name='outputs',
+                 target_tensor_name='targets',
                  name='accuracy'):
         super().__init__(k=1,
-                         output_tensor=output_tensor,
-                         target_tensor=target_tensor,
+                         output_tensor_name=output_tensor_name,
+                         target_tensor_name=target_tensor_name,
                          name=name)
