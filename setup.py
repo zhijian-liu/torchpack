@@ -5,7 +5,7 @@ from torchpack import __version__
 setup(
     name='torchpack',
     version=__version__,
-    packages=find_packages(exclude=['examples', 'tests']),
+    packages=find_packages(exclude=['examples']),
     url='https://github.com/mit-han-lab/torchpack',
     install_requires=[
         'numpy>=1.14',
