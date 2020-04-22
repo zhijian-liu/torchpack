@@ -7,7 +7,6 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 
-import torchpack.utils.argparse as argparse
 import torchpack.utils.io as io
 from torchpack.callbacks import (AutoResumer, InferenceRunner, LambdaCallback,
                                  MaxSaver, Saver)
@@ -61,10 +60,6 @@ class ClassificationTrainer(Trainer):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--devices', action='set_device', default='*')
-    parser.parse_args()
-
     set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
 
     logger.info(' '.join([sys.executable] + sys.argv))
