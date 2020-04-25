@@ -14,7 +14,7 @@ class Saver(Callback):
     """
     Save the checkpoint once triggered.
     """
-    def __init__(self, max_to_keep=10, save_dir=None):
+    def __init__(self, max_to_keep=5, save_dir=None):
         self.max_to_keep = max_to_keep
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
