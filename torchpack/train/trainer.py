@@ -89,8 +89,8 @@ class Trainer:
                     self.global_step += 1
 
                     self.callbacks.before_step(feed_dict)
-                    feed_dict = self.run_step(feed_dict)
-                    self.callbacks.after_step(feed_dict)
+                    output_dict = self.run_step(feed_dict)
+                    self.callbacks.after_step(output_dict)
 
                     self.callbacks.trigger_step()
 
@@ -118,7 +118,8 @@ class Trainer:
                     traceback.print_exc()
 
     def run_step(self, feed_dict):
-        return self._run_step(feed_dict)
+        output_dict = self._run_step(feed_dict)
+        return output_dict
 
     def _run_step(self, feed_dict):
         """
