@@ -18,9 +18,9 @@ class TopKCategoricalAccuracy(Callback):
         self.num_examples = 0
         self.num_corrects = 0
 
-    def _after_step(self, feed_dict):
-        outputs = feed_dict[self.output_tensor]
-        targets = feed_dict[self.target_tensor]
+    def _after_step(self, output_dict):
+        outputs = output_dict[self.output_tensor]
+        targets = output_dict[self.target_tensor]
 
         _, indices = outputs.topk(self.k, dim=1)
         masks = indices.eq(targets.view(-1, 1).expand_as(indices))

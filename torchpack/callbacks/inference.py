@@ -34,8 +34,8 @@ class InferenceRunner(Callback):
         with torch.no_grad():
             for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
                 self.callbacks.before_step(feed_dict)
-                feed_dict = self.trainer.run_step(feed_dict)
-                self.callbacks.after_step(feed_dict)
+                output_dict = self.trainer.run_step(feed_dict)
+                self.callbacks.after_step(output_dict)
 
         self.callbacks.after_epoch()
         logger.info('Inference finished in {}.'.format(

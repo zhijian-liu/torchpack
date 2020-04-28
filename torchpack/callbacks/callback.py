@@ -49,11 +49,11 @@ class Callback:
         """
         pass
 
-    def after_step(self, feed_dict):
+    def after_step(self, output_dict):
         if self.trainer.is_master or not self.master_only:
-            self._after_step(feed_dict)
+            self._after_step(output_dict)
 
-    def _after_step(self, feed_dict):
+    def _after_step(self, output_dict):
         """
         Called after every step.
         """
@@ -173,9 +173,9 @@ class LambdaCallback(Callback):
         if self.before_step_fn:
             self.before_step_fn(self, feed_dict)
 
-    def _after_step(self, feed_dict):
+    def _after_step(self, output_dict):
         if self.after_step_fn:
-            self.after_step_fn(self, feed_dict)
+            self.after_step_fn(self, output_dict)
 
     def _trigger_step(self):
         if self.trigger_step_fn:
@@ -226,8 +226,8 @@ class ProxyCallback(Callback):
     def _before_step(self, feed_dict):
         self.callback.before_step(feed_dict)
 
-    def _after_step(self, feed_dict):
-        self.callback.after_step(feed_dict)
+    def _after_step(self, output_dict):
+        self.callback.after_step(output_dict)
 
     def _trigger_step(self):
         self.callback.trigger_step()
@@ -279,9 +279,9 @@ class Callbacks(Callback):
         for callback in self.callbacks:
             callback.before_step(feed_dict)
 
-    def _after_step(self, feed_dict):
+    def _after_step(self, output_dict):
         for callback in self.callbacks:
-            callback.after_step(feed_dict)
+            callback.after_step(output_dict)
 
     def _trigger_step(self):
         for callback in self.callbacks:
