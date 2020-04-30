@@ -24,7 +24,7 @@ def parse_cuda_devices(text):
     return devices
 
 
-def set_cuda_visible_devices(devices, environ=os.environ):
+def set_cuda_visible_devices(devices, *, environ=os.environ):
     if isinstance(devices, str):
         devices = parse_cuda_devices(devices)
     environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, devices))

@@ -2,19 +2,19 @@ import glob
 import os.path as osp
 from collections import deque
 
-import torchpack.utils.fs as fs
-from torchpack.callbacks.callback import Callback
-from torchpack.environ import get_run_dir
-from torchpack.logging import logger
+from ..environ import get_run_dir
+from ..logging import logger
+from ..utils import fs
+from .callback import Callback
 
-__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'AutoResumer']
+__all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']
 
 
 class Saver(Callback):
     """
     Save the checkpoint once triggered.
     """
-    def __init__(self, max_to_keep=5, save_dir=None):
+    def __init__(self, *, max_to_keep=5, save_dir=None):
         self.max_to_keep = max_to_keep
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
@@ -60,15 +60,15 @@ class BestSaver(Callback):
     """
     extreme = None
 
-    def __init__(self, scalar, save_dir=None, name=None):
+    def __init__(self, scalar, *, name=None, save_dir=None):
         self.scalar = scalar
+        if name is None:
+            name = self.extreme + '-' + scalar.replace('/', '-')
+        self.name = name
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
         fs.makedir(self.save_dir)
-        if name is None:
-            name = self.extreme + '-' + scalar.replace('/', '-')
-        self.name = name
 
     def _before_train(self):
         self.step = None
@@ -94,8 +94,13 @@ class BestSaver(Callback):
                              or (self.extreme == 'max' and value > self.best[1]):
             save_dir = osp.join(self.save_dir, self.name)
             try:
+                fs.remove(save_dir)
+            except OSError:
+                logger.exception(
+                    f'Error occurred when removing checkpoint "{save_dir}".')
+            try:
                 self.trainer.save_checkpoint(save_dir)
-            except (OSError, IOError):
+            except OSError:
                 logger.exception(
                     f'Error occurred when saving checkpoint "{save_dir}".')
             else:
@@ -121,7 +126,7 @@ class MaxSaver(BestSaver):
     extreme = 'max'
 
 
-class AutoResumer(Callback):
+class SaverRestore(Callback):
     def __init__(self, load_dir=None):
         if load_dir is None:
             load_dir = osp.join(get_run_dir(), 'checkpoints')
@@ -136,7 +141,7 @@ class AutoResumer(Callback):
         load_dir = max(checkpoints, key=osp.getmtime)
         try:
             self.trainer.load_checkpoint(load_dir)
-        except (OSError, IOError):
+        except OSError:
             logger.exception(
                 f'Error occurred when loading checkpoint "{load_dir}".')
         else:

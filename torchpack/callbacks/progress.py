@@ -5,9 +5,9 @@ import numpy as np
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
 
-from torchpack.callbacks.callback import Callback
-from torchpack.logging import logger
-from torchpack.utils.matching import NameMatcher
+from ..logging import logger
+from ..utils.matching import NameMatcher
+from .callback import Callback
 
 __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 
@@ -45,7 +45,7 @@ class EstimatedTimeLeft(Callback):
     """
     master_only = True
 
-    def __init__(self, last_k_epochs=5):
+    def __init__(self, *, last_k_epochs=5):
         self.last_k_epochs = last_k_epochs
 
     def _before_train(self):

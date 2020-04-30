@@ -1,8 +1,8 @@
 import os.path as osp
 import time
 
-import torchpack.utils.fs as fs
-from torchpack.logging import set_handler
+from ..logging import set_handler
+from ..utils import fs
 
 __all__ = ['get_run_dir', 'set_run_dir', 'get_logger_dir', 'set_logger_dir']
 

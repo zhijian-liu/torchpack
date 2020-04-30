@@ -9,8 +9,8 @@ from tensorpack.utils.concurrency import (ensure_proc_terminate,
                                           start_proc_mask_signal)
 from tensorpack.utils.nvml import NVMLContext
 
-from torchpack.callbacks.callback import Callback
-from torchpack.logging import logger
+from ..logging import logger
+from .callback import Callback
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 
@@ -109,7 +109,7 @@ class ThroughputTracker(Callback):
     """
     master_only = True
 
-    def __init__(self, samples_per_step=None):
+    def __init__(self, *, samples_per_step=None):
         """
         Args:
             samples_per_step: Number of samples processed in each step.

@@ -5,14 +5,13 @@ import weakref
 
 from tensorpack.utils.utils import humanize_time_delta
 
-import torchpack.utils.fs as fs
-import torchpack.utils.io as io
-from torchpack.callbacks import (ConsoleWriter, EstimatedTimeLeft, ProgressBar,
-                                 TFEventWriter)
-from torchpack.callbacks.callback import Callback, Callbacks
-from torchpack.callbacks.monitor import Monitor, Monitors
-from torchpack.logging import logger
-from torchpack.train.exception import StopTraining
+from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, ProgressBar,
+                         TFEventWriter)
+from ..callbacks.callback import Callback, Callbacks
+from ..callbacks.monitor import Monitor, Monitors
+from ..logging import logger
+from ..utils import fs, io
+from .exception import StopTraining
 
 __all__ = ['Trainer']
 
@@ -38,6 +37,7 @@ class Trainer:
 
     def train(self,
               dataflow,
+              *,
               callbacks=None,
               starting_epoch=1,
               max_epoch=9999999):
@@ -52,6 +52,7 @@ class Trainer:
 
     def train_with_defaults(self,
                             dataflow,
+                            *,
                             callbacks=None,
                             starting_epoch=1,
                             max_epoch=9999999):

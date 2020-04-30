@@ -1,6 +1,6 @@
 import argparse
 
-from torchpack.utils.device import set_cuda_visible_devices
+from .device import set_cuda_visible_devices
 
 __all__ = ['ArgumentParser']
 

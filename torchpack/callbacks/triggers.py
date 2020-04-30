@@ -1,4 +1,4 @@
-from torchpack.callbacks.callback import ProxyCallback
+from .callback import ProxyCallback
 
 __all__ = ['EnableCallbackIf', 'PeriodicTrigger', 'PeriodicCallback']
 
@@ -43,7 +43,7 @@ class PeriodicTrigger(ProxyCallback):
     """
     Trigger the callback every k steps or every k epochs.
     """
-    def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
+    def __init__(self, callback, *, every_k_epochs=None, every_k_steps=None):
         super().__init__(callback)
         assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'
@@ -67,7 +67,7 @@ class PeriodicCallback(EnableCallbackIf):
     Enable the callback every k steps or every k epochs.
     Note that this can only make a callback less frequent.
     """
-    def __init__(self, callback, every_k_epochs=None, every_k_steps=None):
+    def __init__(self, callback, *, every_k_epochs=None, every_k_steps=None):
         super().__init__(callback, PeriodicCallback.predicate)
         assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'

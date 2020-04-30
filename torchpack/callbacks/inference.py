@@ -4,8 +4,8 @@ import torch
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
 
-from torchpack.callbacks.callback import Callback, Callbacks
-from torchpack.logging import logger
+from ..logging import logger
+from .callback import Callback, Callbacks
 
 __all__ = ['InferenceRunner']
 
@@ -14,7 +14,7 @@ class InferenceRunner(Callback):
     """
     A callback that runs inference with a list of :class:`Callback`.
     """
-    def __init__(self, dataflow, callbacks):
+    def __init__(self, dataflow, *, callbacks):
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
         self.callbacks = Callbacks(callbacks)

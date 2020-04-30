@@ -2,12 +2,11 @@ import os.path as osp
 
 from tensorboardX import SummaryWriter
 
-import torchpack.utils.fs as fs
-import torchpack.utils.io as io
-from torchpack.callbacks.monitor import Monitor
-from torchpack.environ import get_run_dir
-from torchpack.logging import logger
-from torchpack.utils.matching import NameMatcher
+from ..environ import get_run_dir
+from ..logging import logger
+from ..utils import fs, io
+from ..utils.matching import NameMatcher
+from .monitor import Monitor
 
 __all__ = ['ConsoleWriter', 'TFEventWriter', 'JSONWriter']
 
@@ -42,7 +41,7 @@ class TFEventWriter(Monitor):
     """
     Write summaries to TensorFlow event file.
     """
-    def __init__(self, save_dir=None):
+    def __init__(self, *, save_dir=None):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'tensorboard')
         self.save_dir = fs.normpath(save_dir)

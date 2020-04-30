@@ -1,4 +1,4 @@
-from torchpack.utils.container import G
+from ..utils.container import G
 
 __all__ = ['g']
 
