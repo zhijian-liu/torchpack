@@ -6,6 +6,7 @@ __all__ = ['TopKCategoricalAccuracy', 'CategoricalAccuracy']
 class TopKCategoricalAccuracy(Callback):
     def __init__(self,
                  k=1,
+                 *,
                  output_tensor='outputs',
                  target_tensor='targets',
                  name='accuracy'):
@@ -35,6 +36,7 @@ class TopKCategoricalAccuracy(Callback):
 
 class CategoricalAccuracy(TopKCategoricalAccuracy):
     def __init__(self,
+                 *,
                  output_tensor='outputs',
                  target_tensor='targets',
                  name='accuracy'):

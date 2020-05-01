@@ -8,8 +8,8 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 
 import torchpack.utils.io as io
-from torchpack.callbacks import (AutoResumer, InferenceRunner, LambdaCallback,
-                                 MaxSaver, Saver)
+from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
+                                 Saver, SaverRestore)
 from torchpack.callbacks.metrics import TopKCategoricalAccuracy
 from torchpack.cuda.copy import async_copy_to
 from torchpack.datasets.vision import ImageNet
@@ -95,13 +95,13 @@ def main():
                                     optimizer=optimizer,
                                     scheduler=scheduler)
     trainer.train_with_defaults(
-        dataflow=dataflow['train'],
+        dataflow['train'],
         max_epoch=150,
         callbacks=[
-            AutoResumer(),
-            LambdaCallback(before_epoch_fn=lambda self: model.train(),
-                           after_epoch_fn=lambda self: model.eval()),
-            LambdaCallback(before_epoch_fn=lambda self: scheduler.step()),
+            SaverRestore(),
+            LambdaCallback(before_epoch=lambda self: model.train(),
+                           after_epoch=lambda self: model.eval()),
+            LambdaCallback(before_epoch=lambda self: scheduler.step()),
             InferenceRunner(dataflow['test'],
                             callbacks=[
                                 TopKCategoricalAccuracy(k=1, name='acc/top1'),
@@ -109,8 +109,7 @@ def main():
                             ]),
             Saver(),
             MaxSaver('acc/top1')
-        ],
-    )
+        ])
 
 
 if __name__ == '__main__':
