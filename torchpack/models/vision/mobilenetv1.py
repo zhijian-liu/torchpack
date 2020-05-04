@@ -67,7 +67,9 @@ class MobileNetV1(nn.Module):
 
         self.features = nn.Sequential(*layers)
         self.classifier = nn.Linear(input_channels, num_classes)
+        self.reset_parameters()
 
+    def reset_parameters(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight,
