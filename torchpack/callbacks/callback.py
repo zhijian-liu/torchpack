@@ -1,5 +1,6 @@
 import os.path as osp
 
+from .. import distributed as dist
 from ..utils import fs
 
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
@@ -12,15 +13,15 @@ class Callback:
     master_only = False
 
     def set_trainer(self, trainer):
-        self.trainer = trainer
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
+            self.trainer = trainer
             self._set_trainer(trainer)
 
     def _set_trainer(self, trainer):
         pass
 
     def before_train(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._before_train()
 
     def _before_train(self):
@@ -30,7 +31,7 @@ class Callback:
         pass
 
     def before_epoch(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._before_epoch()
 
     def _before_epoch(self):
@@ -40,7 +41,7 @@ class Callback:
         pass
 
     def before_step(self, feed_dict):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._before_step(feed_dict)
 
     def _before_step(self, feed_dict):
@@ -50,7 +51,7 @@ class Callback:
         pass
 
     def after_step(self, output_dict):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._after_step(output_dict)
 
     def _after_step(self, output_dict):
@@ -60,7 +61,7 @@ class Callback:
         pass
 
     def trigger_step(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._trigger_step()
 
     def _trigger_step(self):
@@ -70,7 +71,7 @@ class Callback:
         pass
 
     def after_epoch(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._after_epoch()
 
     def _after_epoch(self):
@@ -80,7 +81,7 @@ class Callback:
         pass
 
     def trigger_epoch(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._trigger_epoch()
 
     def _trigger_epoch(self):
@@ -90,7 +91,7 @@ class Callback:
         pass
 
     def trigger(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._trigger()
 
     def _trigger(self):
@@ -102,7 +103,7 @@ class Callback:
         pass
 
     def after_train(self):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
             self._after_train()
 
     def _after_train(self):
@@ -112,16 +113,16 @@ class Callback:
         pass
 
     def save_checkpoint(self, save_dir):
-        save_dir = osp.normpath(save_dir)
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
+            save_dir = osp.normpath(save_dir)
             self._save_checkpoint(save_dir)
 
     def _save_checkpoint(self, save_dir):
         pass
 
     def load_checkpoint(self, load_dir):
-        load_dir = osp.normpath(load_dir)
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master or not self.master_only:
+            load_dir = osp.normpath(load_dir)
             self._load_checkpoint(load_dir)
 
     def _load_checkpoint(self, load_dir):
