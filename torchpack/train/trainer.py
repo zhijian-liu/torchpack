@@ -5,6 +5,7 @@ import weakref
 
 from tensorpack.utils.utils import humanize_time_delta
 
+from .. import distributed as dist
 from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, ProgressBar,
                          TFEventWriter)
 from ..callbacks.callback import Callback, Callbacks
@@ -20,8 +21,6 @@ class Trainer:
     """
     Base class for a trainer.
     """
-    is_master = True
-
     def set_callbacks(self, callbacks):
         monitors = []
         for callback in callbacks:
@@ -80,9 +79,10 @@ class Trainer:
                 self.epoch_num += 1
                 self.local_step = 0
 
-                logger.info('Epoch {}/{} started.'.format(
-                    self.epoch_num, self.max_epoch))
-                epoch_time = time.time()
+                if dist.is_master():
+                    logger.info('Epoch {}/{} started.'.format(
+                        self.epoch_num, self.max_epoch))
+                    epoch_time = time.time()
                 self.callbacks.before_epoch()
 
                 for feed_dict in self.dataflow:
@@ -96,20 +96,25 @@ class Trainer:
                     self.callbacks.trigger_step()
 
                 self.callbacks.after_epoch()
-                logger.info('Training finished in {}.'.format(
-                    humanize_time_delta(time.time() - epoch_time)))
+                if dist.is_master():
+                    logger.info('Training finished in {}.'.format(
+                        humanize_time_delta(time.time() - epoch_time)))
 
                 self.callbacks.trigger_epoch()
-                logger.info('Epoch finished in {}.'.format(
-                    humanize_time_delta(time.time() - epoch_time)))
+                if dist.is_master():
+                    logger.info('Epoch finished in {}.'.format(
+                        humanize_time_delta(time.time() - epoch_time)))
 
-            logger.info('{} epochs of training finished in {}.'.format(
-                self.max_epoch - self.starting_epoch + 1,
-                humanize_time_delta(time.time() - train_time)))
+            if dist.is_master():
+                logger.info('{} epochs of training finished in {}.'.format(
+                    self.max_epoch - self.starting_epoch + 1,
+                    humanize_time_delta(time.time() - train_time)))
         except StopTraining as e:
-            logger.info('Training was stopped by {}.'.format(str(e)))
+            if dist.is_master():
+                logger.info('Training was stopped by {}.'.format(str(e)))
         except KeyboardInterrupt:
-            logger.info('Detected Ctrl-C and exiting training loop.')
+            if dist.is_master():
+                logger.info('Detected Ctrl-C and exiting training loop.')
             raise
         finally:
             for callback in self.callbacks:

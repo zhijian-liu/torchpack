@@ -3,6 +3,7 @@ from collections import deque
 import numpy as np
 import torch
 
+from .. import distributed as dist
 from .callback import Callback
 
 __all__ = ['Monitor', 'Monitors']
@@ -15,14 +16,14 @@ class Monitor(Callback):
     master_only = True
 
     def add_scalar(self, name, scalar):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master() or not self.master_only:
             self._add_scalar(name, scalar)
 
     def _add_scalar(self, name, scalar):
         pass
 
     def add_image(self, name, tensor):
-        if self.trainer.is_master or not self.master_only:
+        if dist.is_master() or not self.master_only:
             self._add_image(name, tensor)
 
     def _add_image(self, name, tensor):
