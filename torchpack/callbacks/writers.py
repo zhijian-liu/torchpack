@@ -15,6 +15,8 @@ class ConsoleWriter(Monitor):
     """
     Write scalar summaries into terminal.
     """
+    master_only = True
+
     def __init__(self, scalars='*'):
         self.matcher = NameMatcher(scalars)
 
@@ -41,6 +43,8 @@ class TFEventWriter(Monitor):
     """
     Write summaries to TensorFlow event file.
     """
+    master_only = True
+
     def __init__(self, *, save_dir=None):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'tensorboard')
