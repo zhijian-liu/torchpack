@@ -6,12 +6,8 @@ import numpy as np
 import torch
 
 __all__ = [
-    'load', 'save',
-    'load_txt', 'save_txt',
-    'load_json', 'save_json',
-    'load_npy', 'save_npy',
-    'load_npz', 'save_npz',
-    'load_pth', 'save_pth'
+    'load', 'save', 'load_txt', 'save_txt', 'load_json', 'save_json',
+    'load_npy', 'save_npy', 'load_npz', 'save_npz', 'load_pth', 'save_pth'
 ]
 
 
@@ -20,8 +16,8 @@ def file_descriptor(f, mode='r'):
     new_fp = False
     try:
         if isinstance(f, str):
-            new_fp = True
             f = open(f, mode)
+            new_fp = True
         yield f
     finally:
         if new_fp:
@@ -87,10 +83,24 @@ def save_pth(f, obj, **kwargs):
     return torch.save(obj, f, **kwargs)
 
 
-load_funcs = {'.txt': load_txt, '.json': load_json, '.pkl': load_pkl,
-              '.npy': load_npy, '.npz': load_npz, '.pth': load_pth, '.pth.tar': load_pth}
-save_funcs = {'.txt': load_txt, '.json': save_json, '.pkl': save_pkl,
-              '.npy': save_npy, '.npz': save_npz, '.pth': save_pth, '.pth.tar': save_pth}
+load_funcs = {
+    '.txt': load_txt,
+    '.json': load_json,
+    '.pkl': load_pkl,
+    '.npy': load_npy,
+    '.npz': load_npz,
+    '.pth': load_pth,
+    '.pth.tar': load_pth
+}
+save_funcs = {
+    '.txt': load_txt,
+    '.json': save_json,
+    '.pkl': save_pkl,
+    '.npy': save_npy,
+    '.npz': save_npz,
+    '.pth': save_pth,
+    '.pth.tar': save_pth
+}
 
 
 def load(fpath, **kwargs):

@@ -14,6 +14,8 @@ class Saver(Callback):
     """
     Save the checkpoint once triggered.
     """
+    master_only = True
+
     def __init__(self, *, max_to_keep=5, save_dir=None):
         self.max_to_keep = max_to_keep
         if save_dir is None:
@@ -58,7 +60,7 @@ class BestSaver(Callback):
     """
     Save the checkpoint with best value of some scalar.
     """
-    extreme = None
+    master_only = True
 
     def __init__(self, scalar, *, name=None, save_dir=None):
         self.scalar = scalar

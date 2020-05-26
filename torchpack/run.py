@@ -5,7 +5,8 @@ import sys
 
 from .utils.device import set_cuda_visible_devices
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--devices',
                         '-d',
@@ -24,3 +25,7 @@ if __name__ == '__main__':
     if process.returncode != 0:
         raise subprocess.CalledProcessError(returncode=process.returncode,
                                             cmd=cmd)
+
+
+if __name__ == '__main__':
+    main()
