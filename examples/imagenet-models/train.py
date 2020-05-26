@@ -1,5 +1,3 @@
-import argparse
-import json
 import os
 import os.path as osp
 import sys
@@ -12,7 +10,6 @@ import torchpack.utils.io as io
 from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
                                  Saver, SaverRestore)
 from torchpack.callbacks.metrics import TopKCategoricalAccuracy
-from torchpack.cuda.copy import async_copy_to
 from torchpack.datasets.vision import ImageNet
 from torchpack.environ import get_run_dir, set_run_dir
 from torchpack.logging import get_logger
@@ -30,8 +27,8 @@ class ClassificationTrainer(Trainer):
         self.scheduler = scheduler
 
     def _run_step(self, feed_dict):
-        inputs = async_copy_to(feed_dict['images'], device='cuda')
-        targets = async_copy_to(feed_dict['classes'], device='cuda')
+        inputs = feed_dict['images'].cuda(non_blocking=True)
+        targets = feed_dict['classes'].cuda(non_blocking=True)
 
         outputs = self.model(inputs)
 
@@ -45,19 +42,15 @@ class ClassificationTrainer(Trainer):
 
         return dict(outputs=outputs, targets=targets)
 
-    def _save_checkpoint(self, save_dir):
-        io.save(osp.join(save_dir, 'model.pth'), self.model.state_dict())
-        io.save(osp.join(save_dir, 'optimizer.pth'),
-                self.optimizer.state_dict())
-        io.save(osp.join(save_dir, 'scheduler.pth'),
-                self.scheduler.state_dict())
+    def _state_dict(self):
+        return dict(model=self.model.state_dict(),
+                    optimizer=self.optimizer.state_dict(),
+                    scheduler=self.scheduler.state_dict())
 
-    def _load_checkpoint(self, load_dir):
-        self.model.load_state_dict(io.load(osp.join(load_dir, 'model.pth')))
-        self.optimizer.load_state_dict(
-            io.load(osp.join(load_dir, 'optimizer.pth')))
-        self.scheduler.load_state_dict(
-            io.load(osp.join(load_dir, 'scheduler.pth')))
+    def _load_state_dict(self, state_dict):
+        self.model.load_state_dict(state_dict['model'])
+        self.optimizer.load_state_dict(state_dict['optimizer'])
+        self.scheduler.load_state_dict(state_dict['scheduler'])
 
 
 def main():

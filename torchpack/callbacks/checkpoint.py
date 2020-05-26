@@ -4,7 +4,7 @@ from collections import deque
 
 from ..environ import get_run_dir
 from ..logging import logger
-from ..utils import fs
+from ..utils import fs, io
 from .callback import Callback
 
 __all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']
@@ -25,35 +25,37 @@ class Saver(Callback):
 
     def _before_train(self):
         self.checkpoints = deque()
-        checkpoints = glob.glob(osp.join(self.save_dir, 'step-*'))
-        for dirpath in sorted(checkpoints, key=osp.getmtime):
-            self._add_checkpoint(dirpath)
+        checkpoints = glob.glob(osp.join(self.save_dir, 'step-*.pt'))
+        for checkpoint in sorted(checkpoints, key=osp.getmtime):
+            self._add_checkpoint(checkpoint)
 
     def _trigger_epoch(self):
         self._trigger()
 
     def _trigger(self):
-        save_dir = osp.join(self.save_dir, f'step-{self.trainer.global_step}')
+        save_path = osp.join(self.save_dir,
+                             f'step-{self.trainer.global_step}.pt')
         try:
-            self.trainer.save_checkpoint(save_dir)
+            state_dict = self.trainer.state_dict()
+            io.save(save_path, state_dict)
         except OSError:
             logger.exception(
-                f'Error occurred when saving checkpoint "{save_dir}".')
+                f'Error occurred when saving checkpoint "{save_path}".')
         else:
-            logger.info(f'Checkpoint saved: "{save_dir}".')
-            self._add_checkpoint(save_dir)
+            logger.info(f'Checkpoint saved: "{save_path}".')
+            self._add_checkpoint(save_path)
 
-    def _add_checkpoint(self, dirpath):
-        self.checkpoints.append(dirpath)
+    def _add_checkpoint(self, checkpoint):
+        self.checkpoints.append(checkpoint)
         if self.max_to_keep is None:
             return
         while len(self.checkpoints) > self.max_to_keep:
-            dirpath = self.checkpoints.popleft()
+            checkpoint = self.checkpoints.popleft()
             try:
-                fs.remove(dirpath)
+                fs.remove(checkpoint)
             except OSError:
                 logger.exception(
-                    f'Error occurred when removing checkpoint "{dirpath}".')
+                    f'Error occurred when removing checkpoint "{checkpoint}".')
 
 
 class BestSaver(Callback):
@@ -94,19 +96,15 @@ class BestSaver(Callback):
 
         if self.best is None or (self.extreme == 'min' and value < self.best[1]) \
                              or (self.extreme == 'max' and value > self.best[1]):
-            save_dir = osp.join(self.save_dir, self.name)
+            save_path = osp.join(self.save_dir, self.name + '.pt')
             try:
-                fs.remove(save_dir)
+                state_dict = self.trainer.state_dict()
+                io.save(save_path, state_dict)
             except OSError:
                 logger.exception(
-                    f'Error occurred when removing checkpoint "{save_dir}".')
-            try:
-                self.trainer.save_checkpoint(save_dir)
-            except OSError:
-                logger.exception(
-                    f'Error occurred when saving checkpoint "{save_dir}".')
+                    f'Error occurred when saving checkpoint "{save_path}".')
             else:
-                logger.info(f'Checkpoint saved: "{save_dir}" ({value:.5g}).')
+                logger.info(f'Checkpoint saved: "{save_path}" ({value:.5g}).')
                 self.best = (step, value)
 
         if self.best is not None:
@@ -135,16 +133,17 @@ class SaverRestore(Callback):
         self.load_dir = fs.normpath(load_dir)
 
     def _before_train(self):
-        checkpoints = glob.glob(osp.join(self.load_dir, 'step-*'))
+        checkpoints = glob.glob(osp.join(self.load_dir, 'step-*.pt'))
         if not checkpoints:
             logger.warning(f'No checkpoints found: "{self.load_dir}".')
             return
 
-        load_dir = max(checkpoints, key=osp.getmtime)
+        load_path = max(checkpoints, key=osp.getmtime)
         try:
-            self.trainer.load_checkpoint(load_dir)
+            state_dict = io.load(load_path)
+            self.trainer.load_state_dict(state_dict)
         except OSError:
             logger.exception(
-                f'Error occurred when loading checkpoint "{load_dir}".')
+                f'Error occurred when loading checkpoint "{load_path}".')
         else:
-            logger.info(f'Checkpoint loaded: "{load_dir}".')
+            logger.info(f'Checkpoint loaded: "{load_path}".')

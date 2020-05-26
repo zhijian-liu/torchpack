@@ -126,28 +126,20 @@ class Trainer:
         """
         raise NotImplementedError
 
-    def save_checkpoint(self, save_dir):
-        save_dir = osp.normpath(save_dir)
-        fs.makedir(save_dir)
-        io.save(
-            osp.join(save_dir, 'loop.json'), {
-                'epoch_num': self.epoch_num,
-                'global_step': self.global_step,
-                'local_step': self.local_step
-            })
-        self._save_checkpoint(save_dir)
+    def state_dict(self):
+        state_dict = self._state_dict()
+        state_dict['loop'] = dict(epoch_num=self.epoch_num,
+                                  global_step=self.global_step,
+                                  local_step=self.local_step)
+        return state_dict
 
-    def _save_checkpoint(self, save_dir):
-        pass
+    def _state_dict(self):
+        return dict()
 
-    def load_checkpoint(self, load_dir):
-        load_dir = osp.normpath(load_dir)
-
-        loop = io.load(osp.join(load_dir, 'loop.json'))
-        self.epoch_num = loop['epoch_num']
+    def load_state_dict(self, state_dict):
+        self.epoch_num = state_dict['loop']['epoch_num']
         self.global_step = self.epoch_num * self.steps_per_epoch
+        self._load_state_dict(state_dict)
 
-        self._load_checkpoint(load_dir)
-
-    def _load_checkpoint(self, load_dir):
+    def _load_state_dict(self, state_dict):
         pass

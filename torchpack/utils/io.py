@@ -89,6 +89,7 @@ load_funcs = {
     '.pkl': load_pkl,
     '.npy': load_npy,
     '.npz': load_npz,
+    '.pt': load_pth,
     '.pth': load_pth,
     '.pth.tar': load_pth
 }
@@ -98,6 +99,7 @@ save_funcs = {
     '.pkl': save_pkl,
     '.npy': save_npy,
     '.npz': save_npz,
+    '.pt': save_pth,
     '.pth': save_pth,
     '.pth.tar': save_pth
 }
@@ -111,9 +113,9 @@ def load(fpath, **kwargs):
     raise NotImplementedError()
 
 
-def save(fname, obj, **kwargs):
-    assert isinstance(fname, str), type(fname)
+def save(fpath, obj, **kwargs):
+    assert isinstance(fpath, str), type(fpath)
     for ext in sorted(save_funcs.keys(), key=len, reverse=True):
-        if fname.endswith(ext):
-            return save_funcs[ext](fname, obj, **kwargs)
+        if fpath.endswith(ext):
+            return save_funcs[ext](fpath, obj, **kwargs)
     raise NotImplementedError()

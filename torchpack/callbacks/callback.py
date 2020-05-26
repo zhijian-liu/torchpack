@@ -112,22 +112,6 @@ class Callback:
         """
         pass
 
-    def save_checkpoint(self, save_dir):
-        if dist.is_master() or not self.master_only:
-            save_dir = osp.normpath(save_dir)
-            self._save_checkpoint(save_dir)
-
-    def _save_checkpoint(self, save_dir):
-        pass
-
-    def load_checkpoint(self, load_dir):
-        if dist.is_master() or not self.master_only:
-            load_dir = osp.normpath(load_dir)
-            self._load_checkpoint(load_dir)
-
-    def _load_checkpoint(self, load_dir):
-        pass
-
     def __str__(self):
         return type(self).__name__
 
@@ -147,8 +131,6 @@ class LambdaCallback(Callback):
                  trigger_epoch=None,
                  trigger=None,
                  after_train=None,
-                 save_checkpoint=None,
-                 load_checkpoint=None,
                  master_only=False):
         self.before_train_fn = before_train
         self.before_epoch_fn = before_epoch
@@ -159,8 +141,6 @@ class LambdaCallback(Callback):
         self.trigger_epoch_fn = trigger_epoch
         self.trigger_fn = trigger
         self.after_train_fn = after_train
-        self.save_checkpoint_fn = save_checkpoint
-        self.load_checkpoint_fn = load_checkpoint
         self.master_only = master_only
 
     def _before_train(self):
@@ -198,14 +178,6 @@ class LambdaCallback(Callback):
     def _after_train(self):
         if self.after_train_fn:
             self.after_train_fn(self)
-
-    def _save_checkpoint(self, save_dir):
-        if self.save_checkpoint_fn:
-            self.save_checkpoint_fn(self, save_dir)
-
-    def _load_checkpoint(self, load_dir):
-        if self.load_checkpoint_fn:
-            self.load_checkpoint_fn(self, load_dir)
 
 
 class ProxyCallback(Callback):
@@ -245,12 +217,6 @@ class ProxyCallback(Callback):
 
     def _after_train(self):
         self.callback.after_train()
-
-    def _save_checkpoint(self, save_dir):
-        self.callback.save_checkpoint(save_dir)
-
-    def _load_checkpoint(self, load_dir):
-        self.callback.load_checkpoint(load_dir)
 
     def __str__(self):
         return 'Proxy-' + str(self.callback)
@@ -304,14 +270,6 @@ class Callbacks(Callback):
     def _after_train(self):
         for callback in self.callbacks:
             callback.after_train()
-
-    def _save_checkpoint(self, save_dir):
-        for callback in self.callbacks:
-            callback.save_checkpoint(save_dir)
-
-    def _load_checkpoint(self, load_dir):
-        for callback in self.callbacks:
-            callback.load_checkpoint(load_dir)
 
     def append(self, callback):
         self.callbacks.append(callback)
