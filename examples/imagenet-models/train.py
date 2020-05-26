@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import os.path as osp
@@ -6,7 +7,7 @@ import sys
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
-
+import torchpack.distributed as dist
 import torchpack.utils.io as io
 from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
                                  Saver, SaverRestore)
@@ -60,8 +61,9 @@ class ClassificationTrainer(Trainer):
 
 
 def main():
-    set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
+    dist.init()
 
+    set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
     logger.info(' '.join([sys.executable] + sys.argv))
 
     cudnn.benchmark = True
@@ -73,15 +75,17 @@ def main():
 
     dataflow = dict()
     for split in dataset:
-        dataflow[split] = torch.utils.data.DataLoader(
-            dataset[split],
-            shuffle=(split == 'train'),
-            batch_size=256,
-            num_workers=16,
-            pin_memory=True)
+        sampler = torch.utils.data.distributed.DistributedSampler(
+            dataset[split], rank=dist.rank(), shuffle=(split == 'train'))
+        dataflow[split] = torch.utils.data.DataLoader(dataset[split],
+                                                      sampler=sampler,
+                                                      batch_size=64,
+                                                      num_workers=16,
+                                                      pin_memory=True)
 
     model = MobileNetV2(num_classes=100)
-    model = nn.DataParallel(model.cuda())
+    model = nn.parallel.DistributedDataParallel(model.cuda(),
+                                                find_unused_parameters=True)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(),
@@ -98,7 +102,8 @@ def main():
         dataflow['train'],
         max_epoch=150,
         callbacks=[
-            SaverRestore(),
+            LambdaCallback(before_epoch=lambda self: dataflow['train'].sampler.
+                           set_epoch(self.trainer.epoch_num)),
             LambdaCallback(before_epoch=lambda self: model.train(),
                            after_epoch=lambda self: model.eval()),
             LambdaCallback(before_epoch=lambda self: scheduler.step()),
