@@ -18,7 +18,7 @@ class ConsoleWriter(Monitor):
     master_only = True
 
     def __init__(self, scalars='*'):
-        self.matcher = NameMatcher(scalars)
+        self.matcher = NameMatcher(patterns=scalars)
 
     def _before_train(self):
         self.scalars = dict()
