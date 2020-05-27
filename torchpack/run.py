@@ -15,16 +15,16 @@ def main():
                         help='list of device(s) to use.')
     args, command = parser.parse_known_args()
 
-    cmd = [sys.executable, '-u'] + command
+    command = [sys.executable, '-u'] + command
 
-    env = os.environ.copy()
-    set_cuda_visible_devices(args.devices, environ=env)
+    environ = os.environ.copy()
+    set_cuda_visible_devices(args.devices, environ=environ)
 
-    process = subprocess.Popen(cmd, env=env)
+    process = subprocess.Popen(command, env=environ)
     process.wait()
     if process.returncode != 0:
         raise subprocess.CalledProcessError(returncode=process.returncode,
-                                            cmd=cmd)
+                                            cmd=command)
 
 
 if __name__ == '__main__':

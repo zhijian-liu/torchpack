@@ -20,7 +20,7 @@ logger = get_logger(__file__)
 
 
 class ClassificationTrainer(Trainer):
-    def __init__(self, model, criterion, optimizer, scheduler):
+    def __init__(self, *, model, criterion, optimizer, scheduler):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
@@ -40,7 +40,7 @@ class ClassificationTrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
-        return dict(outputs=outputs, targets=targets)
+        return {'outputs': outputs, 'targets': targets}
 
     def _state_dict(self):
         return {

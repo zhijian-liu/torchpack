@@ -68,18 +68,19 @@ class PeriodicCallback(EnableCallbackIf):
     Note that this can only make a callback less frequent.
     """
     def __init__(self, callback, *, every_k_epochs=None, every_k_steps=None):
-        super().__init__(callback, PeriodicCallback.predicate)
         assert every_k_epochs is not None or every_k_steps is not None, \
             '`every_k_epochs` and `every_k_steps` cannot both be None!'
         self.every_k_epochs = every_k_epochs
         self.every_k_steps = every_k_steps
 
-    def predicate(self):
-        if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
-            return True
-        if self.every_k_steps is not None and self.trainer.global_step % self.every_k_steps == 0:
-            return True
-        return False
+        def predicate(self):
+            if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
+                return True
+            if self.every_k_steps is not None and self.trainer.global_step % self.every_k_steps == 0:
+                return True
+            return False
+
+        super().__init__(callback, predicate)
 
     def __str__(self):
         return 'PeriodicCallback-' + str(self.callback)

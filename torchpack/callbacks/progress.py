@@ -19,7 +19,7 @@ class ProgressBar(Callback):
     master_only = True
 
     def __init__(self, scalars='*'):
-        self.matcher = NameMatcher(patterns=scalars)
+        self.matcher = NameMatcher(scalars)
 
     def _before_epoch(self):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch,

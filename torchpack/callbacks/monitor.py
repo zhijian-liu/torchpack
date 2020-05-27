@@ -13,8 +13,6 @@ class Monitor(Callback):
     """
     Base class for all monitors.
     """
-    master_only = True
-
     def add_scalar(self, name, scalar):
         if dist.is_master() or not self.master_only:
             self._add_scalar(name, scalar)
