@@ -4,7 +4,7 @@ import torch.nn as nn
 __all__ = ['ShuffleNetV2', 'ShuffleBlockV2']
 
 
-def shuffle_channel(inputs, groups):
+def channel_shuffle(inputs, groups):
     batch_size, num_channels, *sizes = inputs.size()
     inputs = inputs.view(batch_size, groups, num_channels // groups, *sizes)
     inputs = inputs.transpose(1, 2).contiguous()
@@ -13,55 +13,46 @@ def shuffle_channel(inputs, groups):
 
 
 class ShuffleBlockV2(nn.Module):
-    def __init__(self, input_channels, output_channels, kernel_size, stride=1):
+    def __init__(self, in_channels, out_channels, kernel_size, *, stride=1):
         super().__init__()
-        self.input_channels = input_channels
-        self.output_channels = output_channels
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
 
         if stride == 1:
-            input_channels = input_channels // 2
-        output_channels = output_channels // 2
+            in_channels = in_channels // 2
+        out_channels = out_channels // 2
 
         if stride != 1:
             self.branch1 = nn.Sequential(
-                nn.Conv2d(input_channels,
-                          input_channels,
-                          kernel_size=kernel_size,
+                nn.Conv2d(in_channels,
+                          in_channels,
+                          kernel_size,
                           stride=stride,
                           padding=kernel_size // 2,
-                          groups=input_channels,
+                          groups=in_channels,
                           bias=False),
-                nn.BatchNorm2d(input_channels),
-                nn.Conv2d(input_channels,
-                          output_channels,
-                          kernel_size=1,
-                          bias=False),
-                nn.BatchNorm2d(output_channels),
+                nn.BatchNorm2d(in_channels),
+                nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True),
             )
 
         self.branch2 = nn.Sequential(
-            nn.Conv2d(input_channels,
-                      output_channels,
-                      kernel_size=1,
-                      bias=False),
-            nn.BatchNorm2d(output_channels),
+            nn.Conv2d(in_channels, out_channels, 1, bias=False),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(output_channels,
-                      output_channels,
-                      kernel_size=kernel_size,
+            nn.Conv2d(out_channels,
+                      out_channels,
+                      kernel_size,
                       stride=stride,
                       padding=kernel_size // 2,
-                      groups=output_channels,
+                      groups=out_channels,
                       bias=False),
-            nn.BatchNorm2d(output_channels),
-            nn.Conv2d(output_channels,
-                      output_channels,
-                      kernel_size=1,
-                      bias=False),
-            nn.BatchNorm2d(output_channels),
+            nn.BatchNorm2d(out_channels),
+            nn.Conv2d(out_channels, out_channels, 1, bias=False),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
         )
 
@@ -70,10 +61,11 @@ class ShuffleBlockV2(nn.Module):
             x1 = self.branch1(x)
             x2 = self.branch2(x)
         else:
-            x1, x2 = x.chunk(2, dim=1)
+            x1, x2 = torch.chunk(x, 2, dim=1)
             x2 = self.branch2(x2)
+
         x = torch.cat((x1, x2), dim=1)
-        x = shuffle_channel(x, groups=2)
+        x = channel_shuffle(x, 2)
         return x
 
 
@@ -85,48 +77,43 @@ class ShuffleNetV2(nn.Module):
         2.0: [24, (244, 4, 2), (488, 8, 2), (976, 4, 2), 2048]
     }
 
-    def __init__(self, input_channels=3, num_classes=1000, width_multiplier=1):
+    def __init__(self, *, in_channels=3, num_classes=1000, width_multiplier=1):
         super().__init__()
 
-        output_channels = self.blocks[width_multiplier][0]
+        out_channels = self.blocks[width_multiplier][0]
         layers = [
             nn.Sequential(
-                nn.Conv2d(input_channels,
-                          output_channels,
-                          kernel_size=3,
+                nn.Conv2d(in_channels,
+                          out_channels,
+                          3,
                           stride=2,
                           padding=1,
                           bias=False),
-                nn.BatchNorm2d(output_channels),
+                nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True),
             )
         ]
-        input_channels = output_channels
+        in_channels = out_channels
 
-        for output_channels, num_blocks, strides in \
+        for out_channels, num_blocks, strides in \
                 self.blocks[width_multiplier][1:-1]:
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
-                    ShuffleBlockV2(input_channels,
-                                   output_channels,
-                                   kernel_size=3,
+                    ShuffleBlockV2(in_channels, out_channels, 3,
                                    stride=stride))
-                input_channels = output_channels
+                in_channels = out_channels
 
-        output_channels = self.blocks[width_multiplier][-1]
+        out_channels = self.blocks[width_multiplier][-1]
         layers.append(
             nn.Sequential(
-                nn.Conv2d(input_channels,
-                          output_channels,
-                          kernel_size=1,
-                          bias=False),
-                nn.BatchNorm2d(output_channels),
+                nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True),
             ))
-        input_channels = output_channels
+        in_channels = out_channels
 
         self.features = nn.Sequential(*layers)
-        self.classifier = nn.Linear(input_channels, num_classes)
+        self.classifier = nn.Linear(in_channels, num_classes)
         self.reset_parameters()
 
     def reset_parameters(self):
