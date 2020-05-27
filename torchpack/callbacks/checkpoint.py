@@ -18,12 +18,12 @@ class Saver(Callback):
 
     def __init__(self, *, max_to_keep=5, save_dir=None):
         self.max_to_keep = max_to_keep
+
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
         fs.makedir(self.save_dir)
 
-    def _before_train(self):
         self.checkpoints = deque()
         for fpath in sorted(glob.glob(osp.join(self.save_dir, 'step-*.pt')),
                             key=osp.getmtime):
@@ -68,14 +68,13 @@ class BestSaver(Callback):
         if name is None:
             name = self.extreme + '-' + scalar.replace('/', '-')
         self.name = name
+
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
         fs.makedir(self.save_dir)
 
-    def _before_train(self):
-        self.step = None
-        self.best = None
+        self.step, self.best = None, None
 
     def _trigger_epoch(self):
         self._trigger()
@@ -108,6 +107,12 @@ class BestSaver(Callback):
         if self.best is not None:
             self.trainer.monitors.add_scalar(self.scalar + '/' + self.extreme,
                                              self.best[1])
+
+    def _state_dict(self):
+        return {'step': self.step, 'best': self.best}
+
+    def _load_state_dict(self, state_dict):
+        self.step, self.best = state_dict['step'], state_dict['best']
 
 
 class MinSaver(BestSaver):
