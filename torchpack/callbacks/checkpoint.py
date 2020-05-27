@@ -36,8 +36,7 @@ class Saver(Callback):
         save_path = osp.join(self.save_dir,
                              f'step-{self.trainer.global_step}.pt')
         try:
-            state_dict = self.trainer.state_dict()
-            io.save(save_path, state_dict)
+            io.save(save_path, self.trainer.state_dict())
         except OSError:
             logger.exception(
                 f'Error occurred when saving checkpoint "{save_path}".')
@@ -98,8 +97,7 @@ class BestSaver(Callback):
                              or (self.extreme == 'max' and value > self.best[1]):
             save_path = osp.join(self.save_dir, self.name + '.pt')
             try:
-                state_dict = self.trainer.state_dict()
-                io.save(save_path, state_dict)
+                io.save(save_path, self.trainer.state_dict())
             except OSError:
                 logger.exception(
                     f'Error occurred when saving checkpoint "{save_path}".')
