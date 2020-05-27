@@ -25,9 +25,9 @@ class Saver(Callback):
 
     def _before_train(self):
         self.checkpoints = deque()
-        checkpoints = glob.glob(osp.join(self.save_dir, 'step-*.pt'))
-        for checkpoint in sorted(checkpoints, key=osp.getmtime):
-            self._add_checkpoint(checkpoint)
+        for fpath in sorted(glob.glob(osp.join(self.save_dir, 'step-*.pt')),
+                            key=osp.getmtime):
+            self._add_checkpoint(fpath)
 
     def _trigger_epoch(self):
         self._trigger()
@@ -44,17 +44,17 @@ class Saver(Callback):
             logger.info(f'Checkpoint saved: "{save_path}".')
             self._add_checkpoint(save_path)
 
-    def _add_checkpoint(self, checkpoint):
-        self.checkpoints.append(checkpoint)
+    def _add_checkpoint(self, fpath):
+        self.checkpoints.append(fpath)
         if self.max_to_keep is None:
             return
         while len(self.checkpoints) > self.max_to_keep:
-            checkpoint = self.checkpoints.popleft()
+            fpath = self.checkpoints.popleft()
             try:
-                fs.remove(checkpoint)
+                fs.remove(fpath)
             except OSError:
                 logger.exception(
-                    f'Error occurred when removing checkpoint "{checkpoint}".')
+                    f'Error occurred when removing checkpoint "{fpath}".')
 
 
 class BestSaver(Callback):
