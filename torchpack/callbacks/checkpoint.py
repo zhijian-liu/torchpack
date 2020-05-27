@@ -22,7 +22,6 @@ class Saver(Callback):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
-        fs.makedir(self.save_dir)
 
         self.checkpoints = deque()
         for fpath in sorted(glob.glob(osp.join(self.save_dir, 'step-*.pt')),
@@ -72,7 +71,6 @@ class BestSaver(Callback):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
-        fs.makedir(self.save_dir)
 
         self.step, self.best = None, None
 

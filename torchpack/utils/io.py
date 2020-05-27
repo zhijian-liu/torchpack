@@ -1,9 +1,12 @@
 import json
+import os.path as osp
 import pickle
 from contextlib import contextmanager
 
 import numpy as np
 import torch
+
+from . import fs
 
 __all__ = [
     'load', 'save', 'load_txt', 'save_txt', 'load_json', 'save_json',
@@ -114,6 +117,10 @@ def load(fpath, **kwargs):
 
 
 def save(fpath, obj, **kwargs):
+    dirpath = osp.dirname(fpath)
+    if not osp.exists(dirpath):
+        fs.makedir(dirpath)
+
     assert isinstance(fpath, str), type(fpath)
     for ext in sorted(save_funcs.keys(), key=len, reverse=True):
         if fpath.endswith(ext):

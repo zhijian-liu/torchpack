@@ -1,6 +1,6 @@
 import os.path as osp
 
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 from ..environ import get_run_dir
 from ..logging import logger
@@ -49,7 +49,6 @@ class TFEventWriter(Monitor):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'tensorboard')
         self.save_dir = fs.normpath(save_dir)
-        fs.makedir(self.save_dir)
 
     def _before_train(self):
         self.writer = SummaryWriter(self.save_dir)
@@ -72,7 +71,6 @@ class JSONWriter(Monitor):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'summaries')
         self.save_dir = osp.normpath(save_dir)
-        fs.makedir(self.save_dir)
         self.save_fname = osp.join(fs.makedir(save_dir), 'scalars.json')
 
     def _before_train(self):

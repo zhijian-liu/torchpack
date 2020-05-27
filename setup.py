@@ -9,7 +9,6 @@ setup(
     url='https://github.com/mit-han-lab/torchpack',
     install_requires=[
         'numpy>=1.14',
-        'tensorboardX>=1.8',
         'termcolor>=1.1',
         'torch>=1.4',
         'torchvision>=0.5',
