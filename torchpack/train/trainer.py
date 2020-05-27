@@ -128,16 +128,16 @@ class Trainer:
 
     def state_dict(self):
         state_dict = self._state_dict()
-        state_dict['loop'] = dict(epoch_num=self.epoch_num,
-                                  global_step=self.global_step,
-                                  local_step=self.local_step)
+        state_dict.update(epoch_num=self.epoch_num,
+                          local_step=self.local_step,
+                          global_step=self.global_step)
         return state_dict
 
     def _state_dict(self):
         return dict()
 
     def load_state_dict(self, state_dict):
-        self.epoch_num = state_dict['loop']['epoch_num']
+        self.epoch_num = state_dict['epoch_num']
         self.global_step = self.epoch_num * self.steps_per_epoch
         self._load_state_dict(state_dict)
 
