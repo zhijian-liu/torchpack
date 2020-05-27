@@ -43,9 +43,11 @@ class ClassificationTrainer(Trainer):
         return dict(outputs=outputs, targets=targets)
 
     def _state_dict(self):
-        return dict(model=self.model.state_dict(),
-                    optimizer=self.optimizer.state_dict(),
-                    scheduler=self.scheduler.state_dict())
+        return {
+            'model': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'scheduler': self.scheduler.state_dict()
+        }
 
     def _load_state_dict(self, state_dict):
         self.model.load_state_dict(state_dict['model'])

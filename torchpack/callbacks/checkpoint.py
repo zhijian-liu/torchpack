@@ -64,6 +64,8 @@ class BestSaver(Callback):
 
     def __init__(self, scalar, *, name=None, save_dir=None):
         self.scalar = scalar
+        self.step, self.best = None, None
+
         if name is None:
             name = self.extreme + '-' + scalar.replace('/', '-')
         self.name = name
@@ -71,8 +73,6 @@ class BestSaver(Callback):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
-
-        self.step, self.best = None, None
 
     def _trigger_epoch(self):
         self._trigger()
