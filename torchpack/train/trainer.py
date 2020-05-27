@@ -127,14 +127,14 @@ class Trainer:
         raise NotImplementedError
 
     def state_dict(self):
-        state_dict = self._state_dict()
+        state_dict = self._state_dict() or dict()
         state_dict.update(epoch_num=self.epoch_num,
                           local_step=self.local_step,
                           global_step=self.global_step)
         return state_dict
 
     def _state_dict(self):
-        return dict()
+        return None
 
     def load_state_dict(self, state_dict):
         self.epoch_num = state_dict['epoch_num']
