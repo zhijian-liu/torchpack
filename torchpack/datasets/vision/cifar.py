@@ -9,6 +9,7 @@ __all__ = ['CIFAR']
 
 class CIFAR10Dataset(datasets.CIFAR10):
     def __init__(self,
+                 *,
                  root,
                  train=True,
                  transform=None,
@@ -22,11 +23,12 @@ class CIFAR10Dataset(datasets.CIFAR10):
 
     def __getitem__(self, index):
         images, classes = super().__getitem__(index)
-        return dict(images=images, classes=classes)
+        return {'images': images, 'classes': classes}
 
 
 class CIFAR100Dataset(datasets.CIFAR100):
     def __init__(self,
+                 *,
                  root,
                  train,
                  transform=None,
@@ -40,11 +42,12 @@ class CIFAR100Dataset(datasets.CIFAR100):
 
     def __getitem__(self, index):
         images, classes = super().__getitem__(index)
-        return dict(images=images, classes=classes)
+        return {'images': images, 'classes': classes}
 
 
 class CIFAR(Dataset):
-    def __init__(self, root, num_classes=10, image_size=32, transforms=None):
+    def __init__(self, *, root, num_classes=10, image_size=32,
+                 transforms=None):
         if num_classes == 10:
             CIFARDataset = CIFAR10Dataset
         elif num_classes == 100:

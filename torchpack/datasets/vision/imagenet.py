@@ -15,6 +15,7 @@ warnings.filterwarnings('ignore')
 
 class ImageNetDataset(datasets.ImageNet):
     def __init__(self,
+                 *,
                  root,
                  split='train',
                  transform=None,
@@ -26,11 +27,15 @@ class ImageNetDataset(datasets.ImageNet):
 
     def __getitem__(self, index):
         images, classes = super().__getitem__(index)
-        return dict(images=images, classes=classes)
+        return {'images': images, 'classes': classes}
 
 
 class ImageNet(Dataset):
-    def __init__(self, root, num_classes=1000, image_size=224,
+    def __init__(self,
+                 *,
+                 root,
+                 num_classes=1000,
+                 image_size=224,
                  transforms=None):
         if transforms is None:
             transforms = dict()
