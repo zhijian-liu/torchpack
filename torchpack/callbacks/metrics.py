@@ -11,7 +11,7 @@ __all__ = [
 
 class TopKCategoricalAccuracy(Callback):
     def __init__(self,
-                 k=1,
+                 k,
                  *,
                  output_tensor='outputs',
                  target_tensor='targets',
