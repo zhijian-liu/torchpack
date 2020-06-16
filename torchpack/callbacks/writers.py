@@ -75,23 +75,8 @@ class JSONWriter(Monitor):
 
     def _before_train(self):
         self.summaries = []
-
-        if not osp.exists(self.save_fname):
-            return
-
-        self.summaries = io.load(self.save_fname)
-        try:
-            epoch = self.summaries[-1]['epoch_num'] + 1
-        except:
-            return
-        if epoch != self.trainer.starting_epoch:
-            logger.warning(
-                'History epoch={} from JSON is not the predecessor of the current starting_epoch={}'
-                .format(epoch - 1, self.trainer.starting_epoch))
-            logger.warning(
-                'If you want to resume old training, either use `AutoResumeTrainConfig` '
-                'or correctly set the new starting_epoch yourself to avoid inconsistency.'
-            )
+        if osp.exists(self.save_fname):
+            self.summaries = io.load(self.save_fname)
 
     def _trigger_epoch(self):
         self._trigger()

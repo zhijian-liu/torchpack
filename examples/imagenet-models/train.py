@@ -11,7 +11,7 @@ from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
                                  Saver, SaverRestore)
 from torchpack.callbacks.metrics import TopKCategoricalAccuracy
 from torchpack.datasets.vision import ImageNet
-from torchpack.environ import get_run_dir, set_run_dir
+from torchpack.environ import set_run_dir
 from torchpack.logging import get_logger
 from torchpack.models.vision import MobileNetV2
 from torchpack.train import Trainer
@@ -57,11 +57,10 @@ class ClassificationTrainer(Trainer):
 
 def main():
     dist.init()
+    cudnn.benchmark = True
 
     set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
     logger.info(' '.join([sys.executable] + sys.argv))
-
-    cudnn.benchmark = True
 
     logger.info('Loading the dataset.')
     dataset = ImageNet(root='/dataset/imagenet/',
@@ -78,6 +77,7 @@ def main():
                                                       num_workers=16,
                                                       pin_memory=True)
 
+    logging.info('Loading the trainer.')
     model = MobileNetV2(num_classes=100)
     model = nn.parallel.DistributedDataParallel(model.cuda(),
                                                 find_unused_parameters=True)
