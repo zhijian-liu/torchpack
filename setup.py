@@ -6,7 +6,7 @@ setup(
     name='torchpack',
     version=__version__,
     packages=find_packages(exclude=['examples']),
-    url='https://github.com/mit-han-lab/torchpack',
+    url='https://github.com/zhijian-liu/torchpack',
     install_requires=[
         'numpy>=1.14',
         'termcolor>=1.1',
