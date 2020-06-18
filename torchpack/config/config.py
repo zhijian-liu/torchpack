@@ -37,7 +37,7 @@ class Config(dict):
         self.load(fpath, recursive=recursive)
 
     def update(self, other):
-        def __convert_opts(opts):
+        def __cast_from_opts(opts):
             configs = Config()
             index = 0
             while index < len(opts):
@@ -59,8 +59,7 @@ class Config(dict):
             return configs
 
         if isinstance(other, (list, tuple)):
-            other = __convert_opts(other)
-
+            other = __cast_from_opts(other)
         assert isinstance(other, (dict, Config)), type(other)
 
         for key, value in other.items():
@@ -74,19 +73,12 @@ class Config(dict):
     def clone(self):
         return copy.deepcopy(self)
 
-    def dict(self):
+    def dict(self, *, flatten=False):
         configs = dict()
         for key, value in self.items():
             if isinstance(value, Config):
-                value = value.dict()
-            configs[key] = value
-        return configs
-
-    def flatten(self):
-        configs = dict()
-        for key, value in self.items():
-            if isinstance(value, Config):
-                value = value.flatten()
+                value = value.dict(flatten=flatten)
+            if flatten and isinstance(value, dict):
                 for subkey, subval in value.items():
                     configs[key + '.' + subkey] = subval
             else:
@@ -109,7 +101,10 @@ class Config(dict):
         return '\n'.join(texts)
 
     def __repr__(self):
-        return self.__class__.__name__ + '(' + repr(self.dict()) + ')'
+        texts = []
+        for key, value in self.dict(flatten=True).items():
+            texts.append(key + '=' + str(value))
+        return self.__class__.__name__ + '(' + ', '.join(texts) + ')'
 
 
 configs = Config()
