@@ -2,7 +2,7 @@ import copy
 import os.path as osp
 from ast import literal_eval
 
-import yaml
+from ..utils import io
 
 __all__ = ['Config', 'configs']
 
@@ -29,53 +29,47 @@ class Config(dict):
         fpaths = fpaths[::-1]
 
         for fpath in fpaths:
-            if not osp.exists(fpath):
-                continue
-            with open(fpath, 'r') as fp:
-                self.update(yaml.safe_load(fp))
+            if osp.exists(fpath):
+                self.update(io.load(fpath))
 
     def reload(self, fpath, *, recursive=False):
         self.clear()
         self.load(fpath, recursive=recursive)
 
     def update(self, other):
-        if isinstance(other, (dict, Config)):
-            self._update_from_configs(other)
-        elif isinstance(other, (list, tuple)):
-            self._update_from_opts(other)
-        else:
-            raise TypeError(type(other))
+        def __convert_opts(opts):
+            configs = Config()
+            index = 0
+            while index < len(opts):
+                opt = opts[index]
+                if opt.startswith('--'):
+                    opt = opt[2:]
+                if '=' in opt:
+                    key, value = opt.split('=', 1)
+                    index += 1
+                else:
+                    key, value = opt, opts[index + 1]
+                    index += 2
+                current = configs
+                subkeys = key.split('.')
+                value = literal_eval(value)
+                for subkey in subkeys[:-1]:
+                    current = current[subkey]
+                current[subkeys[-1]] = value
+            return configs
 
-    def _update_from_configs(self, configs):
-        for key, value in configs.items():
+        if isinstance(other, (list, tuple)):
+            other = __convert_opts(other)
+
+        assert isinstance(other, (dict, Config)), type(other)
+
+        for key, value in other.items():
             if isinstance(value, (dict, Config)):
                 if key not in self or not isinstance(self[key], Config):
                     self[key] = Config()
                 self[key].update(value)
             else:
                 self[key] = value
-
-    def _update_from_opts(self, opts):
-        index = 0
-        while index < len(opts):
-            opt = opts[index]
-            if opt.startswith('--'):
-                opt = opt[2:]
-
-            if '=' in opt:
-                key, value = opt.split('=', 1)
-                index += 1
-            else:
-                key, value = opt, opts[index + 1]
-                index += 2
-
-            subkeys = key.split('.')
-            value = literal_eval(value)
-
-            current = self
-            for subkey in subkeys[:-1]:
-                current = current[subkey]
-            current[subkeys[-1]] = value
 
     def clone(self):
         return copy.deepcopy(self)
@@ -93,8 +87,8 @@ class Config(dict):
         for key, value in self.items():
             if isinstance(value, Config):
                 value = value.flatten()
-                for k, v in value.items():
-                    configs[key + '.' + k] = v
+                for subkey, subval in value.items():
+                    configs[key + '.' + subkey] = subval
             else:
                 configs[key] = value
         return configs
