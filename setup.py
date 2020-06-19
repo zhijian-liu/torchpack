@@ -7,7 +7,7 @@ setup(
     packages=find_packages(exclude=['examples']),
     install_requires=[
         'numpy>=1.14',
-        'pyyaml>=5.1.2',
+        'pyyaml',
         'termcolor>=1.1',
         'torch>=1.4',
         'torchvision>=0.5',
