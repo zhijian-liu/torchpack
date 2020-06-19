@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 import numpy as np
 import torch
+import yaml
 
 from . import fs
 
@@ -45,6 +46,16 @@ def load_json(f, **kwargs):
 def save_json(f, obj, **kwargs):
     with file_descriptor(f, 'w') as fd:
         return json.dump(obj, fd, **kwargs)
+
+
+def load_yaml(f, **kwargs):
+    with file_descriptor(f, 'r') as fd:
+        return yaml.safe_load(fd, **kwargs)
+
+
+def save_yaml(f, obj, **kwargs):
+    with file_descriptor(f, 'r') as fd:
+        return yaml.safe_dump(obj, fd, **kwargs)
 
 
 def load_pkl(f, **kwargs):
@@ -89,6 +100,8 @@ def save_pth(f, obj, **kwargs):
 load_funcs = {
     '.txt': load_txt,
     '.json': load_json,
+    '.yml': load_yaml,
+    '.yaml': load_yaml,
     '.pkl': load_pkl,
     '.npy': load_npy,
     '.npz': load_npz,
@@ -99,6 +112,8 @@ load_funcs = {
 save_funcs = {
     '.txt': load_txt,
     '.json': save_json,
+    '.yml': load_yaml,
+    '.yaml': load_yaml,
     '.pkl': save_pkl,
     '.npy': save_npy,
     '.npz': save_npz,
