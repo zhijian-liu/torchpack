@@ -19,8 +19,6 @@ class ConsoleWriter(Monitor):
 
     def __init__(self, scalars='*'):
         self.matcher = NameMatcher(patterns=scalars)
-
-    def _before_train(self):
         self.scalars = dict()
 
     def _trigger_epoch(self):
@@ -49,8 +47,6 @@ class TFEventWriter(Monitor):
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'tensorboard')
         self.save_dir = fs.normpath(save_dir)
-
-    def _before_train(self):
         self.writer = SummaryWriter(self.save_dir)
 
     def _after_train(self):
