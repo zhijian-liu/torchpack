@@ -37,8 +37,16 @@ class Config(dict):
         self.load(fpath, recursive=recursive)
 
     def update(self, other):
-        def __cast_from_opts(opts):
-            configs = Config()
+        def __update_from_configs(self, configs):
+            for key, value in configs.items():
+                if isinstance(value, (dict, Config)):
+                    if key not in self or not isinstance(self[key], Config):
+                        self[key] = Config()
+                    __update_from_configs(self[key], value)
+                else:
+                    self[key] = value
+
+        def __update_from_arguments(self, opts):
             index = 0
             while index < len(opts):
                 opt = opts[index]
@@ -50,25 +58,19 @@ class Config(dict):
                 else:
                     key, value = opt, opts[index + 1]
                     index += 2
-                current = configs
+                current = self
                 subkeys = key.split('.')
                 value = literal_eval(value)
                 for subkey in subkeys[:-1]:
                     current = current[subkey]
                 current[subkeys[-1]] = value
-            return configs
 
-        if isinstance(other, (list, tuple)):
-            other = __cast_from_opts(other)
-        assert isinstance(other, (dict, Config)), type(other)
-
-        for key, value in other.items():
-            if isinstance(value, (dict, Config)):
-                if key not in self or not isinstance(self[key], Config):
-                    self[key] = Config()
-                self[key].update(value)
-            else:
-                self[key] = value
+        if isinstance(other, (dict, Config)):
+            __update_from_configs(self, other)
+        elif isinstance(other, (list, tuple)):
+            __update_from_arguments(self, other)
+        else:
+            raise TypeError(type(other))
 
     def clone(self):
         return copy.deepcopy(self)
@@ -101,10 +103,7 @@ class Config(dict):
         return '\n'.join(texts)
 
     def __repr__(self):
-        texts = []
-        for key, value in self.dict(flatten=True).items():
-            texts.append(key + '=' + str(value))
-        return self.__class__.__name__ + '(' + ', '.join(texts) + ')'
+        return repr(self.dict(flatten=True))
 
 
 configs = Config()
