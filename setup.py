@@ -1,4 +1,5 @@
 from setuptools import find_packages, setup
+
 from torchpack import __version__
 
 setup(
@@ -6,6 +7,7 @@ setup(
     version=__version__,
     packages=find_packages(exclude=['examples']),
     install_requires=[
+        'loguru>=0.5.1',
         'numpy>=1.14',
         'pyyaml',
         'termcolor>=1.1',
