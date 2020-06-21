@@ -2,7 +2,7 @@ import copy
 import os.path as osp
 from ast import literal_eval
 
-from ..utils import io
+from . import io
 
 __all__ = ['Config', 'configs']
 
