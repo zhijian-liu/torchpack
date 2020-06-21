@@ -3,8 +3,8 @@ import os.path as osp
 from collections import deque
 
 from ..environ import get_run_dir
-from ..logging import logger
 from ..utils import fs, io
+from ..utils.logging import logger
 from .callback import Callback
 
 __all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']

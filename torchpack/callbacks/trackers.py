@@ -9,7 +9,7 @@ from tensorpack.utils.concurrency import (ensure_proc_terminate,
                                           start_proc_mask_signal)
 from tensorpack.utils.nvml import NVMLContext
 
-from ..logging import logger
+from ..utils.logging import logger
 from .callback import Callback
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']

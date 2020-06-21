@@ -3,8 +3,8 @@ import os.path as osp
 from torch.utils.tensorboard import SummaryWriter
 
 from ..environ import get_run_dir
-from ..logging import logger
 from ..utils import fs, io
+from ..utils.logging import logger
 from ..utils.matching import NameMatcher
 from .monitor import Monitor
 

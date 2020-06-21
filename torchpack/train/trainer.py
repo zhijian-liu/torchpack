@@ -9,8 +9,8 @@ from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, ProgressBar,
                          TFEventWriter)
 from ..callbacks.callback import Callback, Callbacks
 from ..callbacks.monitor import Monitor, Monitors
-from ..logging import logger
 from ..utils import fs, io
+from ..utils.logging import logger
 from .exception import StopTraining
 
 __all__ = ['Trainer']
@@ -57,7 +57,6 @@ class Trainer:
         callbacks += [
             ConsoleWriter(),
             TFEventWriter(),
-            # JSONWriter(),
             ProgressBar(),
             EstimatedTimeLeft()
         ]

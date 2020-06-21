@@ -4,7 +4,7 @@ import torch
 import tqdm
 from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
 
-from ..logging import logger
+from ..utils.logging import logger
 from .callback import Callback, Callbacks
 
 __all__ = ['InferenceRunner']
