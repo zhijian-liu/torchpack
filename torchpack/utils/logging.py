@@ -8,7 +8,7 @@ def __get_logger():
     logger.remove()
     logger.add(
         sys.stderr,
-        level='INFO',
+        level='DEBUG',
         format=
         '<green>[{time:YYYY-MM-DD HH:mm:ss.SSS}]</green> <level>{message}</level>'
     )
