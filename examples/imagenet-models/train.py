@@ -6,17 +6,13 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchpack.distributed as dist
-import torchpack.utils.io as io
 from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
-                                 Saver, SaverRestore)
-from torchpack.callbacks.metrics import TopKCategoricalAccuracy
+                                 Saver, SaverRestore, TopKCategoricalAccuracy)
 from torchpack.datasets.vision import ImageNet
 from torchpack.environ import set_run_dir
-from torchpack.logging import get_logger
 from torchpack.models.vision import MobileNetV2
 from torchpack.train import Trainer
-
-logger = get_logger(__file__)
+from torchpack.utils.logging import logger
 
 
 class ClassificationTrainer(Trainer):
@@ -77,7 +73,7 @@ def main():
                                                       num_workers=16,
                                                       pin_memory=True)
 
-    logging.info('Loading the trainer.')
+    logger.info('Loading the trainer.')
     model = MobileNetV2(num_classes=100)
     model = nn.parallel.DistributedDataParallel(model.cuda(),
                                                 find_unused_parameters=True)
