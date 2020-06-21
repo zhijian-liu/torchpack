@@ -1,8 +1,8 @@
 import os.path as osp
 import time
 
-from ..logging import logger
 from ..utils import fs
+from ..utils.logging import logger
 
 __all__ = ['get_run_dir', 'set_run_dir']
 
