@@ -53,6 +53,8 @@ class ClassificationTrainer(Trainer):
 
 def main():
     dist.init()
+    torch.cuda.set_device(dist.local_rank())
+
     cudnn.benchmark = True
 
     set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
@@ -76,6 +78,7 @@ def main():
     logger.info('Loading the trainer.')
     model = MobileNetV2(num_classes=100)
     model = nn.parallel.DistributedDataParallel(model.cuda(),
+                                                device_ids=[dist.local_rank()],
                                                 find_unused_parameters=True)
 
     criterion = nn.CrossEntropyLoss()

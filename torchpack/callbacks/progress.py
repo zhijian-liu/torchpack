@@ -1,9 +1,10 @@
+import sys
 import time
 from collections import deque
 
 import numpy as np
 import tqdm
-from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
+from tensorpack.utils.utils import humanize_time_delta
 
 from ..utils.logging import logger
 from ..utils.matching import NameMatcher
@@ -22,8 +23,7 @@ class ProgressBar(Callback):
         self.matcher = NameMatcher(patterns=scalars)
 
     def _before_epoch(self):
-        self.pbar = tqdm.trange(self.trainer.steps_per_epoch,
-                                **get_tqdm_kwargs())
+        self.pbar = tqdm.trange(self.trainer.steps_per_epoch, file=sys.stdout)
 
     def _trigger_step(self):
         texts = []

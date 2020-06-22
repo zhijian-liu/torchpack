@@ -1,10 +1,23 @@
 import argparse
+import copy
 import os
 import subprocess
 import sys
 
 
-def run(opts):
+def _find_free_port():
+    import socket
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Binding to port 0 will cause the OS to find an available port for us
+    sock.bind(("", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    # NOTE: there is still a chance the port could be taken by other processes.
+    return port
+
+
+def parse_hosts():
     pass
 
 
@@ -12,14 +25,9 @@ def dist_run(opts):
     parser = argparse.ArgumentParser()
     parser.add_argument('-np',
                         '--nproc',
-                        dest='np',
+                        dest='nproc',
                         type=int,
                         help='Total number of training processes.')
-    parser.add_argument('-p',
-                        '--port',
-                        default=12345,
-                        type=int,
-                        help='SSH port on all the hosts.')
     parser.add_argument(
         '-H',
         '--hosts',
@@ -37,42 +45,38 @@ def dist_run(opts):
     args = parser.parse_args(opts)
 
     if args.hosts is None:
-        args.hosts = 'localhost:' + str(args.np)
+        args.hosts = 'localhost:' + str(args.nproc)
 
-    environ = os.environ.copy()
-    environ['MASTER_ADDR'] = '127.0.0.1'
-    environ['MASTER_PORT'] = str(args.port)
+    master_addr = args.hosts.split(':')[0]
+    master_port = _find_free_port()
 
-    processes = []
-    for rank in range(args.np):
-        environ['WORLD_SIZE'] = str(args.np)
-        environ['WORLD_RANK'] = str(rank)
-        environ['LOCAL_SIZE'] = str(args.np)
-        environ['LOCAL_RANK'] = str(rank)
-        environ['CUDA_VISIBLE_DEVICES'] = str(rank)
+    command = [
+        'mpirun', '-np',
+        str(args.nproc), '-H',
+        str(args.hosts), '-bind-to', 'none', '-map-by', 'slot', '-x',
+        'LD_LIBRARY_PATH', '-x', 'PATH', '-x',
+        'MASTER_ADDR=' + str(master_addr), '-x',
+        'MASTER_PORT=' + str(master_port), '-mca', 'pml', 'ob1', '-mca', 'btl',
+        '^openib', '-mca', 'btl_tcp_if_exclude', 'docker0,lo'
+    ] + args.command
+    command = ' '.join(command)
+    print(command)
 
-        if rank == 0:
-            process = subprocess.Popen(args.command, env=environ)
-        else:
-            process = subprocess.Popen(args.command,
-                                       env=environ,
-                                       stdout=subprocess.DEVNULL,
-                                       stderr=subprocess.DEVNULL)
-        processes.append(process)
+    env = os.environ.copy()
+    for var in ['PATH', 'PYTHONPATH']:
+        if var not in env and var in os.environ:
+            # copy env so we do not leak env modifications
+            env = copy.copy(env)
+            # copy var over from os.environ
+            env[var] = os.environ[var]
 
-    for process in processes:
-        process.wait()
-        if process.returncode != 0:
-            raise subprocess.CalledProcessError(returncode=process.returncode,
-                                                cmd=args.command)
+    os.execve('/bin/sh', ['/bin/sh', '-c', command], env)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str, choices=['run', 'dist-run'])
+    parser.add_argument('mode', type=str, choices=['dist-run'])
     args, opts = parser.parse_known_args()
 
-    if args.mode == 'run':
-        run(opts)
-    elif args.mode == 'dist-run':
+    if args.mode == 'dist-run':
         dist_run(opts)

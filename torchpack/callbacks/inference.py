@@ -1,9 +1,11 @@
+import sys
 import time
 
 import torch
 import tqdm
-from tensorpack.utils.utils import get_tqdm_kwargs, humanize_time_delta
+from tensorpack.utils.utils import humanize_time_delta
 
+from .. import distributed as dist
 from ..utils.logging import logger
 from .callback import Callback, Callbacks
 
@@ -32,7 +34,9 @@ class InferenceRunner(Callback):
 
         # TODO: training / evaluation context
         with torch.no_grad():
-            for feed_dict in tqdm.tqdm(self.dataflow, **get_tqdm_kwargs()):
+            for feed_dict in tqdm.tqdm(self.dataflow,
+                                       file=sys.stdout,
+                                       disable=not dist.is_master()):
                 self.callbacks.before_step(feed_dict)
                 output_dict = self.trainer.run_step(feed_dict)
                 self.callbacks.after_step(output_dict)

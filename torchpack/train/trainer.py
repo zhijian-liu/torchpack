@@ -100,7 +100,7 @@ class Trainer:
                 logger.info('Epoch finished in {}.'.format(
                     humanize_time_delta(time.time() - epoch_time)))
 
-            logger.info('{} epochs of training finished in {}.'.format(
+            logger.success('{} epochs of training finished in {}.'.format(
                 self.max_epoch - self.starting_epoch + 1,
                 humanize_time_delta(time.time() - train_time)))
         except StopTraining as e:
