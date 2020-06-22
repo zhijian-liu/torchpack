@@ -39,20 +39,17 @@ def dist_run(opts):
     if args.hosts is None:
         args.hosts = 'localhost:' + str(args.np)
 
-    print(args)
-    # return
-
     environ = os.environ.copy()
     environ['MASTER_ADDR'] = '127.0.0.1'
     environ['MASTER_PORT'] = str(args.port)
 
     processes = []
-    for rank in range(0, args.np):
+    for rank in range(args.np):
         environ['WORLD_SIZE'] = str(args.np)
         environ['WORLD_RANK'] = str(rank)
         environ['LOCAL_SIZE'] = str(args.np)
         environ['LOCAL_RANK'] = str(rank)
-        # env['CUDA_VISIBLE_DEVICES'] = str(local_rank)
+        environ['CUDA_VISIBLE_DEVICES'] = str(rank)
 
         if rank == 0:
             process = subprocess.Popen(args.command, env=environ)
