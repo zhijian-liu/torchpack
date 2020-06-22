@@ -6,6 +6,8 @@ setup(
     name='torchpack',
     version=__version__,
     packages=find_packages(exclude=['examples']),
+    author='Zhijian Liu',
+    url='https://github.com/zhijian-liu/torchpack',
     install_requires=[
         'loguru>=0.5.1',
         'numpy>=1.14',
@@ -15,5 +17,6 @@ setup(
         'torchvision>=0.5',
         'tqdm>=4.31.0',
     ],
-    url='https://github.com/zhijian-liu/torchpack',
+    python_requires='>=3.6',
+    entry_points={'console_scripts': ['torchpack = torchpack.launch:main']},
 )
