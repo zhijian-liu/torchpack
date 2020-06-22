@@ -18,19 +18,19 @@ def init():
 
 
 def size():
-    return os.environ.get('WORLD_SIZE', 1)
+    return int(os.environ.get('WORLD_SIZE', 1))
 
 
 def rank():
-    return os.environ.get('WORLD_RANK', 0)
+    return int(os.environ.get('WORLD_RANK', 0))
 
 
 def local_size():
-    return os.environ.get('LOCAL_SIZE', 1)
+    return int(os.environ.get('LOCAL_SIZE', 1))
 
 
 def local_rank():
-    return os.environ.get('LOCAL_RANK', 0)
+    return int(os.environ.get('LOCAL_RANK', 0))
 
 
 def is_master():
