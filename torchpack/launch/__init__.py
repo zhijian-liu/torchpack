@@ -3,8 +3,6 @@ import sys
 
 from . import drun
 
-__all__ = ['main']
-
 
 def main():
     parser = argparse.ArgumentParser()
