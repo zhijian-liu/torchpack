@@ -5,6 +5,8 @@ import socket
 import sys
 from shlex import quote
 
+__all__ = ['main']
+
 
 def get_free_tcp_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp:
