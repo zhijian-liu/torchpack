@@ -14,4 +14,4 @@ def main():
 
     sys.argv = [f'torchpack {args.mode}'] + args.command
     if args.mode == 'dist-run':
-        drunner.main()
+        drunner.launch()
