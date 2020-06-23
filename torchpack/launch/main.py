@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-
 import argparse
 import sys
 
-from torchpack.launch import drun
+from . import drun
+
+__all__ = ['main']
 
 
 def main():
@@ -15,7 +15,3 @@ def main():
     sys.argv = [f'torchpack {args.mode}'] + args.command
     if args.mode == 'dist-run':
         drun.main()
-
-
-if __name__ == '__main__':
-    main()

@@ -1,10 +1,18 @@
 import argparse
-import copy
 import os
 import re
 import socket
 import sys
 from shlex import quote
+
+__all__ = ['main']
+
+
+def _find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(('', 0))
+        port = sock.getsockname()[1]
+    return port
 
 
 def main():
@@ -67,10 +75,7 @@ def main():
         hosts.append(hostname)
 
     environ = os.environ.copy()
-    environ['MASTER_ADDR'] = hosts[0]
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(('', 0))
-        environ['MASTER_PORT'] = str(sock.getsockname()[1])
+    environ['MASTER_HOST'] = '{}:{}'.format(hosts[0], _find_free_port())
 
     command = ' '.join(map(quote, args.command))
     if not args.verbose:
