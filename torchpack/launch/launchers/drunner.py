@@ -5,7 +5,7 @@ import socket
 import sys
 from shlex import quote
 
-__all__ = ['launch']
+__all__ = ['main']
 
 
 def get_free_tcp_port():
@@ -15,7 +15,7 @@ def get_free_tcp_port():
     return port
 
 
-def launch():
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-np',
