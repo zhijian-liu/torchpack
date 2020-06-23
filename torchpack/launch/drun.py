@@ -90,7 +90,7 @@ def main():
                '{command}'.format(nproc=args.nproc,
                                   hosts=args.hosts,
                                   environ=' '.join(
-                                      '-x %s' % key
+                                      f'-x {key}'
                                       for key in sorted(environ.keys())),
                                   command=command))
 
