@@ -7,7 +7,7 @@ def __get_logger():
     from loguru import logger
     logger.remove()
     logger.add(
-        sys.stdout,
+        sys.stderr,
         level='DEBUG',
         format=
         '<green>[{time:YYYY-MM-DD HH:mm:ss.SSS}]</green> <level>{message}</level>'

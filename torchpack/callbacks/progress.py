@@ -6,7 +6,6 @@ import numpy as np
 import tqdm
 from tensorpack.utils.utils import humanize_time_delta
 
-from ..utils import tqdm
 from ..utils.logging import logger
 from ..utils.matching import NameMatcher
 from .callback import Callback

@@ -5,7 +5,6 @@ import torch
 import tqdm
 from tensorpack.utils.utils import humanize_time_delta
 
-from ..utils import tqdm
 from ..utils.logging import logger
 from .callback import Callback, Callbacks
 
