@@ -47,7 +47,6 @@ def dist_run(opts):
     )
     args = parser.parse_args(opts)
 
-    # if hosts are not specified, parse from hostfile or default as localhost
     if not args.hosts:
         if args.hostfile:
             hosts = []
@@ -73,7 +72,7 @@ def dist_run(opts):
         sock.bind(('', 0))
         master_port = sock.getsockname()[1]
 
-    command = ' '.join(quote(par) for par in args.command)
+    command = ' '.join(map(quote, args.command))
     if not args.verbose:
         command = 'openmpi-redirect ' + command
 

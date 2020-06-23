@@ -15,14 +15,10 @@ def init():
     from mpi4py import MPI
 
     global _world_comm, _local_comm
-
     _world_comm = MPI.COMM_WORLD
     _local_comm = _world_comm.Split_type(MPI.COMM_TYPE_SHARED)
 
-    dist.init_process_group(backend='nccl',
-                            init_method='env://',
-                            world_size=size(),
-                            rank=rank())
+    dist.init_process_group(backend='nccl', world_size=size(), rank=rank())
 
 
 def size():
