@@ -1,9 +1,7 @@
-import os
 import os.path as osp
 import sys
 
 import torch
-import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchpack.distributed as dist
 from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
@@ -53,9 +51,9 @@ class ClassificationTrainer(Trainer):
 
 def main():
     dist.init()
-    torch.cuda.set_device(dist.local_rank())
 
-    cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = True
+    torch.cuda.set_device(dist.local_rank())
 
     set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
     logger.info(' '.join([sys.executable] + sys.argv))
