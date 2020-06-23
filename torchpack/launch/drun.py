@@ -8,10 +8,10 @@ from shlex import quote
 __all__ = ['main']
 
 
-def _find_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(('', 0))
-        port = sock.getsockname()[1]
+def get_free_tcp_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp:
+        tcp.bind(('0.0.0.0', 0))
+        port = tcp.getsockname()[1]
     return port
 
 
@@ -75,7 +75,7 @@ def main():
         hosts.append(hostname)
 
     environ = os.environ.copy()
-    environ['MASTER_HOST'] = '{}:{}'.format(hosts[0], _find_free_port())
+    environ['MASTER_HOST'] = '{}:{}'.format(hosts[0], get_free_tcp_port())
 
     command = ' '.join(map(quote, args.command))
     if not args.verbose:
@@ -97,7 +97,3 @@ def main():
     if args.verbose:
         print(command)
     os.execve('/bin/sh', ['/bin/sh', '-c', command], environ)
-
-
-if __name__ == '__main__':
-    main()
