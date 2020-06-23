@@ -7,7 +7,7 @@ from torchpack.launch import drun
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str, choices=['dist-run'])
+    parser.add_argument('mode', choices=['dist-run'])
     args, opts = parser.parse_known_args()
 
     if args.mode == 'dist-run':
