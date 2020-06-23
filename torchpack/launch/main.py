@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from . import drunner
+from .launchers import drunner
 
 __all__ = ['main']
 

@@ -1,9 +1,6 @@
 import os
-import pickle
-import time
 
-import torch
-import torch.distributed as dist
+import torch.distributed
 
 __all__ = ['init', 'size', 'rank', 'local_size', 'local_rank', 'is_master']
 
@@ -16,33 +13,29 @@ def init():
 
     global _world_comm, _local_comm
     _world_comm = MPI.COMM_WORLD
-    _local_comm = _world_comm.Split_type(MPI.COMM_TYPE_SHARED)
+    _local_comm = MPI.COMM_WORLD.Split_type(MPI.COMM_TYPE_SHARED)
 
-    dist.init_process_group(backend='nccl', world_size=size(), rank=rank())
+    master_port = 'tcp://' + os.environ['MASTER_HOST']
+    torch.distributed.init_process_group(backend='nccl',
+                                         init_method=master_port,
+                                         world_size=size(),
+                                         rank=rank())
 
 
 def size():
-    if _world_comm is None:
-        return 1
-    return _world_comm.Get_size()
+    return _world_comm.Get_size() if _world_comm else 1
 
 
 def rank():
-    if _world_comm is None:
-        return 0
-    return _world_comm.Get_rank()
+    return _world_comm.Get_rank() if _world_comm else 0
 
 
 def local_size():
-    if _local_comm is None:
-        return 1
-    return _local_comm.Get_size()
+    return _local_comm.Get_size() if _local_comm else 1
 
 
 def local_rank():
-    if _local_comm is None:
-        return 0
-    return _local_comm.Get_rank()
+    return _local_comm.Get_rank() if _local_comm else 0
 
 
 def is_master():
