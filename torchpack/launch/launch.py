@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from . import drun
+from . import drunner
 
 __all__ = ['main']
 
@@ -14,4 +14,4 @@ def main():
 
     sys.argv = [f'torchpack {args.mode}'] + args.command
     if args.mode == 'dist-run':
-        drun.main()
+        drunner.main()
