@@ -6,6 +6,7 @@ import numpy as np
 import tqdm
 from tensorpack.utils.utils import humanize_time_delta
 
+from ..utils import tqdm
 from ..utils.logging import logger
 from ..utils.matching import NameMatcher
 from .callback import Callback
@@ -23,7 +24,7 @@ class ProgressBar(Callback):
         self.matcher = NameMatcher(patterns=scalars)
 
     def _before_epoch(self):
-        self.pbar = tqdm.trange(self.trainer.steps_per_epoch, file=sys.stdout)
+        self.pbar = tqdm.trange(self.trainer.steps_per_epoch)
 
     def _trigger_step(self):
         texts = []
