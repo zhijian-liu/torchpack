@@ -15,7 +15,7 @@ def get_run_dir():
 
 def set_run_dir(dirpath):
     global _run_dir
-    _run_dir = osp.normpath(dirpath)
+    _run_dir = fs.normpath(dirpath)
     fs.makedir(_run_dir)
 
     prefix = '{time}'
