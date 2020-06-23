@@ -19,8 +19,5 @@ setup(
         'tqdm>=4.31.0',
     ],
     python_requires='>=3.6',
-    scripts=[
-        'bin/torchpack',
-        'bin/utils/openmpi-redirect',
-    ],
+    scripts=['bin/torchpack'],
 )
