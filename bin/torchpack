@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import sys
 
 from torchpack.launch import drun
 
@@ -8,10 +9,12 @@ from torchpack.launch import drun
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', choices=['dist-run'])
-    args, opts = parser.parse_known_args()
+    parser.add_argument('command', nargs=argparse.REMAINDER)
+    args = parser.parse_args()
 
+    sys.argv = [f'torchpack {args.mode}'] + args.command
     if args.mode == 'dist-run':
-        drun(opts)
+        drun.main()
 
 
 if __name__ == '__main__':

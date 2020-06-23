@@ -6,16 +6,15 @@ import socket
 import sys
 from shlex import quote
 
-__all__ = ['drun']
 
-
-def drun(opts):
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-np',
         '--nproc',
         type=int,
-        help='Total number of training processes.',
+        required=True,
+        help='Total number of processes.',
     )
     parser.add_argument(
         '-H',
@@ -34,11 +33,6 @@ def drun(opts):
         'available slots. Each line of the file must be of the form: '
         '<hostname> slots=<slots>',
     )
-    # parser.add_argument(
-    #     '-d',
-    #     '--devices',
-    #     help='list of device(s) to use.',
-    # )
     parser.add_argument(
         '-v',
         '--verbose',
@@ -50,7 +44,7 @@ def drun(opts):
         nargs=argparse.REMAINDER,
         help='Command to be executed.',
     )
-    args = parser.parse_args(opts)
+    args = parser.parse_args()
 
     if not args.hosts:
         if args.hostfile:
@@ -73,7 +67,6 @@ def drun(opts):
         hosts.append(hostname)
 
     environ = os.environ.copy()
-
     environ['MASTER_ADDR'] = hosts[0]
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('', 0))
@@ -99,3 +92,7 @@ def drun(opts):
     if args.verbose:
         print(command)
     os.execve('/bin/sh', ['/bin/sh', '-c', command], environ)
+
+
+if __name__ == '__main__':
+    main()
