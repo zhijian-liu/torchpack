@@ -5,8 +5,8 @@ import weakref
 
 from tensorpack.utils.utils import humanize_time_delta
 
-from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, ProgressBar,
-                         TFEventWriter)
+from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, MetaInfoSaver,
+                         ProgressBar, TFEventWriter)
 from ..callbacks.callback import Callback, Callbacks
 from ..callbacks.monitor import Monitor, Monitors
 from ..utils import fs, io
@@ -55,6 +55,7 @@ class Trainer:
                             starting_epoch=1,
                             max_epoch=9999999):
         callbacks += [
+            MetaInfoSaver(),
             ConsoleWriter(),
             TFEventWriter(),
             ProgressBar(),
