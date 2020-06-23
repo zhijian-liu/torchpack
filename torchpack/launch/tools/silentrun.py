@@ -6,7 +6,7 @@ def main():
     rank = 0
     for name in ['OMPI_COMM_WORLD_RANK', 'PMI_RANK']:
         if name in os.environ:
-            rank = os.environ[name]
+            rank = int(os.environ[name])
             break
 
     command = ' '.join(sys.argv[1:])
