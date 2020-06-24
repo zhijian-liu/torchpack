@@ -9,7 +9,7 @@ from .context import _world_size
 __all__ = ['allreduce', 'allgather', 'barrier']
 
 
-def allreduce(data):
+def allreduce(data, reduction='sum'):
     data = allgather(data)
     return sum(data)
 

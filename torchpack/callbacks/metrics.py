@@ -36,8 +36,8 @@ class TopKCategoricalAccuracy(Callback):
         self.corrects += masks.sum().item()
 
     def _after_epoch(self):
-        self.size = dist.allreduce(self.size)
-        self.corrects = dist.allreduce(self.corrects)
+        self.size = dist.allreduce(self.size, reduction='sum')
+        self.corrects = dist.allreduce(self.corrects, reduction='sum')
         self.trainer.monitors.add_scalar(self.name,
                                          self.corrects / self.size * 100)
 
@@ -78,8 +78,8 @@ class MeanSquaredError(Callback):
         self.errors += error.item() * targets.size(0)
 
     def _after_epoch(self):
-        self.size = dist.allreduce(self.size)
-        self.errors = dist.allreduce(self.errors)
+        self.size = dist.allreduce(self.size, reduction='sum')
+        self.errors = dist.allreduce(self.errors, reduction='sum')
         self.trainer.monitors.add_scalar(self.name, self.errors / self.size)
 
 
@@ -107,6 +107,6 @@ class MeanAbsoluteError(Callback):
         self.errors += error.item() * targets.size(0)
 
     def _after_epoch(self):
-        self.size = dist.allreduce(self.size)
-        self.errors = dist.allreduce(self.errors)
+        self.size = dist.allreduce(self.size, reduction='sum')
+        self.errors = dist.allreduce(self.errors, reduction='sum')
         self.trainer.monitors.add_scalar(self.name, self.errors / self.size)
