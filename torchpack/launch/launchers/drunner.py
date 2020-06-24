@@ -78,7 +78,7 @@ def main():
 
     command = ' '.join(map(quote, args.command))
     if not args.verbose:
-        command = 'python -m torchpack.launch.tools.silentrun ' + command
+        command = 'python -m torchpack.launch.helpers.silentrun ' + command
 
     command = ('mpirun --allow-run-as-root '
                '-np {nproc} -H {hosts} '
