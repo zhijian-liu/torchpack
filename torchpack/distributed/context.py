@@ -1,42 +1,24 @@
-import os
+__all__ = ['world_size', 'world_rank', 'local_size', 'local_rank', 'is_master']
 
-import torch.distributed
-
-__all__ = ['init', 'size', 'rank', 'local_size', 'local_rank', 'is_master']
-
-_world_comm = None
-_local_comm = None
+_world_size, _world_rank = 1, 0
+_local_size, _local_rank = 1, 0
 
 
-def init():
-    from mpi4py import MPI
-
-    global _world_comm, _local_comm
-    _world_comm = MPI.COMM_WORLD
-    _local_comm = MPI.COMM_WORLD.Split_type(MPI.COMM_TYPE_SHARED)
-
-    master_port = 'tcp://' + os.environ['MASTER_HOST']
-    torch.distributed.init_process_group(backend='nccl',
-                                         init_method=master_port,
-                                         world_size=size(),
-                                         rank=rank())
+def world_size():
+    return _world_size
 
 
-def size():
-    return _world_comm.Get_size() if _world_comm else 1
-
-
-def rank():
-    return _world_comm.Get_rank() if _world_comm else 0
+def world_rank():
+    return _world_rank
 
 
 def local_size():
-    return _local_comm.Get_size() if _local_comm else 1
+    return _local_size
 
 
 def local_rank():
-    return _local_comm.Get_rank() if _local_comm else 0
+    return _local_rank
 
 
 def is_master():
-    return rank() == 0
+    return _world_rank == 0

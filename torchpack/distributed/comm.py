@@ -4,7 +4,7 @@ import pickle
 import torch
 import torch.distributed
 
-from . import context as dist
+from .context import _world_size
 
 __all__ = ['allreduce', 'allgather', 'barrier']
 
@@ -15,8 +15,7 @@ def allreduce(data):
 
 
 def allgather(data):
-    world_size = dist.size()
-    if world_size == 1:
+    if _world_size == 1:
         return [data]
 
     # serialized to a tensor
@@ -26,7 +25,7 @@ def allgather(data):
 
     # obtain tensor size of each rank
     local_size = torch.LongTensor([tensor.numel()]).cuda()
-    size_list = [torch.LongTensor([0]).cuda() for _ in range(world_size)]
+    size_list = [torch.LongTensor([0]).cuda() for _ in range(_world_size)]
     torch.distributed.all_gather(size_list, local_size)
     size_list = [int(size.item()) for size in size_list]
     max_size = max(size_list)
@@ -48,6 +47,6 @@ def allgather(data):
 
 
 def barrier():
-    if dist.size() == 1:
+    if _world_size == 1:
         return
     torch.distributed.barrier()
