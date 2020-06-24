@@ -19,8 +19,8 @@ def set_run_dir(dirpath):
     fs.makedir(_run_dir)
 
     prefix = '{time}'
-    if dist.world_size() > 1:
-        prefix += '_{:04d}'.format(dist.world_rank())
+    if dist.size() > 1:
+        prefix += '_{:04d}'.format(dist.rank())
     logger.add(osp.join(_run_dir, 'logging', prefix + '.log'),
                format=('{time:YYYY-MM-DD HH:mm:ss.SSS} | '
                        '{name}:{function}:{line} | '

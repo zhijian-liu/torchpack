@@ -25,14 +25,14 @@ def allgather(data):
 
     # obtain tensor size of each rank
     local_size = torch.LongTensor([tensor.numel()]).cuda()
-    size_list = [torch.LongTensor([0]).cuda() for _ in range(_world_size)]
-    torch.distributed.all_gather(size_list, local_size)
-    size_list = [int(size.item()) for size in size_list]
-    max_size = max(size_list)
+    sizes = [torch.LongTensor([0]).cuda() for _ in range(_world_size)]
+    torch.distributed.all_gather(sizes, local_size)
+    sizes = [int(size.item()) for size in sizes]
+    max_size = max(sizes)
 
     # receiving tensors from all ranks
     tensors = []
-    for _ in size_list:
+    for _ in sizes:
         tensors.append(torch.ByteTensor(size=(max_size, )).cuda())
     if local_size != max_size:
         padding = torch.ByteTensor(size=(max_size - local_size, )).cuda()
@@ -40,7 +40,7 @@ def allgather(data):
     torch.distributed.all_gather(tensors, tensor)
 
     data_list = []
-    for size, tensor in zip(size_list, tensors):
+    for size, tensor in zip(sizes, tensors):
         buffer = tensor.cpu().numpy().tobytes()[:size]
         data_list.append(pickle.loads(buffer))
     return data_list
