@@ -6,7 +6,12 @@ import torch.distributed
 
 from . import context as dist
 
-__all__ = ['allgather', 'barrier']
+__all__ = ['allreduce', 'allgather', 'barrier']
+
+
+def allreduce(data):
+    data = allgather(data)
+    return sum(data)
 
 
 def allgather(data):

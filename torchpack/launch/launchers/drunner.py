@@ -22,35 +22,31 @@ def main():
         '--nproc',
         type=int,
         required=True,
-        help='Total number of processes.',
+        help='total number of processes.',
     )
     parser.add_argument(
         '-H',
         '--hosts',
-        help='List of host names and the number of available slots '
-        'for running processes on each, of the form: <hostname>:<slots> '
-        '(e.g.: host1:2,host2:4,host3:1 indicating 2 processes can run on host1, '
-        '4 on host2, and 1 on host3). If not specified, defaults to using '
-        'localhost:<np>',
+        help='list of host names and the number of available slots '
+        'in the form of <hostname>:<slots>, defaults to localhost:<np>.',
     )
     parser.add_argument(
         '-hostfile',
         '--hostfile',
-        help=
-        'Path to a host file containing the list of host names and the number of '
-        'available slots. Each line of the file must be of the form: '
-        '<hostname> slots=<slots>',
+        help='path to a host file containing the list of host names and '
+        'the number of available slots, where each line must be '
+        'in the form of <hostname> slots=<slots>.',
     )
     parser.add_argument(
         '-v',
         '--verbose',
         action='store_true',
-        help='If this flag is set, extra messages will be printed.',
+        help='extra messages will be printed if this flag is set.',
     )
     parser.add_argument(
         'command',
         nargs=argparse.REMAINDER,
-        help='Command to be executed.',
+        help='command to be executed.',
     )
     args = parser.parse_args()
 
@@ -69,13 +65,16 @@ def main():
     hosts = []
     for host in args.hosts.split(','):
         if not re.match(r'^[\w.-]+:[0-9]+$', host.strip()):
-            raise ValueError('Invalid host input, please make sure it has '
-                             'format as : worker-0:2,worker-1:2.')
+            raise ValueError('Invalid host input, please make sure it is '
+                             'in the form of <hostname>:<slots>.')
         hostname, slots = host.strip().split(':')
         hosts.append(hostname)
 
+    master_addr = hosts[0]
+    master_port = get_free_tcp_port()
+
     environ = os.environ.copy()
-    environ['MASTER_HOST'] = '{}:{}'.format(hosts[0], get_free_tcp_port())
+    environ['MASTER_HOST'] = f'{master_addr}:{master_port}'
 
     command = ' '.join(map(quote, args.command))
     if not args.verbose:
