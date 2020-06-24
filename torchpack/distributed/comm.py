@@ -4,14 +4,15 @@ import pickle
 import torch
 import torch.distributed
 
-from .context import _world_size
+from .basics import _world_size
 
 __all__ = ['allreduce', 'allgather', 'barrier']
 
 
 def allreduce(data, reduction='sum'):
     data = allgather(data)
-    return sum(data)
+    if reduction == 'sum':
+        return sum(data)
 
 
 def allgather(data):
@@ -32,18 +33,18 @@ def allgather(data):
 
     # receiving tensors from all ranks
     tensors = []
-    for _ in sizes:
+    for size in sizes:
         tensors.append(torch.ByteTensor(size=(max_size, )).cuda())
     if local_size != max_size:
         padding = torch.ByteTensor(size=(max_size - local_size, )).cuda()
         tensor = torch.cat((tensor, padding), dim=0)
     torch.distributed.all_gather(tensors, tensor)
 
-    data_list = []
+    data = []
     for size, tensor in zip(sizes, tensors):
         buffer = tensor.cpu().numpy().tobytes()[:size]
-        data_list.append(pickle.loads(buffer))
-    return data_list
+        data.append(pickle.loads(buffer))
+    return data
 
 
 def barrier():
