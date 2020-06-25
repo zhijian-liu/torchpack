@@ -110,10 +110,10 @@ load_funcs = {
     '.pth.tar': load_pth
 }
 save_funcs = {
-    '.txt': load_txt,
+    '.txt': save_txt,
     '.json': save_json,
-    '.yml': load_yaml,
-    '.yaml': load_yaml,
+    '.yml': save_yaml,
+    '.yaml': save_yaml,
     '.pkl': save_pkl,
     '.npy': save_npy,
     '.npz': save_npz,
