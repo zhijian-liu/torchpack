@@ -54,7 +54,7 @@ def load_yaml(f, **kwargs):
 
 
 def save_yaml(f, obj, **kwargs):
-    with file_descriptor(f, 'r') as fd:
+    with file_descriptor(f, 'w') as fd:
         return yaml.safe_dump(obj, fd, **kwargs)
 
 
