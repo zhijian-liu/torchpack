@@ -97,8 +97,6 @@ def main():
         dataflow['train'],
         max_epoch=150,
         callbacks=[
-            LambdaCallback(before_epoch=lambda self: dataflow['train'].sampler.
-                           set_epoch(self.trainer.epoch_num)),
             LambdaCallback(before_epoch=lambda self: model.train(),
                            after_epoch=lambda self: model.eval()),
             LambdaCallback(before_epoch=lambda self: scheduler.step()),

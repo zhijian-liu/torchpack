@@ -4,6 +4,7 @@ import traceback
 import weakref
 
 from tensorpack.utils.utils import humanize_time_delta
+from torch.utils.data import DataLoader, DistributedSampler
 
 from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, MetaInfoSaver,
                          ProgressBar, TFEventWriter)
@@ -82,6 +83,10 @@ class Trainer:
                     self.epoch_num, self.max_epoch))
                 epoch_time = time.time()
                 self.callbacks.before_epoch()
+
+                if isinstance(self.dataflow, DataLoader) and isinstance(
+                        self.dataflow.sampler, DistributedSampler):
+                    self.dataflow.sampler.set_epoch(self.epoch_num)
 
                 for feed_dict in self.dataflow:
                     self.local_step += 1
