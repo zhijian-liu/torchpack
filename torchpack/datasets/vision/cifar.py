@@ -22,8 +22,8 @@ class CIFAR10Dataset(datasets.CIFAR10):
                          download=download)
 
     def __getitem__(self, index):
-        images, classes = super().__getitem__(index)
-        return {'images': images, 'classes': classes}
+        image, label = super().__getitem__(index)
+        return {'image': image, 'class': label}
 
 
 class CIFAR100Dataset(datasets.CIFAR100):
@@ -41,8 +41,8 @@ class CIFAR100Dataset(datasets.CIFAR100):
                          download=download)
 
     def __getitem__(self, index):
-        images, classes = super().__getitem__(index)
-        return {'images': images, 'classes': classes}
+        image, label = super().__getitem__(index)
+        return {'image': image, 'class': label}
 
 
 class CIFAR(Dataset):

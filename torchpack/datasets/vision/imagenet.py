@@ -21,13 +21,13 @@ class ImageNetDataset(datasets.ImageNet):
                  transform=None,
                  target_transform=None):
         super().__init__(root=root,
-                         split=('train' if split == 'train' else 'val'),
+                         split=split,
                          transform=transform,
                          target_transform=target_transform)
 
     def __getitem__(self, index):
-        images, classes = super().__getitem__(index)
-        return {'images': images, 'classes': classes}
+        image, label = super().__getitem__(index)
+        return {'image': image, 'class': label}
 
 
 class ImageNet(Dataset):
@@ -57,9 +57,10 @@ class ImageNet(Dataset):
             ])
 
         super().__init__({
-            split: ImageNetDataset(root=root,
-                                   split=split,
-                                   transform=transforms[split])
+            split:
+            ImageNetDataset(root=root,
+                            split=('train' if split == 'train' else 'val'),
+                            transform=transforms[split])
             for split in ['train', 'test']
         })
 

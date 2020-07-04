@@ -21,8 +21,8 @@ class ClassificationTrainer(Trainer):
         self.scheduler = scheduler
 
     def _run_step(self, feed_dict):
-        inputs = feed_dict['images'].cuda(non_blocking=True)
-        targets = feed_dict['classes'].cuda(non_blocking=True)
+        inputs = feed_dict['image'].cuda(non_blocking=True)
+        targets = feed_dict['class'].cuda(non_blocking=True)
 
         outputs = self.model(inputs)
 
