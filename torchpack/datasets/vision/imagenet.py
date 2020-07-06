@@ -14,14 +14,9 @@ warnings.filterwarnings('ignore')
 
 
 class ImageNetDataset(datasets.ImageNet):
-    def __init__(self,
-                 *,
-                 root,
-                 split='train',
-                 transform=None,
-                 target_transform=None):
+    def __init__(self, *, root, split, transform=None, target_transform=None):
         super().__init__(root=root,
-                         split=split,
+                         split=('train' if split == 'train' else 'val'),
                          transform=transform,
                          target_transform=target_transform)
 
@@ -57,10 +52,9 @@ class ImageNet(Dataset):
             ])
 
         super().__init__({
-            split:
-            ImageNetDataset(root=root,
-                            split=('train' if split == 'train' else 'val'),
-                            transform=transforms[split])
+            split: ImageNetDataset(root=root,
+                                   split=split,
+                                   transform=transforms[split])
             for split in ['train', 'test']
         })
 

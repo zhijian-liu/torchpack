@@ -11,12 +11,12 @@ class CIFAR10Dataset(datasets.CIFAR10):
     def __init__(self,
                  *,
                  root,
-                 train=True,
+                 split,
                  transform=None,
                  target_transform=None,
                  download=True):
         super().__init__(root=root,
-                         train=train,
+                         train=(split == 'train'),
                          transform=transform,
                          target_transform=target_transform,
                          download=download)
@@ -30,12 +30,12 @@ class CIFAR100Dataset(datasets.CIFAR100):
     def __init__(self,
                  *,
                  root,
-                 train,
+                 split,
                  transform=None,
                  target_transform=None,
                  download=True):
         super().__init__(root=root,
-                         train=train,
+                         train=(split == 'train'),
                          transform=transform,
                          target_transform=target_transform,
                          download=download)
@@ -75,7 +75,7 @@ class CIFAR(Dataset):
 
         super().__init__({
             split: CIFARDataset(root=root,
-                                train=(split == 'train'),
+                                split=split,
                                 transform=transforms[split])
             for split in ['train', 'test']
         })
