@@ -46,8 +46,7 @@ class CIFAR100Dataset(datasets.CIFAR100):
 
 
 class CIFAR(Dataset):
-    def __init__(self, *, root, num_classes=10, image_size=32,
-                 transforms=None):
+    def __init__(self, *, root, num_classes=10, transforms=None):
         if num_classes == 10:
             CIFARDataset = CIFAR10Dataset
         elif num_classes == 100:
@@ -59,7 +58,7 @@ class CIFAR(Dataset):
             transforms = dict()
         if 'train' not in transforms:
             transforms['train'] = Compose([
-                RandomCrop(image_size, padding=4),
+                RandomCrop(32, padding=4),
                 RandomHorizontalFlip(),
                 ToTensor(),
                 Normalize(mean=[0.4914, 0.4822, 0.4465],
@@ -67,7 +66,7 @@ class CIFAR(Dataset):
             ])
         if 'test' not in transforms:
             transforms['test'] = Compose([
-                Resize(image_size),
+                Resize(32),
                 ToTensor(),
                 Normalize(mean=[0.4914, 0.4822, 0.4465],
                           std=[0.2023, 0.1994, 0.2010])
