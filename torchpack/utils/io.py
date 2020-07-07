@@ -4,38 +4,30 @@ import pickle
 from contextlib import contextmanager
 
 import numpy as np
+import scipy.io
 import torch
 import yaml
 
 from . import fs
 
 __all__ = [
-    'load', 'save', 'load_txt', 'save_txt', 'load_json', 'save_json',
-    'load_npy', 'save_npy', 'load_npz', 'save_npz', 'load_pt', 'save_pt'
+    'load', 'save', 'load_json', 'save_json', 'load_jsonl', 'save_jsonl',
+    'load_mat', 'save_mat', 'load_npy', 'save_npy', 'load_npz', 'save_npz',
+    'load_pt', 'save_pt', 'load_yaml', 'save_yaml'
 ]
 
 
 @contextmanager
 def file_descriptor(f, mode='r'):
-    new_fp = False
+    opened = False
     try:
         if isinstance(f, str):
             f = open(f, mode)
-            new_fp = True
+            opened = True
         yield f
     finally:
-        if new_fp:
+        if opened:
             f.close()
-
-
-def load_txt(f, **kwargs):
-    with file_descriptor(f, 'r') as fd:
-        return fd.readlines(**kwargs)
-
-
-def save_txt(f, obj, **kwargs):
-    with file_descriptor(f, 'w') as fd:
-        raise NotImplementedError()
 
 
 def load_json(f, **kwargs):
@@ -48,29 +40,22 @@ def save_json(f, obj, **kwargs):
         return json.dump(obj, fd, **kwargs)
 
 
-def load_yaml(f, **kwargs):
+def load_jsonl(f, **kwargs):
     with file_descriptor(f, 'r') as fd:
-        return yaml.safe_load(fd, **kwargs)
+        return [json.loads(datum, **kwargs) for datum in fd.readlines()]
 
 
-def save_yaml(f, obj, **kwargs):
+def save_jsonl(f, obj, **kwargs):
     with file_descriptor(f, 'w') as fd:
-        return yaml.safe_dump(obj, fd, default_flow_style=False, **kwargs)
+        fd.write('\n'.join(json.dumps(datum, **kwargs) for datum in obj))
 
 
-def load_pkl(f, **kwargs):
-    with file_descriptor(f, 'rb') as fd:
-        try:
-            return pickle.load(fd, **kwargs)
-        except UnicodeDecodeError:
-            if 'encoding' in kwargs:
-                raise
-            return pickle.load(fd, encoding='latin1', **kwargs)
+def load_mat(f, **kwargs):
+    return scipy.io.loadmat(f, **kwargs)
 
 
-def save_pkl(f, obj, **kwargs):
-    with file_descriptor(f, 'wb') as fd:
-        return pickle.dump(obj, fd, **kwargs)
+def save_mat(f, obj, **kwargs):
+    return scipy.io.savemat(f, obj, **kwargs)
 
 
 def load_npy(f, **kwargs):
@@ -89,6 +74,21 @@ def save_npz(f, obj, **kwargs):
     return np.savez(f, obj, **kwargs)
 
 
+def load_pkl(f, **kwargs):
+    with file_descriptor(f, 'rb') as fd:
+        try:
+            return pickle.load(fd, **kwargs)
+        except UnicodeDecodeError:
+            if 'encoding' in kwargs:
+                raise
+            return pickle.load(fd, encoding='latin1', **kwargs)
+
+
+def save_pkl(f, obj, **kwargs):
+    with file_descriptor(f, 'wb') as fd:
+        return pickle.dump(obj, fd, **kwargs)
+
+
 def load_pt(f, **kwargs):
     return torch.load(f, **kwargs)
 
@@ -97,47 +97,52 @@ def save_pt(f, obj, **kwargs):
     return torch.save(obj, f, **kwargs)
 
 
-load_funcs = {
-    '.txt': load_txt,
-    '.json': load_json,
-    '.yml': load_yaml,
-    '.yaml': load_yaml,
-    '.pkl': load_pkl,
-    '.npy': load_npy,
-    '.npz': load_npz,
-    '.pt': load_pt,
-    '.pth': load_pt,
-    '.pth.tar': load_pt
-}
-save_funcs = {
-    '.txt': save_txt,
-    '.json': save_json,
-    '.yml': save_yaml,
-    '.yaml': save_yaml,
-    '.pkl': save_pkl,
-    '.npy': save_npy,
-    '.npz': save_npz,
-    '.pt': save_pt,
-    '.pth': save_pt,
-    '.pth.tar': save_pt
+def load_yaml(f, **kwargs):
+    with file_descriptor(f, 'r') as fd:
+        return yaml.safe_load(fd, **kwargs)
+
+
+def save_yaml(f, obj, **kwargs):
+    with file_descriptor(f, 'w') as fd:
+        return yaml.safe_dump(obj, fd, **kwargs)
+
+
+__io_registry = {
+    '.json': (load_json, save_json),
+    '.jsonl': (load_jsonl, save_jsonl),
+    '.mat': (load_mat, save_mat),
+    '.npy': (load_npy, save_npy),
+    '.npz': (load_npz, save_npz),
+    '.pkl': (load_pkl, save_pkl),
+    '.pt': (load_pt, save_pt),
+    '.pth': (load_pt, save_pt),
+    '.pth.tar': (load_pt, save_pt),
+    '.yml': (load_yaml, save_yaml),
+    '.yaml': (load_yaml, save_yaml)
 }
 
 
 def load(fpath, **kwargs):
     assert isinstance(fpath, str), type(fpath)
-    for extension in sorted(load_funcs.keys(), key=len, reverse=True):
+
+    for extension in sorted(__io_registry.keys(), key=len, reverse=True):
         if fpath.endswith(extension):
-            return load_funcs[extension](fpath, **kwargs)
-    raise NotImplementedError()
+            return __io_registry[extension][0](fpath, **kwargs)
+
+    extension = osp.splitext(fpath)[1]
+    raise NotImplementedError(f'Unsupported file format: \'{extension}\'')
 
 
 def save(fpath, obj, **kwargs):
+    assert isinstance(fpath, str), type(fpath)
+
     dirpath = osp.dirname(fpath)
     if not osp.exists(dirpath):
         fs.makedir(dirpath)
 
-    assert isinstance(fpath, str), type(fpath)
-    for ext in sorted(save_funcs.keys(), key=len, reverse=True):
-        if fpath.endswith(ext):
-            return save_funcs[ext](fpath, obj, **kwargs)
-    raise NotImplementedError()
+    for extension in sorted(__io_registry.keys(), key=len, reverse=True):
+        if fpath.endswith(extension):
+            return __io_registry[extension][1](fpath, obj, **kwargs)
+
+    extension = osp.splitext(fpath)[1]
+    raise NotImplementedError(f'Unsupported file format: \'{extension}\'')
