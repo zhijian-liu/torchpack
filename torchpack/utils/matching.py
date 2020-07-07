@@ -1,6 +1,6 @@
 import fnmatch
 
-__all__ = ['NameMatcher', 'IENameMatcher']
+__all__ = ['NameMatcher']
 
 
 class NameMatcher:
@@ -16,12 +16,3 @@ class NameMatcher:
             if fnmatch.fnmatch(name, pattern):
                 return True
         return False
-
-
-class IENameMatcher:
-    def __init__(self, includes, excludes):
-        self.includes = NameMatcher(includes)
-        self.excludes = NameMatcher(excludes)
-
-    def match(self, name):
-        return self.includes.match(name) and not self.excludes.match(name)
