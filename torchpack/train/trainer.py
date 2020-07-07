@@ -21,53 +21,33 @@ class Trainer:
     """
     Base class for a trainer.
     """
-    def set_callbacks(self, callbacks):
-        monitors = []
-        for callback in callbacks:
-            assert isinstance(callback, Callback), type(callback)
-            if isinstance(callback, Monitor):
-                monitors.append(callback)
-        # callbacks
-        self.callbacks = Callbacks(callbacks)
-        self.callbacks.set_trainer(weakref.proxy(self))
-        # monitors
-        self.monitors = Monitors(monitors)
-        self.monitors.set_trainer(weakref.proxy(self))
-
     def train(self,
               dataflow,
               *,
-              callbacks=None,
               starting_epoch=1,
-              max_epoch=9999999):
+              max_epoch=9999999,
+              callbacks=None):
         self.dataflow = dataflow
-        self.set_callbacks(callbacks)
 
         self.steps_per_epoch = len(self.dataflow)
         self.starting_epoch = starting_epoch
         self.max_epoch = max_epoch
 
-        self.run()
+        if callbacks is None:
+            callbacks = []
 
-    def train_with_defaults(self,
-                            dataflow,
-                            *,
-                            callbacks=None,
-                            starting_epoch=1,
-                            max_epoch=9999999):
-        callbacks += [
-            MetaInfoSaver(),
-            ConsoleWriter(),
-            TFEventWriter(),
-            ProgressBar(),
-            EstimatedTimeLeft()
-        ]
-        self.train(dataflow=dataflow,
-                   callbacks=callbacks,
-                   starting_epoch=starting_epoch,
-                   max_epoch=max_epoch)
+        monitors = []
+        for callback in callbacks:
+            assert isinstance(callback, Callback), type(callback)
+            if isinstance(callback, Monitor):
+                monitors.append(callback)
 
-    def run(self):
+        self.callbacks = Callbacks(callbacks)
+        self.callbacks.set_trainer(weakref.proxy(self))
+
+        self.monitors = Monitors(monitors)
+        self.monitors.set_trainer(weakref.proxy(self))
+
         self.epoch_num = self.starting_epoch - 1
         self.global_step = self.epoch_num * self.steps_per_epoch
 
@@ -121,6 +101,26 @@ class Trainer:
                 except Exception:
                     traceback.print_exc()
 
+    def train_with_defaults(self,
+                            dataflow,
+                            *,
+                            starting_epoch=1,
+                            max_epoch=9999999,
+                            callbacks=None):
+        if callbacks is None:
+            callbacks = []
+
+        self.train(dataflow=dataflow,
+                   starting_epoch=starting_epoch,
+                   max_epoch=max_epoch,
+                   callbacks=callbacks + [
+                       MetaInfoSaver(),
+                       ConsoleWriter(),
+                       TFEventWriter(),
+                       ProgressBar(),
+                       EstimatedTimeLeft()
+                   ])
+
     def run_step(self, feed_dict):
         output_dict = self._run_step(feed_dict)
         return output_dict
@@ -145,7 +145,8 @@ class Trainer:
 
     def load_state_dict(self, state_dict):
         self.epoch_num = state_dict['epoch_num']
-        self.global_step = self.epoch_num * self.steps_per_epoch
+        self.local_step = state_dict['local_step']
+        self.global_step = state_dict['global_step']
         self._load_state_dict(state_dict)
 
     def _load_state_dict(self, state_dict):

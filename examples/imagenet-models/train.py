@@ -59,9 +59,7 @@ def main():
     logger.info(' '.join([sys.executable] + sys.argv))
 
     logger.info('Loading the dataset.')
-    dataset = ImageNet(root='/dataset/imagenet/',
-                       num_classes=100,
-                       image_size=112)
+    dataset = ImageNet(root='/dataset/imagenet/', num_classes=100)
 
     dataflow = dict()
     for split in dataset:

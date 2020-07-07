@@ -11,7 +11,7 @@ from . import fs
 
 __all__ = [
     'load', 'save', 'load_txt', 'save_txt', 'load_json', 'save_json',
-    'load_npy', 'save_npy', 'load_npz', 'save_npz', 'load_pth', 'save_pth'
+    'load_npy', 'save_npy', 'load_npz', 'save_npz', 'load_pt', 'save_pt'
 ]
 
 
@@ -55,7 +55,7 @@ def load_yaml(f, **kwargs):
 
 def save_yaml(f, obj, **kwargs):
     with file_descriptor(f, 'w') as fd:
-        return yaml.safe_dump(obj, fd, **kwargs)
+        return yaml.safe_dump(obj, fd, default_flow_style=False, **kwargs)
 
 
 def load_pkl(f, **kwargs):
@@ -89,11 +89,11 @@ def save_npz(f, obj, **kwargs):
     return np.savez(f, obj, **kwargs)
 
 
-def load_pth(f, **kwargs):
+def load_pt(f, **kwargs):
     return torch.load(f, **kwargs)
 
 
-def save_pth(f, obj, **kwargs):
+def save_pt(f, obj, **kwargs):
     return torch.save(obj, f, **kwargs)
 
 
@@ -105,9 +105,9 @@ load_funcs = {
     '.pkl': load_pkl,
     '.npy': load_npy,
     '.npz': load_npz,
-    '.pt': load_pth,
-    '.pth': load_pth,
-    '.pth.tar': load_pth
+    '.pt': load_pt,
+    '.pth': load_pt,
+    '.pth.tar': load_pt
 }
 save_funcs = {
     '.txt': save_txt,
@@ -117,9 +117,9 @@ save_funcs = {
     '.pkl': save_pkl,
     '.npy': save_npy,
     '.npz': save_npz,
-    '.pt': save_pth,
-    '.pth': save_pth,
-    '.pth.tar': save_pth
+    '.pt': save_pt,
+    '.pth': save_pt,
+    '.pth.tar': save_pt
 }
 
 

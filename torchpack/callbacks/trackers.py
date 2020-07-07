@@ -82,10 +82,7 @@ class GPUUtilizationTracker(Callback):
         try:
             meters = self.queue.get(timeout=60)
         except Empty:
-            meters = None
-
-        if meters is None:
-            logger.exception('Error in `GPUUtilizationTracker` worker.')
+            logger.exception('Error occurred in `GPUUtilizationTracker`.')
             return
 
         self.trainer.monitors.add_scalar('utilization/gpu', np.mean(meters))
