@@ -63,10 +63,10 @@ class Trainer:
         self.monitors = Monitors(monitors)
         self.monitors.set_trainer(weakref.proxy(self))
 
-        self.epoch_num = self.starting_epoch - 1
-        self.global_step = self.epoch_num * self.steps_per_epoch
-
         try:
+            self.epoch_num = self.starting_epoch - 1
+            self.global_step = self.epoch_num * self.steps_per_epoch
+
             train_time = time.time()
             self.before_train()
 
