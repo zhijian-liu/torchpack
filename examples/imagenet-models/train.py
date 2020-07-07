@@ -62,7 +62,7 @@ def main():
     torch.backends.cudnn.benchmark = True
     torch.cuda.set_device(dist.local_rank())
 
-    set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2.size=112'))
+    set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2'))
     logger.info(' '.join([sys.executable] + sys.argv))
 
     logger.info('Loading the dataset.')
