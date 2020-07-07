@@ -9,7 +9,8 @@ __all__ = ['normpath', 'makedir', 'remove']
 def normpath(path):
     if '://' in path:
         scheme, netloc, path, params, query, fragment = urlparse(path)
-        return urlunparse((scheme, netloc, osp.normpath(path), params, query, fragment))
+        return urlunparse(
+            (scheme, netloc, osp.normpath(path), params, query, fragment))
     else:
         return osp.normpath(path)
 

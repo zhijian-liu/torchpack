@@ -130,7 +130,7 @@ def load(fpath, **kwargs):
             return __io_registry[extension][0](fpath, **kwargs)
 
     extension = osp.splitext(fpath)[1]
-    raise NotImplementedError(f'Unsupported file format: \'{extension}\'')
+    raise NotImplementedError(f'"{extension}" is not supported.')
 
 
 def save(fpath, obj, **kwargs):
@@ -145,4 +145,4 @@ def save(fpath, obj, **kwargs):
             return __io_registry[extension][1](fpath, obj, **kwargs)
 
     extension = osp.splitext(fpath)[1]
-    raise NotImplementedError(f'Unsupported file format: \'{extension}\'')
+    raise NotImplementedError(f'"{extension}" is not supported.')
