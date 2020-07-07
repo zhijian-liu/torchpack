@@ -1,4 +1,3 @@
-import os.path as osp
 import time
 import traceback
 import weakref
@@ -10,7 +9,6 @@ from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, MetaInfoSaver,
                          ProgressBar, TFEventWriter)
 from ..callbacks.callback import Callback, Callbacks
 from ..callbacks.monitor import Monitor, Monitors
-from ..utils import fs, io
 from ..utils.logging import logger
 from .exception import StopTraining
 
@@ -28,7 +26,6 @@ class Trainer:
               max_epoch=9999999,
               callbacks=None):
         self.dataflow = dataflow
-
         self.steps_per_epoch = len(self.dataflow)
         self.starting_epoch = starting_epoch
         self.max_epoch = max_epoch
