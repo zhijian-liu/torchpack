@@ -36,14 +36,14 @@ class Trainer:
         if callbacks is None:
             callbacks = []
 
+        self.callbacks = Callbacks(callbacks)
+        self.callbacks.set_trainer(weakref.proxy(self))
+
         monitors = []
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
             if isinstance(callback, Monitor):
                 monitors.append(callback)
-
-        self.callbacks = Callbacks(callbacks)
-        self.callbacks.set_trainer(weakref.proxy(self))
 
         self.monitors = Monitors(monitors)
         self.monitors.set_trainer(weakref.proxy(self))
