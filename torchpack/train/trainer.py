@@ -28,17 +28,17 @@ class Trainer:
                             callbacks=None):
         if callbacks is None:
             callbacks = []
-
+        callbacks.extend([
+            MetaInfoSaver(),
+            ConsoleWriter(),
+            TFEventWriter(),
+            ProgressBar(),
+            EstimatedTimeLeft()
+        ])
         self.train(dataflow=dataflow,
                    starting_epoch=starting_epoch,
                    max_epoch=max_epoch,
-                   callbacks=callbacks + [
-                       MetaInfoSaver(),
-                       ConsoleWriter(),
-                       TFEventWriter(),
-                       ProgressBar(),
-                       EstimatedTimeLeft()
-                   ])
+                   callbacks=callbacks)
 
     def train(self,
               dataflow,
@@ -53,16 +53,13 @@ class Trainer:
 
         if callbacks is None:
             callbacks = []
-
         self.callbacks = Callbacks(callbacks)
         self.callbacks.set_trainer(weakref.proxy(self))
 
         monitors = []
         for callback in callbacks:
-            assert isinstance(callback, Callback), type(callback)
             if isinstance(callback, Monitor):
                 monitors.append(callback)
-
         self.monitors = Monitors(monitors)
         self.monitors.set_trainer(weakref.proxy(self))
 
