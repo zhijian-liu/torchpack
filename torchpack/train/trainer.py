@@ -2,6 +2,7 @@ import time
 import traceback
 import weakref
 
+import torch
 from tensorpack.utils.utils import humanize_time_delta
 from torch.utils.data import DataLoader, DistributedSampler
 
@@ -19,6 +20,26 @@ class Trainer:
     """
     Base class for a trainer.
     """
+    def train_with_defaults(self,
+                            dataflow,
+                            *,
+                            starting_epoch=1,
+                            max_epoch=9999999,
+                            callbacks=None):
+        if callbacks is None:
+            callbacks = []
+
+        self.train(dataflow=dataflow,
+                   starting_epoch=starting_epoch,
+                   max_epoch=max_epoch,
+                   callbacks=callbacks + [
+                       MetaInfoSaver(),
+                       ConsoleWriter(),
+                       TFEventWriter(),
+                       ProgressBar(),
+                       EstimatedTimeLeft()
+                   ])
+
     def train(self,
               dataflow,
               *,
@@ -50,7 +71,7 @@ class Trainer:
 
         try:
             train_time = time.time()
-            self.callbacks.before_train()
+            self.before_train()
 
             while self.epoch_num < self.max_epoch:
                 self.epoch_num += 1
@@ -59,27 +80,23 @@ class Trainer:
                 logger.info('Epoch {}/{} started.'.format(
                     self.epoch_num, self.max_epoch))
                 epoch_time = time.time()
-                self.callbacks.before_epoch()
-
-                if isinstance(self.dataflow, DataLoader) and isinstance(
-                        self.dataflow.sampler, DistributedSampler):
-                    self.dataflow.sampler.set_epoch(self.epoch_num)
+                self.before_epoch()
 
                 for feed_dict in self.dataflow:
                     self.local_step += 1
                     self.global_step += 1
 
-                    self.callbacks.before_step(feed_dict)
+                    self.before_step(feed_dict)
                     output_dict = self.run_step(feed_dict)
-                    self.callbacks.after_step(output_dict)
+                    self.after_step(output_dict)
 
-                    self.callbacks.trigger_step()
+                    self.trigger_step()
 
-                self.callbacks.after_epoch()
+                self.after_epoch()
                 logger.info('Training finished in {}.'.format(
                     humanize_time_delta(time.time() - epoch_time)))
 
-                self.callbacks.trigger_epoch()
+                self.trigger_epoch()
                 logger.info('Epoch finished in {}.'.format(
                     humanize_time_delta(time.time() - epoch_time)))
 
@@ -92,31 +109,32 @@ class Trainer:
             logger.info('Detected Ctrl-C and exiting training loop.')
             raise
         finally:
-            for callback in self.callbacks:
-                try:
-                    callback.after_train()
-                except Exception:
-                    traceback.print_exc()
+            self.after_train()
 
-    def train_with_defaults(self,
-                            dataflow,
-                            *,
-                            starting_epoch=1,
-                            max_epoch=9999999,
-                            callbacks=None):
-        if callbacks is None:
-            callbacks = []
+    def before_train(self):
+        self._before_train()
+        self.callbacks.before_train()
 
-        self.train(dataflow=dataflow,
-                   starting_epoch=starting_epoch,
-                   max_epoch=max_epoch,
-                   callbacks=callbacks + [
-                       MetaInfoSaver(),
-                       ConsoleWriter(),
-                       TFEventWriter(),
-                       ProgressBar(),
-                       EstimatedTimeLeft()
-                   ])
+    def _before_train(self):
+        pass
+
+    def before_epoch(self):
+        torch.set_grad_enabled(True)
+        if isinstance(self.dataflow, DataLoader) and isinstance(
+                self.dataflow.sampler, DistributedSampler):
+            self.dataflow.sampler.set_epoch(self.epoch_num)
+        self._before_epoch()
+        self.callbacks.before_epoch()
+
+    def _before_epoch(self):
+        pass
+
+    def before_step(self, feed_dict):
+        self._before_step(feed_dict)
+        self.callbacks.before_step(feed_dict)
+
+    def _before_step(self, feed_dict):
+        pass
 
     def run_step(self, feed_dict):
         output_dict = self._run_step(feed_dict)
@@ -127,6 +145,46 @@ class Trainer:
         Defines what to do in one iteration.
         """
         raise NotImplementedError
+
+    def after_step(self, output_dict):
+        self.callbacks.after_step(output_dict)
+        self._after_step(output_dict)
+
+    def _after_step(self, output_dict):
+        pass
+
+    def trigger_step(self):
+        self.callbacks.trigger_step()
+        self._trigger_step()
+
+    def _trigger_step(self):
+        pass
+
+    def after_epoch(self):
+        self.callbacks.after_epoch()
+        torch.set_grad_enabled(False)
+        self._after_epoch()
+
+    def _after_epoch(self):
+        pass
+
+    def trigger_epoch(self):
+        self.callbacks.trigger_epoch()
+        self._trigger_epoch()
+
+    def _trigger_epoch(self):
+        pass
+
+    def after_train(self):
+        for callback in self.callbacks:
+            try:
+                callback.after_train()
+            except Exception:
+                traceback.print_exc()
+        self._after_train()
+
+    def _after_train(self):
+        pass
 
     def state_dict(self):
         state_dict = self._state_dict() or dict()

@@ -4,8 +4,8 @@ import sys
 import torch
 import torch.nn as nn
 import torchpack.distributed as dist
-from torchpack.callbacks import (InferenceRunner, LambdaCallback, MaxSaver,
-                                 Saver, SaverRestore, TopKCategoricalAccuracy)
+from torchpack.callbacks import (InferenceRunner, MaxSaver, Saver,
+                                 TopKCategoricalAccuracy)
 from torchpack.datasets.vision import ImageNet
 from torchpack.environ import set_run_dir
 from torchpack.models.vision import MobileNetV2
@@ -19,6 +19,9 @@ class ClassificationTrainer(Trainer):
         self.criterion = criterion
         self.optimizer = optimizer
         self.scheduler = scheduler
+
+    def _before_epoch(self):
+        self.model.train()
 
     def _run_step(self, feed_dict):
         inputs = feed_dict['image'].cuda(non_blocking=True)
@@ -35,6 +38,10 @@ class ClassificationTrainer(Trainer):
             self.optimizer.step()
 
         return {'outputs': outputs, 'targets': targets}
+
+    def _after_epoch(self):
+        self.model.eval()
+        self.scheduler.step()
 
     def _state_dict(self):
         return {
@@ -95,9 +102,6 @@ def main():
         dataflow['train'],
         max_epoch=150,
         callbacks=[
-            LambdaCallback(before_epoch=lambda self: model.train(),
-                           after_epoch=lambda self: model.eval()),
-            LambdaCallback(before_epoch=lambda self: scheduler.step()),
             InferenceRunner(dataflow['test'],
                             callbacks=[
                                 TopKCategoricalAccuracy(k=1, name='acc/top1'),

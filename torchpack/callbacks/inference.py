@@ -31,12 +31,10 @@ class InferenceRunner(Callback):
         start_time = time.time()
         self.callbacks.before_epoch()
 
-        # TODO: training / evaluation context
-        with torch.no_grad():
-            for feed_dict in tqdm.tqdm(self.dataflow):
-                self.callbacks.before_step(feed_dict)
-                output_dict = self.trainer.run_step(feed_dict)
-                self.callbacks.after_step(output_dict)
+        for feed_dict in tqdm.tqdm(self.dataflow):
+            self.callbacks.before_step(feed_dict)
+            output_dict = self.trainer.run_step(feed_dict)
+            self.callbacks.after_step(output_dict)
 
         self.callbacks.after_epoch()
         logger.info('Inference finished in {}.'.format(
