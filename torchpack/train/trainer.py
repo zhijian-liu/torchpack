@@ -102,9 +102,6 @@ class Trainer:
                 humanize_time_delta(time.time() - train_time)))
         except StopTraining as e:
             logger.info('Training was stopped by {}.'.format(str(e)))
-        except KeyboardInterrupt:
-            logger.info('Detected Ctrl-C and exiting training loop.')
-            raise
         finally:
             self.after_train()
 
