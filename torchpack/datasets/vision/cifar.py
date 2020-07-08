@@ -52,7 +52,7 @@ class CIFAR(Dataset):
         elif num_classes == 100:
             CIFARDataset = CIFAR100Dataset
         else:
-            raise NotImplementedError('only CIFAR-10/100 are supported')
+            raise NotImplementedError(f'CIFAR-{num_classes} is not supported.')
 
         if transforms is None:
             transforms = dict()

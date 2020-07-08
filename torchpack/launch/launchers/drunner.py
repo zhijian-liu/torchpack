@@ -65,8 +65,8 @@ def main():
     hosts = []
     for host in args.hosts.split(','):
         if not re.match(r'^[\w.-]+:[0-9]+$', host.strip()):
-            raise ValueError('Invalid host input, please make sure it is '
-                             'in the form of <hostname>:<slots>.')
+            raise ValueError(
+                'Host input is not in the form of <hostname>:<slots>.')
         hostname, slots = host.strip().split(':')
         hosts.append(hostname)
 
