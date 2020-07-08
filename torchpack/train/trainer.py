@@ -113,10 +113,10 @@ class Trainer:
         pass
 
     def before_epoch(self):
-        torch.set_grad_enabled(True)
         if isinstance(self.dataflow, DataLoader) and isinstance(
                 self.dataflow.sampler, DistributedSampler):
             self.dataflow.sampler.set_epoch(self.epoch_num)
+        torch.set_grad_enabled(True)
         self._before_epoch()
         self.callbacks.before_epoch()
 
