@@ -85,10 +85,10 @@ class GPUUtilizationTracker(Callback):
             logger.exception('Error occurred in `GPUUtilizationTracker`.')
             return
 
-        self.trainer.monitors.add_scalar('utilization/gpu', np.mean(meters))
+        self.trainer.summary.add_scalar('utilization/gpu', np.mean(meters))
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
-                self.trainer.monitors.add_scalar(
+                self.trainer.summary.add_scalar(
                     'utilization/gpu{}'.format(device), meters[k])
 
     def _after_train(self):
@@ -120,9 +120,9 @@ class ThroughputTracker(Callback):
         self.last_step = self.trainer.global_step
 
         if self.samples_per_step is None:
-            self.trainer.monitors.add_scalar('throughput/steps_per_sec',
-                                             steps_per_sec)
+            self.trainer.summary.add_scalar('throughput/steps_per_sec',
+                                            steps_per_sec)
         else:
             samples_per_sec = steps_per_sec * self.samples_per_step
-            self.trainer.monitors.add_scalar('throughput/samples_per_sec',
-                                             samples_per_sec)
+            self.trainer.summary.add_scalar('throughput/samples_per_sec',
+                                            samples_per_sec)

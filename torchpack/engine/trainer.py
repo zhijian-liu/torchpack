@@ -6,12 +6,11 @@ import torch
 from tensorpack.utils.utils import humanize_time_delta
 from torch.utils.data import DataLoader, DistributedSampler
 
-from ..callbacks import (ConsoleWriter, EstimatedTimeLeft, MetaInfoSaver,
-                         ProgressBar, TFEventWriter)
-from ..callbacks.callback import Callback, Callbacks
-from ..callbacks.monitor import Monitor, Monitors
+from ..callbacks import (Callback, ConsoleWriter, EstimatedTimeLeft,
+                         MetaInfoSaver, ProgressBar, TFEventWriter, Writer)
 from ..utils.logging import logger
 from .exception import StopTraining
+from .summary import Summary
 
 __all__ = ['Trainer']
 
@@ -53,15 +52,16 @@ class Trainer:
 
         if callbacks is None:
             callbacks = []
-        self.callbacks = Callbacks(callbacks)
-        self.callbacks.set_trainer(weakref.proxy(self))
+        self.callbacks = callbacks
 
-        monitors = []
+        writers = []
         for callback in callbacks:
-            if isinstance(callback, Monitor):
-                monitors.append(callback)
-        self.monitors = Monitors(monitors)
-        self.monitors.set_trainer(weakref.proxy(self))
+            callback.trainer = weakref.proxy(self)
+            if isinstance(callback, Writer):
+                writers.append(callback)
+
+        self.summary = Summary(writers)
+        self.summary.set_trainer(weakref.proxy(self))
 
         try:
             self.epoch_num = self.starting_epoch - 1
@@ -107,25 +107,28 @@ class Trainer:
 
     def before_train(self):
         self._before_train()
-        self.callbacks.before_train()
+        for callback in self.callbacks:
+            callback.before_train()
 
     def _before_train(self):
         pass
 
     def before_epoch(self):
+        torch.set_grad_enabled(True)
         if isinstance(self.dataflow, DataLoader) and isinstance(
                 self.dataflow.sampler, DistributedSampler):
             self.dataflow.sampler.set_epoch(self.epoch_num)
-        torch.set_grad_enabled(True)
         self._before_epoch()
-        self.callbacks.before_epoch()
+        for callback in self.callbacks:
+            callback.before_epoch()
 
     def _before_epoch(self):
         pass
 
     def before_step(self, feed_dict):
         self._before_step(feed_dict)
-        self.callbacks.before_step(feed_dict)
+        for callback in self.callbacks:
+            callback.before_step(feed_dict)
 
     def _before_step(self, feed_dict):
         pass
@@ -141,29 +144,33 @@ class Trainer:
         raise NotImplementedError
 
     def after_step(self, output_dict):
-        self.callbacks.after_step(output_dict)
+        for callback in self.callbacks:
+            callback.after_step(output_dict)
         self._after_step(output_dict)
 
     def _after_step(self, output_dict):
         pass
 
     def trigger_step(self):
-        self.callbacks.trigger_step()
+        for callback in self.callbacks:
+            callback.trigger_step()
         self._trigger_step()
 
     def _trigger_step(self):
         pass
 
     def after_epoch(self):
-        self.callbacks.after_epoch()
-        torch.set_grad_enabled(False)
+        for callback in self.callbacks:
+            callback.after_epoch()
         self._after_epoch()
+        torch.set_grad_enabled(False)
 
     def _after_epoch(self):
         pass
 
     def trigger_epoch(self):
-        self.callbacks.trigger_epoch()
+        for callback in self.callbacks:
+            callback.trigger_epoch()
         self._trigger_epoch()
 
     def _trigger_epoch(self):

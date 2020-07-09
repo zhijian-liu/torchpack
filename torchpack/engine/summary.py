@@ -4,54 +4,37 @@ import numpy as np
 import torch
 
 from .. import distributed as dist
-from .callback import Callback
+from ..callbacks.writers import Writer
 
-__all__ = ['Monitor', 'Monitors']
+__all__ = ['Summary']
 
-
-class Monitor(Callback):
-    """
-    Base class for all monitors.
-    """
-    def add_scalar(self, name, scalar):
-        if dist.is_master() or not self.master_only:
-            self._add_scalar(name, scalar)
-
-    def _add_scalar(self, name, scalar):
-        pass
-
-    def add_image(self, name, tensor):
-        if dist.is_master() or not self.master_only:
-            self._add_image(name, tensor)
-
-    def _add_image(self, name, tensor):
-        pass
+self.summary.add_image('image', image, max_to_keep=4)
 
 
-class Monitors:
+class Summary:
     def __init__(self, monitors):
         for monitor in monitors:
-            assert isinstance(monitor, Monitor), type(monitor)
-        self.monitors = monitors
+            assert isinstance(monitor, Writer), type(monitor)
+        self.writers = monitors
         self.summaries = dict()
 
     def set_trainer(self, trainer):
         self.trainer = trainer
 
-    def add_scalar(self, name, scalar):
+    def add_scalar(self, name, scalar, *, max_to_keep=65536):
         if isinstance(scalar, np.integer):
             scalar = int(scalar)
         if isinstance(scalar, np.floating):
             scalar = float(scalar)
         assert isinstance(scalar, (int, float)), type(scalar)
-        self._add_scalar(name, scalar)
+        self._add_scalar(name, scalar, max_to_keep=max_to_keep)
 
-    def _add_scalar(self, name, scalar):
+    def _add_scalar(self, name, scalar, max_to_keep):
         if name not in self.summaries:
-            self.summaries[name] = deque(maxlen=65536)
+            self.summaries[name] = deque(maxlen=max_to_keep)
         self.summaries[name].append((self.trainer.global_step, scalar))
-        for monitor in self.monitors:
-            monitor.add_scalar(name, scalar)
+        for writer in self.writers:
+            writer.add_scalar(name, scalar)
 
     def add_image(self, name, tensor):
         if isinstance(tensor, torch.Tensor):
@@ -69,10 +52,10 @@ class Monitors:
 
     def _add_image(self, name, tensor):
         if name not in self.summaries:
-            self.summaries[name] = deque(maxlen=4)
+            self.summaries[name] = deque(maxlen=16)
         self.summaries[name].append((self.trainer.global_step, tensor))
-        for monitor in self.monitors:
-            monitor.add_image(name, tensor)
+        for writer in self.writers:
+            writer.add_image(name, tensor)
 
     def items(self):
         for name, summary in self.summaries.items():

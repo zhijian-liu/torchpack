@@ -58,9 +58,10 @@ class Saver(Callback):
 
 class BestSaver(Callback):
     """
-    Save the checkpoint with best value of some scalar.
+    Save the checkpoint with best value of some scalar in `trainer.summary`.
     """
     master_only = True
+    extreme = None
 
     def __init__(self, scalar, *, name=None, save_dir=None):
         self.scalar = scalar
@@ -78,11 +79,11 @@ class BestSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        if self.scalar not in self.trainer.monitors:
+        if self.scalar not in self.trainer.summary:
             logger.warning(
-                f'`{self.scalar}` has not been added to `trainer.monitors`.')
+                f'`{self.scalar}` has not been added to `trainer.summary`.')
             return
-        step, value = self.trainer.monitors[self.scalar]
+        step, value = self.trainer.summary[self.scalar]
 
         if self.step is not None and step <= self.step:
             logger.warning(
@@ -103,8 +104,8 @@ class BestSaver(Callback):
                 self.best = (step, value)
 
         if self.best is not None:
-            self.trainer.monitors.add_scalar(self.scalar + '/' + self.extreme,
-                                             self.best[1])
+            self.trainer.summary.add_scalar(self.scalar + '/' + self.extreme,
+                                            self.best[1])
 
     def _state_dict(self):
         return {'step': self.step, 'best': self.best}
@@ -115,14 +116,14 @@ class BestSaver(Callback):
 
 class MinSaver(BestSaver):
     """
-    Save the checkpoint with minimum value of some scalar.
+    Save the checkpoint with minimum value of some scalar in `trainer.summary`.
     """
     extreme = 'min'
 
 
 class MaxSaver(BestSaver):
     """
-    Save the checkpoint with maximum value of some scalar.
+    Save the checkpoint with maximum value of some scalar in `trainer.summary`.
     """
     extreme = 'max'
 

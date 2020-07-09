@@ -2,16 +2,36 @@ import os.path as osp
 
 from torch.utils.tensorboard import SummaryWriter
 
+from .. import distributed as dist
 from ..environ import get_run_dir
 from ..utils import fs, io
 from ..utils.logging import logger
 from ..utils.matching import NameMatcher
-from .monitor import Monitor
+from .callback import Callback
 
 __all__ = ['ConsoleWriter', 'TFEventWriter', 'JSONWriter']
 
 
-class ConsoleWriter(Monitor):
+class Writer(Callback):
+    """
+    Base class for all monitors.
+    """
+    def add_scalar(self, name, scalar):
+        if dist.is_master() or not self.master_only:
+            self._add_scalar(name, scalar)
+
+    def _add_scalar(self, name, scalar):
+        pass
+
+    def add_image(self, name, tensor):
+        if dist.is_master() or not self.master_only:
+            self._add_image(name, tensor)
+
+    def _add_image(self, name, tensor):
+        pass
+
+
+class ConsoleWriter(Writer):
     """
     Write scalar summaries into terminal.
     """
@@ -37,7 +57,7 @@ class ConsoleWriter(Monitor):
         self.scalars[name] = scalar
 
 
-class TFEventWriter(Monitor):
+class TFEventWriter(Writer):
     """
     Write summaries to TensorFlow event file.
     """
@@ -59,7 +79,7 @@ class TFEventWriter(Monitor):
         self.writer.add_image(name, tensor, self.trainer.global_step)
 
 
-class JSONWriter(Monitor):
+class JSONWriter(Writer):
     """
     Write scalar summaries to JSON file.
     """

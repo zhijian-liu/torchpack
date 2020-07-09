@@ -27,7 +27,7 @@ class ProgressBar(Callback):
 
     def _trigger_step(self):
         texts = []
-        for name, (step, scalar) in sorted(self.trainer.monitors.items()):
+        for name, (step, scalar) in sorted(self.trainer.summary.items()):
             if step == self.trainer.global_step and isinstance(
                     scalar, (int, float)) and self.matcher.match(name):
                 texts.append('[{}] = {:.3g}'.format(name, scalar))
@@ -45,7 +45,7 @@ class EstimatedTimeLeft(Callback):
     """
     master_only = True
 
-    def __init__(self, *, last_k_epochs=5):
+    def __init__(self, *, last_k_epochs=10):
         self.last_k_epochs = last_k_epochs
 
     def _before_train(self):
