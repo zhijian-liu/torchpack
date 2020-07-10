@@ -61,7 +61,6 @@ class BestSaver(Callback):
     Save the checkpoint with best value of some scalar in `trainer.summary`.
     """
     master_only = True
-    extreme = None
 
     def __init__(self, scalar, *, name=None, save_dir=None):
         self.scalar = scalar
