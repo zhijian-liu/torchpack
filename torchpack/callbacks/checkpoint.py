@@ -45,15 +45,14 @@ class Saver(Callback):
 
     def _add_checkpoint(self, fpath):
         self.checkpoints.append(fpath)
-        if self.max_to_keep is None:
-            return
-        while len(self.checkpoints) > self.max_to_keep:
-            fpath = self.checkpoints.popleft()
-            try:
-                fs.remove(fpath)
-            except OSError:
-                logger.exception(
-                    f'Error occurred when removing checkpoint "{fpath}".')
+        if self.max_to_keep is not None:
+            while len(self.checkpoints) > self.max_to_keep:
+                fpath = self.checkpoints.popleft()
+                try:
+                    fs.remove(fpath)
+                except OSError:
+                    logger.exception(
+                        f'Error occurred when removing checkpoint "{fpath}".')
 
 
 class BestSaver(Callback):
@@ -141,7 +140,7 @@ class SaverRestore(Callback):
 
         load_path = max(checkpoints, key=osp.getmtime)
         try:
-            state_dict = io.load(load_path)
+            state_dict = io.load(load_path, map_location='cpu')
             self.trainer.load_state_dict(state_dict)
         except OSError:
             logger.exception(
