@@ -1,3 +1,5 @@
+from typing import Any, Callable, Dict, Optional
+
 import torchvision.datasets as datasets
 from torchvision.transforms import (Compose, Normalize, RandomCrop,
                                     RandomHorizontalFlip, Resize, ToTensor)
@@ -10,18 +12,18 @@ __all__ = ['CIFAR']
 class CIFAR10Dataset(datasets.CIFAR10):
     def __init__(self,
                  *,
-                 root,
-                 split,
-                 transform=None,
-                 target_transform=None,
-                 download=True):
+                 root: str,
+                 split: str,
+                 transform: Optional[Callable] = None,
+                 target_transform: Optional[Callable] = None,
+                 download: bool = True) -> None:
         super().__init__(root=root,
                          train=(split == 'train'),
                          transform=transform,
                          target_transform=target_transform,
                          download=download)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Dict[str, Any]:
         image, label = super().__getitem__(index)
         return {'image': image, 'class': label}
 
@@ -29,24 +31,28 @@ class CIFAR10Dataset(datasets.CIFAR10):
 class CIFAR100Dataset(datasets.CIFAR100):
     def __init__(self,
                  *,
-                 root,
-                 split,
-                 transform=None,
-                 target_transform=None,
-                 download=True):
+                 root: str,
+                 split: str,
+                 transform: Optional[Callable] = None,
+                 target_transform: Optional[Callable] = None,
+                 download: bool = True) -> None:
         super().__init__(root=root,
                          train=(split == 'train'),
                          transform=transform,
                          target_transform=target_transform,
                          download=download)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Dict[str, Any]:
         image, label = super().__getitem__(index)
         return {'image': image, 'class': label}
 
 
 class CIFAR(Dataset):
-    def __init__(self, *, root, num_classes=10, transforms=None):
+    def __init__(self,
+                 *,
+                 root: str,
+                 num_classes: int = 10,
+                 transforms: Optional[Dict[str, Callable]] = None) -> None:
         if num_classes == 10:
             CIFARDataset = CIFAR10Dataset
         elif num_classes == 100:

@@ -1,4 +1,5 @@
 import warnings
+from typing import Any, Callable, Dict, Optional
 
 import torchvision.datasets as datasets
 from torchvision.transforms import (CenterCrop, Compose, Normalize,
@@ -14,19 +15,28 @@ warnings.filterwarnings('ignore')
 
 
 class ImageNetDataset(datasets.ImageNet):
-    def __init__(self, *, root, split, transform=None, target_transform=None):
+    def __init__(self,
+                 *,
+                 root: str,
+                 split: str,
+                 transform: Optional[Callable] = None,
+                 target_transform: Optional[Callable] = None) -> None:
         super().__init__(root=root,
                          split=('train' if split == 'train' else 'val'),
                          transform=transform,
                          target_transform=target_transform)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Dict[str, Any]:
         image, label = super().__getitem__(index)
         return {'image': image, 'class': label}
 
 
 class ImageNet(Dataset):
-    def __init__(self, *, root, num_classes=1000, transforms=None):
+    def __init__(self,
+                 *,
+                 root: str,
+                 num_classes: int = 1000,
+                 transforms: Optional[Dict[str, Callable]] = None) -> None:
         if transforms is None:
             transforms = dict()
         if 'train' not in transforms:
@@ -57,7 +67,7 @@ class ImageNet(Dataset):
         for k in range(num_classes):
             indices[k * (1000 // num_classes)] = k
 
-        for split, dataset in self.items():
+        for dataset in self.values():
             samples = []
             for x, c in dataset.samples:
                 if c in indices:
