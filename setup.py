@@ -15,6 +15,7 @@ setup(
         'numpy',
         'pyyaml',
         'tensorboard',
+        'tensorpack',
         'torch>=1.5.1',
         'torchvision>=0.6.1',
         'tqdm>=4.31.0',
