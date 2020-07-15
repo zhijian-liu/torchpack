@@ -11,6 +11,7 @@ setup(
     url='https://github.com/zhijian-liu/torchpack',
     install_requires=[
         'loguru',
+        'mpi4py',
         'numpy',
         'pyyaml',
         'tensorboard',
