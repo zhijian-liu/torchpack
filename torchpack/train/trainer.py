@@ -1,16 +1,17 @@
 import time
-import traceback
-import weakref
+from typing import Any, Dict, List, Optional
 
 import torch
 from tensorpack.utils.utils import humanize_time_delta
 from torch.utils.data import DataLoader, DistributedSampler
 
-from ..callbacks import (Callback, ConsoleWriter, EstimatedTimeLeft,
-                         MetaInfoSaver, ProgressBar, TFEventWriter, Writer)
-from ..utils.logging import logger
-from .exception import StopTraining
-from .summary import Summary
+from torchpack.callbacks.callback import Callback, Callbacks
+from torchpack.callbacks.metainfo import MetaInfoSaver
+from torchpack.callbacks.progress import EstimatedTimeLeft, ProgressBar
+from torchpack.callbacks.writers import LoggingWriter, TFEventWriter, Writer
+from torchpack.train.exception import StopTraining
+from torchpack.train.summary import Summary
+from torchpack.utils.logging import logger
 
 __all__ = ['Trainer']
 
@@ -19,17 +20,22 @@ class Trainer:
     """
     Base class for a trainer.
     """
+    dataflow: DataLoader
+    callbacks: Callbacks
+    summary: Summary
+
     def train_with_defaults(self,
-                            dataflow,
+                            dataflow: DataLoader,
                             *,
-                            starting_epoch=1,
-                            max_epoch=9999999,
-                            callbacks=None):
+                            starting_epoch: int = 1,
+                            max_epoch: int = 9999999,
+                            callbacks: Optional[List[Callback]] = None
+                            ) -> None:
         if callbacks is None:
             callbacks = []
         callbacks.extend([
             MetaInfoSaver(),
-            ConsoleWriter(),
+            LoggingWriter(),
             TFEventWriter(),
             ProgressBar(),
             EstimatedTimeLeft()
@@ -40,11 +46,11 @@ class Trainer:
                    callbacks=callbacks)
 
     def train(self,
-              dataflow,
+              dataflow: DataLoader,
               *,
-              starting_epoch=1,
-              max_epoch=9999999,
-              callbacks=None):
+              starting_epoch: int = 1,
+              max_epoch: int = 9999999,
+              callbacks: Optional[List[Callback]] = None) -> None:
         self.dataflow = dataflow
         self.steps_per_epoch = len(self.dataflow)
         self.starting_epoch = starting_epoch
@@ -52,16 +58,14 @@ class Trainer:
 
         if callbacks is None:
             callbacks = []
-        self.callbacks = callbacks
+        self.callbacks = Callbacks(callbacks)
+        self.callbacks.set_trainer(self)
 
         writers = []
         for callback in callbacks:
-            callback.trainer = weakref.proxy(self)
             if isinstance(callback, Writer):
                 writers.append(callback)
-
-        self.summary = Summary(writers)
-        self.summary.set_trainer(weakref.proxy(self))
+        self.summary = Summary(trainer=self, writers=writers)
 
         try:
             self.epoch_num = self.starting_epoch - 1
@@ -105,105 +109,92 @@ class Trainer:
         finally:
             self.after_train()
 
-    def before_train(self):
+    def before_train(self) -> None:
         self._before_train()
-        for callback in self.callbacks:
-            callback.before_train()
+        self.callbacks.before_train()
 
-    def _before_train(self):
+    def _before_train(self) -> None:
         pass
 
-    def before_epoch(self):
+    def before_epoch(self) -> None:
         torch.set_grad_enabled(True)
         if isinstance(self.dataflow, DataLoader) and isinstance(
                 self.dataflow.sampler, DistributedSampler):
             self.dataflow.sampler.set_epoch(self.epoch_num)
         self._before_epoch()
-        for callback in self.callbacks:
-            callback.before_epoch()
+        self.callbacks.before_epoch()
 
-    def _before_epoch(self):
+    def _before_epoch(self) -> None:
         pass
 
-    def before_step(self, feed_dict):
+    def before_step(self, feed_dict: Dict[str, Any]) -> None:
         self._before_step(feed_dict)
-        for callback in self.callbacks:
-            callback.before_step(feed_dict)
+        self.callbacks.before_step(feed_dict)
 
-    def _before_step(self, feed_dict):
+    def _before_step(self, feed_dict: Dict[str, Any]) -> None:
         pass
 
-    def run_step(self, feed_dict):
+    def run_step(self, feed_dict: Dict[str, Any]) -> Dict[str, Any]:
         output_dict = self._run_step(feed_dict)
         return output_dict
 
-    def _run_step(self, feed_dict):
+    def _run_step(self, feed_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
         Defines what to do in one iteration.
         """
         raise NotImplementedError
 
-    def after_step(self, output_dict):
-        for callback in self.callbacks:
-            callback.after_step(output_dict)
+    def after_step(self, output_dict: Dict[str, Any]) -> None:
+        self.callbacks.after_step(output_dict)
         self._after_step(output_dict)
 
-    def _after_step(self, output_dict):
+    def _after_step(self, output_dict: Dict[str, Any]) -> None:
         pass
 
-    def trigger_step(self):
-        for callback in self.callbacks:
-            callback.trigger_step()
+    def trigger_step(self) -> None:
+        self.callbacks.trigger_step()
         self._trigger_step()
 
-    def _trigger_step(self):
+    def _trigger_step(self) -> None:
         pass
 
-    def after_epoch(self):
-        for callback in self.callbacks:
-            callback.after_epoch()
+    def after_epoch(self) -> None:
+        self.callbacks.after_epoch()
         self._after_epoch()
         torch.set_grad_enabled(False)
 
-    def _after_epoch(self):
+    def _after_epoch(self) -> None:
         pass
 
-    def trigger_epoch(self):
-        for callback in self.callbacks:
-            callback.trigger_epoch()
+    def trigger_epoch(self) -> None:
+        self.callbacks.trigger_epoch()
         self._trigger_epoch()
 
-    def _trigger_epoch(self):
+    def _trigger_epoch(self) -> None:
         pass
 
-    def after_train(self):
-        for callback in self.callbacks:
-            try:
-                callback.after_train()
-            except Exception:
-                traceback.print_exc()
+    def after_train(self) -> None:
+        self.callbacks.after_train()
         self._after_train()
 
-    def _after_train(self):
+    def _after_train(self) -> None:
         pass
 
-    def state_dict(self):
-        state_dict = self._state_dict() or dict()
-        state_dict.update({
-            'epoch_num': self.epoch_num,
-            'local_step': self.local_step,
-            'global_step': self.global_step
-        })
+    def state_dict(self) -> Dict[str, Any]:
+        state_dict = self._state_dict()
+        state_dict['epoch_num'] = self.epoch_num
+        state_dict['local_step'] = self.local_step
+        state_dict['global_step'] = self.global_step
         return state_dict
 
-    def _state_dict(self):
-        return None
+    def _state_dict(self) -> Dict[str, Any]:
+        return dict()
 
-    def load_state_dict(self, state_dict):
-        self.epoch_num = state_dict['epoch_num']
-        self.local_step = state_dict['local_step']
-        self.global_step = state_dict['global_step']
+    def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
+        self.epoch_num = state_dict.pop('epoch_num')
+        self.local_step = state_dict.pop('local_step')
+        self.global_step = state_dict.pop('global_step')
         self._load_state_dict(state_dict)
 
-    def _load_state_dict(self, state_dict):
+    def _load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         pass
