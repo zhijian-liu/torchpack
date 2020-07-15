@@ -3,7 +3,8 @@ import torch
 __all__ = ['batched_index_select']
 
 
-def batched_index_select(inputs, indices, dim):
+def batched_index_select(inputs: torch.Tensor, indices: torch.Tensor,
+                         dim: int) -> torch.Tensor:
     vsizes, esizes = [], []
     for k, size in enumerate(inputs.shape):
         if k == 0:

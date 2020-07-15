@@ -1,10 +1,12 @@
+from typing import Dict, List, Tuple, Union
+
 import torch
 import torch.nn as nn
 
 __all__ = ['ShuffleNetV2', 'ShuffleBlockV2']
 
 
-def channel_shuffle(inputs, groups):
+def channel_shuffle(inputs: torch.Tensor, groups: int) -> torch.Tensor:
     batch_size, num_channels, *sizes = inputs.size()
     inputs = inputs.view(batch_size, groups, num_channels // groups, *sizes)
     inputs = inputs.transpose(1, 2).contiguous()
@@ -13,7 +15,12 @@ def channel_shuffle(inputs, groups):
 
 
 class ShuffleBlockV2(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, *, stride=1):
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: Union[int, Tuple[int, int]],
+                 *,
+                 stride: int = 1) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -56,7 +63,7 @@ class ShuffleBlockV2(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.stride != 1:
             x1 = self.branch1(x)
             x2 = self.branch2(x)
@@ -70,18 +77,22 @@ class ShuffleBlockV2(nn.Module):
 
 
 class ShuffleNetV2(nn.Module):
-    blocks = {
+    layers: Dict[float, List] = {
         0.5: [24, (48, 4, 2), (96, 8, 2), (192, 4, 2), 1024],
         1.0: [24, (116, 4, 2), (232, 8, 2), (464, 4, 2), 1024],
         1.5: [24, (176, 4, 2), (352, 8, 2), (704, 4, 2), 1024],
         2.0: [24, (244, 4, 2), (488, 8, 2), (976, 4, 2), 2048]
     }
 
-    def __init__(self, *, in_channels=3, num_classes=1000, width_multiplier=1):
+    def __init__(self,
+                 *,
+                 in_channels: int = 3,
+                 num_classes: int = 1000,
+                 width_multiplier: float = 1) -> None:
         super().__init__()
 
-        out_channels = self.blocks[width_multiplier][0]
-        layers = [
+        out_channels = self.layers[width_multiplier][0]
+        layers = nn.ModuleList([
             nn.Sequential(
                 nn.Conv2d(in_channels,
                           out_channels,
@@ -92,18 +103,18 @@ class ShuffleNetV2(nn.Module):
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True),
             )
-        ]
+        ])
         in_channels = out_channels
 
         for out_channels, num_blocks, strides in \
-                self.blocks[width_multiplier][1:-1]:
+                self.layers[width_multiplier][1:-1]:
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
                     ShuffleBlockV2(in_channels, out_channels, 3,
                                    stride=stride))
                 in_channels = out_channels
 
-        out_channels = self.blocks[width_multiplier][-1]
+        out_channels = self.layers[width_multiplier][-1]
         layers.append(
             nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
@@ -116,7 +127,7 @@ class ShuffleNetV2(nn.Module):
         self.classifier = nn.Linear(in_channels, num_classes)
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight,
@@ -129,7 +140,7 @@ class ShuffleNetV2(nn.Module):
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = x.mean([2, 3])
         x = self.classifier(x)

@@ -6,7 +6,7 @@ from torchvision.transforms import (CenterCrop, Compose, Normalize,
                                     RandomHorizontalFlip, RandomResizedCrop,
                                     Resize, ToTensor)
 
-from ..dataset import Dataset
+from torchpack.datasets.dataset import Dataset
 
 __all__ = ['ImageNet']
 

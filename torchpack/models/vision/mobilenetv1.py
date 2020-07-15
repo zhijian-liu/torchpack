@@ -1,12 +1,20 @@
+from typing import List, Tuple, Union
+
+import torch
 import torch.nn as nn
 
-from ..utils import make_divisible
+from torchpack.models.utils import make_divisible
 
 __all__ = ['MobileNetV1', 'MobileBlockV1']
 
 
 class MobileBlockV1(nn.Sequential):
-    def __init__(self, in_channels, out_channels, kernel_size, *, stride=1):
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: Union[int, Tuple[int, int]],
+                 *,
+                 stride: int = 1) -> None:
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
@@ -29,15 +37,18 @@ class MobileBlockV1(nn.Sequential):
 
 
 class MobileNetV1(nn.Module):
-    blocks = [
-        32, (64, 1, 1), (128, 2, 2), (256, 2, 2), (512, 6, 2), (1024, 2, 2)
-    ]
+    layers: List = [(32, 1, 2), (64, 1, 1), (128, 2, 2), (256, 2, 2),
+                    (512, 6, 2), (1024, 2, 2)]
 
-    def __init__(self, *, in_channels=3, num_classes=1000, width_multiplier=1):
+    def __init__(self,
+                 *,
+                 in_channels: int = 3,
+                 num_classes: int = 1000,
+                 width_multiplier: float = 1) -> None:
         super().__init__()
 
-        out_channels = make_divisible(self.blocks[0] * width_multiplier, 8)
-        layers = [
+        out_channels = make_divisible(self.layers[0] * width_multiplier, 8)
+        layers = nn.ModuleList([
             nn.Sequential(
                 nn.Conv2d(in_channels,
                           out_channels,
@@ -48,10 +59,10 @@ class MobileNetV1(nn.Module):
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True),
             )
-        ]
+        ])
         in_channels = out_channels
 
-        for out_channels, num_blocks, strides in self.blocks[1:]:
+        for out_channels, num_blocks, strides in self.layers[1:]:
             out_channels = make_divisible(out_channels * width_multiplier, 8)
             for stride in [strides] + [1] * (num_blocks - 1):
                 layers.append(
@@ -62,7 +73,7 @@ class MobileNetV1(nn.Module):
         self.classifier = nn.Linear(in_channels, num_classes)
         self.reset_parameters()
 
-    def reset_parameters(self):
+    def reset_parameters(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight,
@@ -75,7 +86,7 @@ class MobileNetV1(nn.Module):
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = x.mean([2, 3])
         x = self.classifier(x)

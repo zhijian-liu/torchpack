@@ -4,7 +4,7 @@ import torchvision.datasets as datasets
 from torchvision.transforms import (Compose, Normalize, RandomCrop,
                                     RandomHorizontalFlip, Resize, ToTensor)
 
-from ..dataset import Dataset
+from torchpack.datasets.dataset import Dataset
 
 __all__ = ['CIFAR']
 
