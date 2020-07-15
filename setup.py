@@ -13,11 +13,12 @@ setup(
         'loguru',
         'numpy',
         'pyyaml',
-        'torch>=1.4',
-        'torchvision>=0.5',
+        'tensorboard',
+        'torch>=1.5.1',
+        'torchvision>=0.6.1',
         'tqdm>=4.31.0',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     entry_points={
         'console_scripts': [
             'torchpack = torchpack.launch:main',
