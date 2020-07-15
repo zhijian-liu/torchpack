@@ -2,7 +2,7 @@ import os
 import sys
 
 
-def main():
+def main() -> None:
     rank = 0
     for name in ['OMPI_COMM_WORLD_RANK', 'PMI_RANK']:
         if name in os.environ:

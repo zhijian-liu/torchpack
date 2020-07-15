@@ -6,7 +6,7 @@ from .launchers import drunner
 __all__ = ['main']
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('launcher', choices=['dist-run'])
     parser.add_argument('command', nargs=argparse.REMAINDER)
