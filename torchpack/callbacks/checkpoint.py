@@ -7,6 +7,7 @@ import torchpack.utils.fs as fs
 import torchpack.utils.io as io
 from torchpack.callbacks.callback import Callback
 from torchpack.environ import get_run_dir
+from torchpack.train import Trainer
 from torchpack.utils.logging import logger
 
 __all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']
@@ -21,11 +22,11 @@ class Saver(Callback):
     def __init__(self, *, max_to_keep: int = 4,
                  save_dir: Optional[str] = None) -> None:
         self.max_to_keep = max_to_keep
-
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
 
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.checkpoints = deque()
         for fpath in sorted(glob.glob(osp.join(self.save_dir, 'step-*.pt')),
                             key=osp.getmtime):
@@ -70,15 +71,15 @@ class BestSaver(Callback):
                  name: Optional[str] = None,
                  save_dir: Optional[str] = None) -> None:
         self.scalar = scalar
-        self.step, self.best = None, None
-
         if name is None:
             name = self.extreme + '-' + scalar.replace('/', '-')
         self.name = name
-
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
+
+    def _set_trainer(self, trainer: Trainer) -> None:
+        self.step, self.best = None, None
 
     def _trigger_epoch(self) -> None:
         self._trigger()
