@@ -1,7 +1,7 @@
 import os.path as osp
 
-import torchpack.distributed as dist
-import torchpack.utils.fs as fs
+from torchpack import distributed as dist
+from torchpack.utils import fs
 from torchpack.utils.logging import logger
 
 __all__ = ['get_run_dir', 'set_run_dir']

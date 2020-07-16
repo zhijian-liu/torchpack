@@ -1,7 +1,7 @@
 import warnings
 from typing import Any, Callable, Dict, Optional
 
-import torchvision.datasets as datasets
+from torchvision import datasets
 from torchvision.transforms import (CenterCrop, Compose, Normalize,
                                     RandomHorizontalFlip, RandomResizedCrop,
                                     Resize, ToTensor)

@@ -1,7 +1,7 @@
-from typing import Any, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from torchpack.models.utils import make_divisible
 

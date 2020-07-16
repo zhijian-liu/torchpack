@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple, Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 __all__ = ['ShuffleNetV2', 'ShuffleBlockV2']
 

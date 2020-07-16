@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from .launchers import drunner
+from torchpack.launch.launchers import drunner
 
 __all__ = ['main']
 
