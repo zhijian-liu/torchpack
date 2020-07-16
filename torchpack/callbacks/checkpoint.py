@@ -17,7 +17,7 @@ class Saver(Callback):
     """
     Save the checkpoint once triggered.
     """
-    master_only = True
+    master_only: bool = True
 
     def __init__(self, *, max_to_keep: int = 4,
                  save_dir: Optional[str] = None) -> None:
@@ -63,7 +63,8 @@ class BestSaver(Callback):
     """
     Save the checkpoint with best value of some scalar in `trainer.summary`.
     """
-    master_only = True
+    master_only: bool = True
+    extreme: ClassVar[str]
 
     def __init__(self,
                  scalar: str,
@@ -124,14 +125,14 @@ class MinSaver(BestSaver):
     """
     Save the checkpoint with minimum value of some scalar in `trainer.summary`.
     """
-    extreme = 'min'
+    extreme: ClassVar[str] = 'min'
 
 
 class MaxSaver(BestSaver):
     """
     Save the checkpoint with maximum value of some scalar in `trainer.summary`.
     """
-    extreme = 'max'
+    extreme: ClassVar[str] = 'max'
 
 
 class SaverRestore(Callback):
