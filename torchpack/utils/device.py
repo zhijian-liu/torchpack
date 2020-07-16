@@ -1,13 +1,14 @@
 import os
+from typing import List, Union
 
 import torch
 
 __all__ = ['parse_cuda_devices', 'set_cuda_visible_devices']
 
 
-def parse_cuda_devices(text):
+def parse_cuda_devices(text: str) -> List[int]:
     if text == '*':
-        return range(torch.cuda.device_count())
+        return [device for device in range(torch.cuda.device_count())]
 
     devices = []
     for device in text.split(','):
@@ -24,7 +25,9 @@ def parse_cuda_devices(text):
     return devices
 
 
-def set_cuda_visible_devices(devices, *, environ=os.environ):
+def set_cuda_visible_devices(devices: Union[str, List[int]],
+                             *,
+                             environ: os._Environ = os.environ) -> List[int]:
     if isinstance(devices, str):
         devices = parse_cuda_devices(devices)
     environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, devices))
