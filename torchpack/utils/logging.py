@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from loguru import Logger
 
 __all__ = ['logger']
 
 
-def __get_logger():
+def __get_logger() -> Logger:
     from loguru import logger
     logger.remove()
     logger.add(sys.stderr,
@@ -13,4 +19,4 @@ def __get_logger():
     return logger
 
 
-logger = __get_logger()
+logger: Logger = __get_logger()
