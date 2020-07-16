@@ -1,19 +1,18 @@
 import os.path as osp
 
-from .. import distributed as dist
-from ..utils import fs
-from ..utils.logging import logger
+import torchpack.distributed as dist
+import torchpack.utils.fs as fs
+from torchpack.utils.logging import logger
 
 __all__ = ['get_run_dir', 'set_run_dir']
 
-_run_dir = None
 
-
-def get_run_dir():
+def get_run_dir() -> str:
+    global _run_dir
     return _run_dir
 
 
-def set_run_dir(dirpath):
+def set_run_dir(dirpath: str) -> None:
     global _run_dir
     _run_dir = fs.normpath(dirpath)
     fs.makedir(_run_dir)
