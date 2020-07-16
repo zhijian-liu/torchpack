@@ -1,9 +1,10 @@
 import subprocess
+from typing import Optional
 
 __all__ = ['is_inside_work_tree', 'get_commit_hash', 'get_remote_url']
 
 
-def is_inside_work_tree():
+def is_inside_work_tree() -> bool:
     try:
         return subprocess.check_output(
             ['git', 'rev-parse', '--is-inside-work-tree'],
@@ -12,7 +13,7 @@ def is_inside_work_tree():
         return False
 
 
-def get_commit_hash(revision='HEAD'):
+def get_commit_hash(revision: str = 'HEAD') -> Optional[str]:
     try:
         return subprocess.check_output(
             ['git', 'rev-parse', revision],
@@ -21,7 +22,7 @@ def get_commit_hash(revision='HEAD'):
         return None
 
 
-def get_remote_url(name='origin'):
+def get_remote_url(name: str = 'origin') -> Optional[str]:
     try:
         return subprocess.check_output(
             ['git', 'config', '--get', f'remote.{name}.url'],

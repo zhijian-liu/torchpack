@@ -2,13 +2,14 @@ import json
 import os.path as osp
 import pickle
 from contextlib import contextmanager
+from typing import IO, Any, Callable, Dict, Iterator, Tuple, Union
 
 import numpy as np
 import scipy.io
 import torch
 import yaml
 
-from . import fs
+import torchpack.utils.fs as fs
 
 __all__ = [
     'load', 'save', 'load_json', 'save_json', 'load_jsonl', 'save_jsonl',
@@ -18,7 +19,7 @@ __all__ = [
 
 
 @contextmanager
-def file_descriptor(f, mode='r'):
+def file_descriptor(f: Union[str, IO], mode: str = 'r') -> Iterator[IO]:
     opened = False
     try:
         if isinstance(f, str):
@@ -30,51 +31,51 @@ def file_descriptor(f, mode='r'):
             f.close()
 
 
-def load_json(f, **kwargs):
+def load_json(f: Union[str, IO[str]], **kwargs) -> Any:
     with file_descriptor(f, 'r') as fd:
         return json.load(fd, **kwargs)
 
 
-def save_json(f, obj, **kwargs):
+def save_json(f: Union[str, IO[str]], obj: Any, **kwargs) -> None:
     with file_descriptor(f, 'w') as fd:
-        return json.dump(obj, fd, **kwargs)
+        json.dump(obj, fd, **kwargs)
 
 
-def load_jsonl(f, **kwargs):
+def load_jsonl(f: Union[str, IO[str]], **kwargs) -> Any:
     with file_descriptor(f, 'r') as fd:
         return [json.loads(datum, **kwargs) for datum in fd.readlines()]
 
 
-def save_jsonl(f, obj, **kwargs):
+def save_jsonl(f: Union[str, IO[str]], obj: Any, **kwargs) -> None:
     with file_descriptor(f, 'w') as fd:
         fd.write('\n'.join(json.dumps(datum, **kwargs) for datum in obj))
 
 
-def load_mat(f, **kwargs):
+def load_mat(f: Union[str, IO[bytes]], **kwargs) -> Any:
     return scipy.io.loadmat(f, **kwargs)
 
 
-def save_mat(f, obj, **kwargs):
-    return scipy.io.savemat(f, obj, **kwargs)
+def save_mat(f: Union[str, IO[bytes]], obj: Any, **kwargs) -> None:
+    scipy.io.savemat(f, obj, **kwargs)
 
 
-def load_npy(f, **kwargs):
+def load_npy(f: Union[str, IO[bytes]], **kwargs) -> Any:
     return np.load(f, **kwargs)
 
 
-def save_npy(f, obj, **kwargs):
-    return np.save(f, obj, **kwargs)
+def save_npy(f: Union[str, IO[bytes]], obj: Any, **kwargs) -> None:
+    np.save(f, obj, **kwargs)
 
 
-def load_npz(f, **kwargs):
+def load_npz(f: Union[str, IO[bytes]], **kwargs) -> Any:
     return np.load(f, **kwargs)
 
 
-def save_npz(f, obj, **kwargs):
-    return np.savez(f, obj, **kwargs)
+def save_npz(f: Union[str, IO[bytes]], obj: Any, **kwargs) -> None:
+    np.savez(f, obj, **kwargs)
 
 
-def load_pkl(f, **kwargs):
+def load_pkl(f: Union[str, IO[bytes]], **kwargs) -> Any:
     with file_descriptor(f, 'rb') as fd:
         try:
             return pickle.load(fd, **kwargs)
@@ -84,30 +85,30 @@ def load_pkl(f, **kwargs):
             return pickle.load(fd, encoding='latin1', **kwargs)
 
 
-def save_pkl(f, obj, **kwargs):
+def save_pkl(f: Union[str, IO[bytes]], obj: Any, **kwargs) -> None:
     with file_descriptor(f, 'wb') as fd:
-        return pickle.dump(obj, fd, **kwargs)
+        pickle.dump(obj, fd, **kwargs)
 
 
-def load_pt(f, **kwargs):
+def load_pt(f: Union[str, IO[bytes]], **kwargs) -> Any:
     return torch.load(f, **kwargs)
 
 
-def save_pt(f, obj, **kwargs):
-    return torch.save(obj, f, **kwargs)
+def save_pt(f: Union[str, IO[bytes]], obj: Any, **kwargs) -> None:
+    torch.save(obj, f, **kwargs)
 
 
-def load_yaml(f, **kwargs):
+def load_yaml(f: Union[str, IO[str]], **kwargs) -> Any:
     with file_descriptor(f, 'r') as fd:
         return yaml.safe_load(fd, **kwargs)
 
 
-def save_yaml(f, obj, **kwargs):
+def save_yaml(f: Union[str, IO[str]], obj: Any, **kwargs) -> None:
     with file_descriptor(f, 'w') as fd:
-        return yaml.safe_dump(obj, fd, **kwargs)
+        yaml.safe_dump(obj, fd, **kwargs)
 
 
-__io_registry = {
+__io_registry: Dict[str, Tuple[Callable, Callable]] = {
     '.json': (load_json, save_json),
     '.jsonl': (load_jsonl, save_jsonl),
     '.mat': (load_mat, save_mat),
@@ -122,7 +123,7 @@ __io_registry = {
 }
 
 
-def load(fpath, **kwargs):
+def load(fpath: str, **kwargs) -> Any:
     assert isinstance(fpath, str), type(fpath)
 
     for extension in sorted(__io_registry.keys(), key=len, reverse=True):
@@ -133,16 +134,14 @@ def load(fpath, **kwargs):
     raise NotImplementedError(f'"{extension}" is not supported.')
 
 
-def save(fpath, obj, **kwargs):
+def save(fpath: str, obj: Any, **kwargs) -> None:
     assert isinstance(fpath, str), type(fpath)
-
-    dirpath = osp.dirname(fpath)
-    if not osp.exists(dirpath):
-        fs.makedir(dirpath)
+    fs.makedir(osp.dirname(fpath))
 
     for extension in sorted(__io_registry.keys(), key=len, reverse=True):
         if fpath.endswith(extension):
-            return __io_registry[extension][1](fpath, obj, **kwargs)
+            __io_registry[extension][1](fpath, obj, **kwargs)
+            return
 
     extension = osp.splitext(fpath)[1]
     raise NotImplementedError(f'"{extension}" is not supported.')

@@ -6,7 +6,7 @@ from urllib.parse import urlparse, urlunparse
 __all__ = ['normpath', 'makedir', 'remove']
 
 
-def normpath(path):
+def normpath(path: str) -> str:
     if '://' in path:
         scheme, netloc, path, params, query, fragment = urlparse(path)
         return urlunparse(
@@ -15,14 +15,14 @@ def normpath(path):
         return osp.normpath(path)
 
 
-def makedir(dirpath):
+def makedir(dirpath: str) -> None:
     dirpath = normpath(dirpath)
     os.makedirs(dirpath, exist_ok=True)
     if not osp.isdir(dirpath):
         raise OSError(f'"{dirpath}" cannot be created.')
 
 
-def remove(path):
+def remove(path: str) -> None:
     path = normpath(path)
     if osp.exists(path):
         if osp.isdir(path):

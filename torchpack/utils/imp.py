@@ -1,10 +1,12 @@
 import importlib
 import os
+from types import ModuleType
+from typing import Optional
 
 __all__ = ['load_source']
 
 
-def load_source(fpath, *, name=None):
+def load_source(fpath: str, *, name: Optional[str] = None) -> ModuleType:
     if name is None:
         name = os.path.basename(fpath)
         if name.endswith('.py'):
