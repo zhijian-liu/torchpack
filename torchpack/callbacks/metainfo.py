@@ -1,22 +1,25 @@
 import os.path as osp
+from typing import Optional
 
-from ..environ import get_run_dir
-from ..utils import fs, git, io
-from ..utils.config import configs
-from .callback import Callback
+import torchpack.utils.fs as fs
+import torchpack.utils.git as git
+import torchpack.utils.io as io
+from torchpack.callbacks.callback import Callback
+from torchpack.environ import get_run_dir
+from torchpack.utils.config import configs
 
 __all__ = ['MetaInfoSaver']
 
 
 class MetaInfoSaver(Callback):
-    master_only = True
+    master_only: bool = True
 
-    def __init__(self, save_dir=None):
+    def __init__(self, save_dir: Optional[str] = None) -> None:
         if save_dir is None:
             save_dir = osp.join(get_run_dir(), 'metainfo')
         self.save_dir = fs.normpath(save_dir)
 
-    def _before_train(self):
+    def _before_train(self) -> None:
         if configs:
             io.save(osp.join(self.save_dir, 'configs.yaml'), configs.dict())
 
