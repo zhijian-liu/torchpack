@@ -14,13 +14,14 @@ setup(
         'mpi4py',
         'numpy',
         'pyyaml',
+        'scipy',
         'tensorboard',
         'tensorpack',
-        'torch>=1.5.1',
-        'torchvision>=0.6.1',
-        'tqdm>=4.31.0',
+        'torch>=1.5.0',
+        'torchvision',
+        'tqdm',
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     entry_points={
         'console_scripts': [
             'torchpack = torchpack.launch:main',
