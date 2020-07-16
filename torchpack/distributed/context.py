@@ -8,7 +8,7 @@ _world_size, _world_rank = 1, 0
 _local_size, _local_rank = 1, 0
 
 
-def init():
+def init() -> None:
     from mpi4py import MPI
     world_comm = MPI.COMM_WORLD
     local_comm = MPI.COMM_WORLD.Split_type(MPI.COMM_TYPE_SHARED)
@@ -24,21 +24,21 @@ def init():
                                          rank=_world_rank)
 
 
-def size():
+def size() -> int:
     return _world_size
 
 
-def rank():
+def rank() -> int:
     return _world_rank
 
 
-def local_size():
+def local_size() -> int:
     return _local_size
 
 
-def local_rank():
+def local_rank() -> int:
     return _local_rank
 
 
-def is_master():
+def is_master() -> bool:
     return _world_rank == 0

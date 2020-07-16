@@ -1,21 +1,22 @@
 import os
 import pickle
+from typing import Any, List
 
 import torch
 import torch.distributed
 
-from . import context
+from torchpack.distributed import context
 
 __all__ = ['allreduce', 'allgather', 'barrier']
 
 
-def allreduce(data, reduction='sum'):
+def allreduce(data: Any, reduction: str = 'sum') -> Any:
     data = allgather(data)
     if reduction == 'sum':
         return sum(data)
 
 
-def allgather(data):
+def allgather(data: Any) -> List[Any]:
     world_size = context.size()
     if world_size == 1:
         return [data]
@@ -46,7 +47,7 @@ def allgather(data):
     return data
 
 
-def barrier():
+def barrier() -> None:
     world_size = context.size()
     if world_size == 1:
         return

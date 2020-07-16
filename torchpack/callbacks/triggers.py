@@ -16,27 +16,27 @@ class EnableCallbackIf(ProxyCallback):
 
     def _before_epoch(self) -> None:
         if self.predicate(self):
-            self.callback.before_epoch()
+            super()._before_epoch()
 
     def _before_step(self, feed_dict: Dict[str, Any]) -> None:
         if self.predicate(self):
-            self.callback.before_step(feed_dict)
+            super()._before_step(feed_dict)
 
     def _after_step(self, output_dict: Dict[str, Any]) -> None:
         if self.predicate(self):
-            self.callback.after_step(output_dict)
+            super()._after_step(output_dict)
 
     def _trigger_step(self) -> None:
         if self.predicate(self):
-            self.callback.trigger_step()
+            super()._trigger_step()
 
     def _after_epoch(self) -> None:
         if self.predicate(self):
-            self.callback.after_epoch()
+            super()._after_epoch()
 
     def _trigger_epoch(self) -> None:
         if self.predicate(self):
-            self.callback.trigger_epoch()
+            super()._trigger_epoch()
 
     def __str__(self) -> str:
         return 'EnableCallbackIf-' + str(self.callback)
@@ -59,11 +59,11 @@ class PeriodicTrigger(ProxyCallback):
 
     def _trigger_step(self) -> None:
         if self.every_k_steps is not None and self.trainer.global_step % self.every_k_steps == 0:
-            self.callback.trigger()
+            super()._trigger()
 
     def _trigger_epoch(self) -> None:
         if self.every_k_epochs is not None and self.trainer.epoch_num % self.every_k_epochs == 0:
-            self.callback.trigger()
+            super()._trigger()
 
     def __str__(self) -> str:
         return 'PeriodicTrigger-' + str(self.callback)
