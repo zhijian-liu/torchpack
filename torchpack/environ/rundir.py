@@ -1,4 +1,4 @@
-import os.path as osp
+from os import path as osp
 
 from torchpack import distributed as dist
 from torchpack.utils import fs
