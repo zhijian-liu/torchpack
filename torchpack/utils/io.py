@@ -1,7 +1,7 @@
 import json
-import os.path as osp
 import pickle
 from contextlib import contextmanager
+from os import path as osp
 from typing import IO, Any, Callable, Dict, Iterator, Tuple, Union
 
 import numpy as np
@@ -9,7 +9,7 @@ import scipy.io
 import torch
 import yaml
 
-import torchpack.utils.fs as fs
+from torchpack.utils import fs
 
 __all__ = [
     'load', 'save', 'load_json', 'save_json', 'load_jsonl', 'save_jsonl',
