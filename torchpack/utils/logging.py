@@ -1,10 +1,6 @@
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from loguru import Logger
+from torchpack.utils.typing import Logger
 
 __all__ = ['logger']
 
