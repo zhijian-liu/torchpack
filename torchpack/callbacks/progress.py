@@ -5,8 +5,8 @@ from typing import List, Union
 import numpy as np
 import tqdm
 
-import torchpack.utils.humanize as humanize
 from torchpack.callbacks.callback import Callback
+from torchpack.utils import humanize
 from torchpack.utils.logging import logger
 from torchpack.utils.matching import NameMatcher
 
@@ -26,9 +26,6 @@ class ProgressBar(Callback):
         self.pbar = tqdm.trange(self.trainer.steps_per_epoch, ncols=0)
 
     def _trigger_step(self) -> None:
-        self._trigger()
-
-    def _trigger(self) -> None:
         texts = []
         for name, (step, scalar) in sorted(self.trainer.summary.items()):
             if step == self.trainer.global_step and isinstance(
@@ -56,9 +53,6 @@ class EstimatedTimeLeft(Callback):
         self.last_time = time.time()
 
     def _trigger_epoch(self) -> None:
-        self._trigger()
-
-    def _trigger(self) -> None:
         if self.trainer.epoch_num < self.trainer.max_epoch:
             self.times.append(time.time() - self.last_time)
             self.last_time = time.time()

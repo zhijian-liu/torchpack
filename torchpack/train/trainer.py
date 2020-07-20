@@ -1,10 +1,9 @@
 import time
 from typing import Any, Dict, List, Optional
 
-import torch
-from tensorpack.utils.utils import humanize_time_delta
 from torch.utils.data import DataLoader, DistributedSampler
 
+import torchpack.utils.humanize as humanize
 from torchpack.callbacks.callback import Callback, Callbacks
 from torchpack.callbacks.metainfo import MetaInfoSaver
 from torchpack.callbacks.progress import EstimatedTimeLeft, ProgressBar
@@ -58,14 +57,12 @@ class Trainer:
 
         if callbacks is None:
             callbacks = []
+
         self.callbacks = Callbacks(callbacks)
         self.callbacks.set_trainer(self)
 
-        writers = []
-        for callback in callbacks:
-            if isinstance(callback, Writer):
-                writers.append(callback)
-        self.summary = Summary(trainer=self, writers=writers)
+        self.summary = Summary()
+        self.summary.set_trainer(self)
 
         try:
             self.epoch_num = self.starting_epoch - 1
@@ -95,15 +92,15 @@ class Trainer:
 
                 self.after_epoch()
                 logger.info('Training finished in {}.'.format(
-                    humanize_time_delta(time.time() - epoch_time)))
+                    humanize.naturaldelta(time.time() - epoch_time)))
 
                 self.trigger_epoch()
                 logger.info('Epoch finished in {}.'.format(
-                    humanize_time_delta(time.time() - epoch_time)))
+                    humanize.naturaldelta(time.time() - epoch_time)))
 
             logger.success('{} epochs of training finished in {}.'.format(
                 self.max_epoch - self.starting_epoch + 1,
-                humanize_time_delta(time.time() - train_time)))
+                humanize.naturaldelta(time.time() - train_time)))
         except StopTraining as e:
             logger.info('Training was stopped by {}.'.format(str(e)))
         finally:
@@ -117,7 +114,6 @@ class Trainer:
         pass
 
     def before_epoch(self) -> None:
-        torch.set_grad_enabled(True)
         if isinstance(self.dataflow, DataLoader) and isinstance(
                 self.dataflow.sampler, DistributedSampler):
             self.dataflow.sampler.set_epoch(self.epoch_num)
@@ -161,7 +157,6 @@ class Trainer:
     def after_epoch(self) -> None:
         self.callbacks.after_epoch()
         self._after_epoch()
-        torch.set_grad_enabled(False)
 
     def _after_epoch(self) -> None:
         pass
@@ -185,6 +180,7 @@ class Trainer:
         state_dict['epoch_num'] = self.epoch_num
         state_dict['local_step'] = self.local_step
         state_dict['global_step'] = self.global_step
+        state_dict['callbacks'] = self.callbacks.state_dict()
         return state_dict
 
     def _state_dict(self) -> Dict[str, Any]:
@@ -194,6 +190,7 @@ class Trainer:
         self.epoch_num = state_dict.pop('epoch_num')
         self.local_step = state_dict.pop('local_step')
         self.global_step = state_dict.pop('global_step')
+        self.callbacks.load_state_dict(state_dict.pop('callbacks'))
         self._load_state_dict(state_dict)
 
     def _load_state_dict(self, state_dict: Dict[str, Any]) -> None:

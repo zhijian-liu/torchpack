@@ -5,10 +5,10 @@ import torch
 import tqdm
 from torch.utils.data import DataLoader
 
-import torchpack.utils.humanize as humanize
 from torchpack.callbacks.callback import Callback, Callbacks
-from torchpack.train import Trainer
+from torchpack.utils import humanize
 from torchpack.utils.logging import logger
+from torchpack.utils.typing import Trainer
 
 __all__ = ['InferenceRunner']
 

@@ -1,21 +1,16 @@
-from __future__ import annotations
-
-import os.path as osp
-from typing import TYPE_CHECKING, List, Optional, Union
+import os
+from typing import List, Optional, Union
 
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
-import torchpack.distributed as dist
-import torchpack.utils.fs as fs
-import torchpack.utils.io as io
+from torchpack import distributed as dist
 from torchpack.callbacks.callback import Callback
 from torchpack.environ import get_run_dir
+from torchpack.utils import fs, io
 from torchpack.utils.logging import logger
 from torchpack.utils.matching import NameMatcher
-
-if TYPE_CHECKING:
-    from torchpack.train import Trainer
+from torchpack.utils.typing import Trainer
 
 __all__ = ['Writer', 'LoggingWriter', 'TFEventWriter', 'JSONWriter']
 
@@ -80,7 +75,7 @@ class TFEventWriter(Writer):
 
     def __init__(self, *, save_dir: Optional[str] = None) -> None:
         if save_dir is None:
-            save_dir = osp.join(get_run_dir(), 'tensorboard')
+            save_dir = os.path.join(get_run_dir(), 'tensorboard')
         self.save_dir = fs.normpath(save_dir)
 
     def _set_trainer(self, trainer: Trainer) -> None:
@@ -104,9 +99,9 @@ class JSONWriter(Writer):
     """
     def __init__(self, save_dir: Optional[str] = None) -> None:
         if save_dir is None:
-            save_dir = osp.join(get_run_dir(), 'summary')
+            save_dir = os.path.join(get_run_dir(), 'summary')
         self.save_dir = fs.normpath(save_dir)
-        self.save_fname = osp.join(save_dir, 'scalars.json')
+        self.save_fname = os.path.join(save_dir, 'scalars.json')
 
     def _set_trainer(self, trainer: Trainer) -> None:
         self.summaries = []

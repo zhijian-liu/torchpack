@@ -2,6 +2,7 @@ import multiprocessing as mp
 import os
 import time
 from queue import Empty
+from typing import List, Optional
 
 import numpy as np
 import torch
@@ -9,8 +10,8 @@ from tensorpack.utils.concurrency import (ensure_proc_terminate,
                                           start_proc_mask_signal)
 from tensorpack.utils.nvml import NVMLContext
 
-from ..utils.logging import logger
-from .callback import Callback
+from torchpack.callbacks.callback import Callback
+from torchpack.utils.logging import logger
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 
@@ -22,9 +23,9 @@ class GPUUtilizationTracker(Callback):
     every second within the epoch (the time of `trigger_epoch` is not included).
     This callback creates a process, therefore it is not safe to be used with MPI.
     """
-    master_only = True
+    master_only: bool = True
 
-    def __init__(self, *, devices=None):
+    def __init__(self, *, devices: Optional[List[int]] = None) -> None:
         if devices is not None:
             self.devices = devices
         else:
@@ -60,7 +61,7 @@ class GPUUtilizationTracker(Callback):
         except:
             queue.put(None)
 
-    def _before_train(self):
+    def _before_train(self) -> None:
         self.queue = mp.Queue()
         self.event = mp.Event()
         self.process = mp.Process(target=self._worker,
@@ -68,17 +69,17 @@ class GPUUtilizationTracker(Callback):
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
-    def _before_epoch(self):
+    def _before_epoch(self) -> None:
         while self.event.is_set():
             pass
         self.event.set()
 
-    def _after_epoch(self):
+    def _after_epoch(self) -> None:
         while self.event.is_set():
             pass
         self.event.set()
 
-    def _trigger_epoch(self):
+    def _trigger_epoch(self) -> None:
         try:
             meters = self.queue.get(timeout=60)
         except Empty:
@@ -91,7 +92,7 @@ class GPUUtilizationTracker(Callback):
                 self.trainer.summary.add_scalar(
                     'utilization/gpu{}'.format(device), meters[k])
 
-    def _after_train(self):
+    def _after_train(self) -> None:
         if self.process.is_alive():
             self.process.terminate()
 
@@ -100,21 +101,21 @@ class ThroughputTracker(Callback):
     """
     Track the throughput within an epoch (the time of `trigger_epoch` is not included).
     """
-    master_only = True
+    master_only: bool = True
 
-    def __init__(self, *, samples_per_step=None):
+    def __init__(self, *, samples_per_step: Optional[int] = None) -> None:
         self.samples_per_step = samples_per_step
 
-    def _before_train(self):
+    def _before_train(self) -> None:
         self.last_step = self.trainer.global_step
 
-    def _before_epoch(self):
+    def _before_epoch(self) -> None:
         self.start_time = time.time()
 
-    def _after_epoch(self):
+    def _after_epoch(self) -> None:
         self.end_time = time.time()
 
-    def _trigger_epoch(self):
+    def _trigger_epoch(self) -> None:
         steps_per_sec = (self.trainer.global_step -
                          self.last_step) / (self.end_time - self.start_time)
         self.last_step = self.trainer.global_step

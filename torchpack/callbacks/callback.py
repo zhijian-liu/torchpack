@@ -1,12 +1,8 @@
-from __future__ import annotations
-
 import traceback
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from torchpack import distributed as dist
-
-if TYPE_CHECKING:
-    from torchpack.train import Trainer
+from torchpack.utils.typing import Trainer
 
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 

@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import torch
 
-import torchpack.distributed as dist
+from torchpack import distributed as dist
 from torchpack.callbacks.callback import Callback
 
 __all__ = [

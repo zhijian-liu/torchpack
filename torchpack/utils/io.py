@@ -1,7 +1,7 @@
 import json
+import os
 import pickle
 from contextlib import contextmanager
-from os import path as osp
 from typing import IO, Any, Callable, Dict, Iterator, Tuple, Union
 
 import numpy as np
@@ -130,18 +130,18 @@ def load(fpath: str, **kwargs) -> Any:
         if fpath.endswith(extension):
             return __io_registry[extension][0](fpath, **kwargs)
 
-    extension = osp.splitext(fpath)[1]
+    extension = os.path.splitext(fpath)[1]
     raise NotImplementedError(f'"{extension}" is not supported.')
 
 
 def save(fpath: str, obj: Any, **kwargs) -> None:
     assert isinstance(fpath, str), type(fpath)
-    fs.makedir(osp.dirname(fpath))
+    fs.makedir(os.path.dirname(fpath))
 
     for extension in sorted(__io_registry.keys(), key=len, reverse=True):
         if fpath.endswith(extension):
             __io_registry[extension][1](fpath, obj, **kwargs)
             return
 
-    extension = osp.splitext(fpath)[1]
+    extension = os.path.splitext(fpath)[1]
     raise NotImplementedError(f'"{extension}" is not supported.')

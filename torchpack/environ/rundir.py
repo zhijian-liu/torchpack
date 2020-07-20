@@ -1,4 +1,4 @@
-from os import path as osp
+import os
 
 from torchpack import distributed as dist
 from torchpack.utils import fs
@@ -20,7 +20,7 @@ def set_run_dir(dirpath: str) -> None:
     prefix = '{time}'
     if dist.size() > 1:
         prefix += '_{:04d}'.format(dist.rank())
-    logger.add(osp.join(_run_dir, 'logging', prefix + '.log'),
+    logger.add(os.path.join(_run_dir, 'logging', prefix + '.log'),
                format=('{time:YYYY-MM-DD HH:mm:ss.SSS} | '
                        '{name}:{function}:{line} | '
                        '{level} | {message}'))

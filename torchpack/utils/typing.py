@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+import typing
 
 __all__ = ['Logger', 'Trainer']
 
@@ -6,6 +6,6 @@ Logger = None
 Trainer = None
 
 # https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from loguru import Logger
     from torchpack.train import Trainer
