@@ -22,5 +22,5 @@ def naturaldelta(seconds: float) -> str:
             continue
         if values[k] > 1:
             unit += 's'
-        texts.append('{:.3d} {}'.format(values[k], unit))
+        texts.append('{:.3g} {}'.format(values[k], unit))
     return ' '.join(texts)
