@@ -19,10 +19,6 @@ class Trainer:
     """
     Base class for a trainer.
     """
-    dataflow: DataLoader
-    callbacks: Callbacks
-    summary: Summary
-
     def train_with_defaults(self,
                             dataflow: DataLoader,
                             *,

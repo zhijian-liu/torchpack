@@ -10,18 +10,21 @@ __all__ = ['Summary']
 
 
 class Summary:
-    def __init__(self, trainer, writers):
-        self.trainer = trainer
-        for writer in writers:
-            assert isinstance(writer, Writer), type(writer)
-        self.writers = writers
+    def __init__(self):
         self.history = defaultdict(deque)
+
+    def set_trainer(self, trainer):
+        self.trainer = trainer
+        self.writers = []
+        for callback in trainer.callbacks:
+            if isinstance(callback, Writer):
+                self.writers.append(callback)
 
     def add_scalar(self,
                    name: str,
                    scalar: Union[int, float, np.integer, np.floating],
                    *,
-                   max_to_keep: Optional[int] = 65536) -> None:
+                   max_to_keep: Optional[int] = None) -> None:
         if isinstance(scalar, np.integer):
             scalar = int(scalar)
         if isinstance(scalar, np.floating):
@@ -42,7 +45,7 @@ class Summary:
                   name: str,
                   tensor: Union[torch.Tensor, np.ndarray],
                   *,
-                  max_to_keep: Optional[int] = 64) -> None:
+                  max_to_keep: Optional[int] = None) -> None:
         if isinstance(tensor, torch.Tensor):
             tensor = tensor.cpu().numpy()
         assert isinstance(tensor, np.ndarray), type(tensor)
