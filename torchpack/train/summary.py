@@ -4,7 +4,8 @@ from typing import Any, Deque, Iterable, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from torchpack.callbacks.writers import Writer
+from torchpack.callbacks.writers import SummaryWriter
+from torchpack.utils.typing import Scalar, Tensor
 
 __all__ = ['Summary']
 
@@ -17,15 +18,15 @@ class Summary:
         self.trainer = trainer
         self.writers = []
         for callback in trainer.callbacks:
-            if isinstance(callback, Writer):
+            if isinstance(callback, SummaryWriter):
                 self.writers.append(callback)
 
     def add_scalar(self,
                    name: str,
-                   scalar: Union[int, float, np.integer, np.floating],
+                   scalar: Scalar,
                    *,
                    max_to_keep: Optional[int] = None) -> None:
-        if isinstance(scalar, np.integer):
+        if isinstance(scalar, (np.integer)):
             scalar = int(scalar)
         if isinstance(scalar, np.floating):
             scalar = float(scalar)
@@ -43,7 +44,7 @@ class Summary:
 
     def add_image(self,
                   name: str,
-                  tensor: Union[torch.Tensor, np.ndarray],
+                  tensor: Tensor,
                   *,
                   max_to_keep: Optional[int] = None) -> None:
         if isinstance(tensor, torch.Tensor):

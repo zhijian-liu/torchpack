@@ -3,13 +3,12 @@ from typing import Any, Dict, List, Optional
 
 from torch.utils.data import DataLoader, DistributedSampler
 
-import torchpack.utils.humanize as humanize
+from torchpack.callbacks import (ConsoleWriter, EstimatedTimeLeft, JSONLWriter,
+                                 MetaInfoSaver, ProgressBar, TFEventWriter)
 from torchpack.callbacks.callback import Callback, Callbacks
-from torchpack.callbacks.metainfo import MetaInfoSaver
-from torchpack.callbacks.progress import EstimatedTimeLeft, ProgressBar
-from torchpack.callbacks.writers import LoggingWriter, TFEventWriter, Writer
 from torchpack.train.exception import StopTraining
 from torchpack.train.summary import Summary
+from torchpack.utils import humanize
 from torchpack.utils.logging import logger
 
 __all__ = ['Trainer']
@@ -30,8 +29,9 @@ class Trainer:
             callbacks = []
         callbacks.extend([
             MetaInfoSaver(),
-            LoggingWriter(),
+            ConsoleWriter(),
             TFEventWriter(),
+            JSONLWriter(),
             ProgressBar(),
             EstimatedTimeLeft()
         ])
