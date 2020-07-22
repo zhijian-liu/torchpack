@@ -1,12 +1,16 @@
 from typing import Any, Dict
 
+from torch import nn
+
 from torchpack.train import Trainer
+from torchpack.utils.typing import Optimizer, Scheduler
 
 __all__ = ['ClassificationTrainer']
 
 
 class ClassificationTrainer(Trainer):
-    def __init__(self, *, model, criterion, optimizer, scheduler) -> None:
+    def __init__(self, *, model: nn.Module, criterion: nn.Module,
+                 optimizer: Optimizer, scheduler: Scheduler) -> None:
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
