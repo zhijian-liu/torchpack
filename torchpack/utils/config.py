@@ -49,7 +49,7 @@ class Config(dict):
                 self[key] = value
 
     @multimethod
-    def update(self, opts: Union[List[str], Tuple[str]]) -> None:  # pylint: disable=function-redefined
+    def update(self, opts: Union[List[str], Tuple[str]]) -> None:  # noqa: F811
         index = 0
         while index < len(opts):
             opt = opts[index]
