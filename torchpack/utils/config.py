@@ -92,5 +92,3 @@ class Config(dict):
 
 
 configs: Config = Config()
-
-configs.update
