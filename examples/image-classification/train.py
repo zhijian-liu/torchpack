@@ -1,26 +1,26 @@
-import os.path as osp
+import os
 import sys
 
 import torch
-import torch.nn as nn
-import torchpack.distributed as dist
+from torch import nn
+
+from torchpack import distributed as dist
 from torchpack.callbacks import (InferenceRunner, MaxSaver, Saver,
                                  SaverRestore, TopKCategoricalAccuracy)
 from torchpack.datasets.vision import ImageNet
 from torchpack.environ import set_run_dir
 from torchpack.models.vision import MobileNetV2
 from torchpack.utils.logging import logger
-
 from utils.trainer import ClassificationTrainer
 
 
-def main():
+def main() -> None:
     dist.init()
 
     torch.backends.cudnn.benchmark = True
     torch.cuda.set_device(dist.local_rank())
 
-    set_run_dir(osp.join('runs', 'imagenet100.mobilenetv2'))
+    set_run_dir(os.path.join('runs', 'imagenet100.mobilenetv2'))
     logger.info(' '.join([sys.executable] + sys.argv))
 
     logger.info('Loading the dataset.')
@@ -59,13 +59,13 @@ def main():
         max_epoch=150,
         callbacks=[
             SaverRestore(),
-            Saver(),
             InferenceRunner(dataflow['test'],
                             callbacks=[
                                 TopKCategoricalAccuracy(k=1, name='acc/top1'),
                                 TopKCategoricalAccuracy(k=5, name='acc/top5')
                             ]),
-            MaxSaver('acc/top1')
+            MaxSaver('acc/top1'),
+            Saver()
         ])
 
 
