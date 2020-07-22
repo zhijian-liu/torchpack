@@ -100,6 +100,12 @@ class JSONLWriter(SummaryWriter):
         self.scalars[name] = scalar
 
     def _trigger_step(self) -> None:
+        self.trigger()
+
+    def _trigger_epoch(self) -> None:
+        self.trigger()
+
+    def _trigger(self) -> None:
         summary = {
             'epoch_num': self.trainer.epoch_num,
             'global_step': self.trainer.global_step,
