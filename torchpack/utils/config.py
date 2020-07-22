@@ -39,7 +39,7 @@ class Config(dict):
         self.load(fpath, recursive=recursive)
 
     @multimethod
-    def update(self, other: Dict) -> None:
+    def update(self, other: Dict[str, Any]) -> None:
         for key, value in other.items():
             if isinstance(value, dict):
                 if key not in self or not isinstance(self[key], Config):
