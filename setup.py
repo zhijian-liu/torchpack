@@ -12,6 +12,7 @@ setup(
     install_requires=[
         'loguru',
         'mpi4py',
+        'multimethod',
         'numpy',
         'pyyaml',
         'scipy',
