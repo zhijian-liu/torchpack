@@ -93,6 +93,7 @@ class JSONLWriter(SummaryWriter):
 
     def _set_trainer(self, trainer: Trainer) -> None:
         self.scalars = dict()
+        fs.makedir(self.save_dir)
         self.jsonl = open(os.path.join(self.save_dir, 'scalars.jsonl'), 'a')
 
     def _add_scalar(self, name: str, scalar: Scalar) -> None:

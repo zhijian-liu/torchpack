@@ -2,7 +2,9 @@ import os
 import sys
 
 import torch
-from torch import nn
+from torch import nn, optim
+from torch.nn.parallel import DistributedDataParallel
+from torch.utils.data import DataLoader, DistributedSampler
 
 from torchpack import distributed as dist
 from torchpack.callbacks import (InferenceRunner, MaxSaver, Saver,
@@ -27,29 +29,27 @@ def main() -> None:
     dataset = ImageNet(root='/dataset/imagenet/', num_classes=100)
     dataflow = dict()
     for split in dataset:
-        sampler = torch.utils.data.distributed.DistributedSampler(
-            dataset[split],
-            num_replicas=dist.size(),
-            rank=dist.rank(),
-            shuffle=(split == 'train'))
-        dataflow[split] = torch.utils.data.DataLoader(dataset[split],
-                                                      sampler=sampler,
-                                                      batch_size=64,
-                                                      num_workers=4,
-                                                      pin_memory=True)
+        sampler = DistributedSampler(dataset[split],
+                                     num_replicas=dist.size(),
+                                     rank=dist.rank(),
+                                     shuffle=(split == 'train'))
+        dataflow[split] = DataLoader(dataset[split],
+                                     sampler=sampler,
+                                     batch_size=64,
+                                     num_workers=4,
+                                     pin_memory=True)
 
     logger.info('Building the trainer.')
     model = MobileNetV2(num_classes=100)
-    model = nn.parallel.DistributedDataParallel(model.cuda(),
-                                                device_ids=[dist.local_rank()],
-                                                find_unused_parameters=True)
+    model = DistributedDataParallel(model.cuda(),
+                                    device_ids=[dist.local_rank()],
+                                    find_unused_parameters=True)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(),
-                                lr=0.05,
-                                momentum=0.9,
-                                weight_decay=4e-5)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-                                                           T_max=150)
+    optimizer = optim.SGD(model.parameters(),
+                          lr=0.05,
+                          momentum=0.9,
+                          weight_decay=4e-5)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=150)
     trainer = ClassificationTrainer(model=model,
                                     criterion=criterion,
                                     optimizer=optimizer,
