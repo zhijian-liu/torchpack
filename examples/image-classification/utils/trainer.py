@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from torch import nn
 
@@ -9,7 +9,7 @@ __all__ = ['ClassificationTrainer']
 
 
 class ClassificationTrainer(Trainer):
-    def __init__(self, *, model: nn.Module, criterion: nn.Module,
+    def __init__(self, *, model: nn.Module, criterion: Callable,
                  optimizer: Optimizer, scheduler: Scheduler) -> None:
         self.model = model
         self.criterion = criterion
