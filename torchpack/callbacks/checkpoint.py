@@ -49,14 +49,14 @@ class Saver(Callback):
 
     def _add_checkpoint(self, fpath: str) -> None:
         self.checkpoints.append(fpath)
-        if self.max_to_keep is not None:
-            while len(self.checkpoints) > self.max_to_keep:
-                fpath = self.checkpoints.popleft()
-                try:
-                    fs.remove(fpath)
-                except OSError:
-                    logger.exception(
-                        f'Error occurred when removing checkpoint "{fpath}".')
+        while self.max_to_keep is not None and \
+                len(self.checkpoints) > self.max_to_keep:
+            fpath = self.checkpoints.popleft()
+            try:
+                fs.remove(fpath)
+            except OSError:
+                logger.exception(
+                    f'Error occurred when removing checkpoint "{fpath}".')
 
 
 class BestSaver(Callback):

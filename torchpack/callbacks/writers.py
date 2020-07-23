@@ -2,12 +2,14 @@ import json
 import os
 from typing import List, Optional, Union
 
+import numpy as np
+
 from torchpack.callbacks.callback import Callback
 from torchpack.environ import get_run_dir
 from torchpack.utils import fs
 from torchpack.utils.logging import logger
 from torchpack.utils.matching import NameMatcher
-from torchpack.utils.typing import Scalar, Tensor, Trainer
+from torchpack.utils.typing import Trainer
 
 __all__ = ['SummaryWriter', 'ConsoleWriter', 'TFEventWriter', 'JSONLWriter']
 
@@ -18,18 +20,18 @@ class SummaryWriter(Callback):
     """
     master_only: bool = True
 
-    def add_scalar(self, name: str, scalar: Scalar) -> None:
+    def add_scalar(self, name: str, scalar: Union[int, float]) -> None:
         if self.enabled:
             self._add_scalar(name, scalar)
 
-    def _add_scalar(self, name: str, scalar: Scalar) -> None:
+    def _add_scalar(self, name: str, scalar: Union[int, float]) -> None:
         pass
 
-    def add_image(self, name: str, tensor: Tensor) -> None:
+    def add_image(self, name: str, tensor: np.ndarray) -> None:
         if self.enabled:
             self._add_image(name, tensor)
 
-    def _add_image(self, name: str, tensor: Tensor) -> None:
+    def _add_image(self, name: str, tensor: np.ndarray) -> None:
         pass
 
 
@@ -43,7 +45,7 @@ class ConsoleWriter(SummaryWriter):
     def _set_trainer(self, trainer: Trainer) -> None:
         self.scalars = dict()
 
-    def _add_scalar(self, name: str, scalar: Scalar) -> None:
+    def _add_scalar(self, name: str, scalar: Union[int, float]) -> None:
         self.scalars[name] = scalar
 
     def _trigger_epoch(self) -> None:
@@ -72,10 +74,10 @@ class TFEventWriter(SummaryWriter):
         from torch.utils.tensorboard import SummaryWriter
         self.writer = SummaryWriter(self.save_dir)
 
-    def _add_scalar(self, name: str, scalar: Scalar) -> None:
+    def _add_scalar(self, name: str, scalar: Union[int, float]) -> None:
         self.writer.add_scalar(name, scalar, self.trainer.global_step)
 
-    def _add_image(self, name: str, tensor: Tensor) -> None:
+    def _add_image(self, name: str, tensor: np.ndarray) -> None:
         self.writer.add_image(name, tensor, self.trainer.global_step)
 
     def _after_train(self) -> None:
@@ -92,11 +94,11 @@ class JSONLWriter(SummaryWriter):
         self.save_dir = fs.normpath(save_dir)
 
     def _set_trainer(self, trainer: Trainer) -> None:
-        self.scalars = dict()
         fs.makedir(self.save_dir)
         self.jsonl = open(os.path.join(self.save_dir, 'scalars.jsonl'), 'a')
+        self.scalars = dict()
 
-    def _add_scalar(self, name: str, scalar: Scalar) -> None:
+    def _add_scalar(self, name: str, scalar: Union[int, float]) -> None:
         self.scalars[name] = scalar
 
     def _trigger_step(self) -> None:

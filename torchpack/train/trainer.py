@@ -55,9 +55,9 @@ class Trainer:
             callbacks = []
 
         self.callbacks = Callbacks(callbacks)
-        self.callbacks.set_trainer(self)
-
         self.summary = Summary()
+
+        self.callbacks.set_trainer(self)
         self.summary.set_trainer(self)
 
         try:

@@ -4,12 +4,14 @@ import torch.distributed
 
 __all__ = ['init', 'size', 'rank', 'local_size', 'local_rank', 'is_master']
 
-_world_size, _world_rank = 1, 0
-_local_size, _local_rank = 1, 0
+_world_size: int = 1
+_world_rank: int = 0
+_local_size: int = 1
+_local_rank: int = 0
 
 
 def init() -> None:
-    from mpi4py import MPI
+    from mpi4py import MPI  # type: ignore
     world_comm = MPI.COMM_WORLD
     local_comm = MPI.COMM_WORLD.Split_type(MPI.COMM_TYPE_SHARED)
 

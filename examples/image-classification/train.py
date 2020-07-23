@@ -2,7 +2,7 @@ import os
 import sys
 
 import torch
-from torch import nn, optim
+from torch import nn
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 
@@ -45,11 +45,12 @@ def main() -> None:
                                     device_ids=[dist.local_rank()],
                                     find_unused_parameters=True)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(),
-                          lr=0.05,
-                          momentum=0.9,
-                          weight_decay=4e-5)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=150)
+    optimizer = torch.optim.SGD(model.parameters(),
+                                lr=0.05,
+                                momentum=0.9,
+                                weight_decay=4e-5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                           T_max=150)
     trainer = ClassificationTrainer(model=model,
                                     criterion=criterion,
                                     optimizer=optimizer,
