@@ -39,8 +39,8 @@ class Summary:
     def _add_scalar(self, name: str, scalar: Union[int, float], *,
                     max_to_keep: Optional[int]) -> None:
         self.history[name].append((self.trainer.global_step, scalar))
-        while max_to_keep is not None and len(
-                self.history[name]) > max_to_keep:
+        while max_to_keep is not None and \
+                len(self.history[name]) > max_to_keep:
             self.history[name].popleft()
         for writer in self.writers:
             writer.add_scalar(name, scalar)
@@ -69,17 +69,17 @@ class Summary:
         for writer in self.writers:
             writer.add_image(name, tensor)
 
-    def items(self) -> Iterable[Tuple[str, Deque[Tuple[int, Any]]]]:
-        for key, value in self.history.items():
-            yield key, value
-
     def keys(self) -> Iterable[str]:
-        for key, _ in self.items():
+        for key in self.history.keys():
             yield key
 
     def values(self) -> Iterable[Deque[Tuple[int, Any]]]:
-        for _, value in self.items():
+        for value in self.history.values():
             yield value
+
+    def items(self) -> Iterable[Tuple[str, Deque[Tuple[int, Any]]]]:
+        for key, value in self.history.items():
+            yield key, value
 
     def __contains__(self, key: str) -> bool:
         return key in self.history
