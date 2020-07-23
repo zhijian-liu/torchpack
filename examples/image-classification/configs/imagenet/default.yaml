@@ -1,0 +1,3 @@
+dataset:
+  name: imagenet
+  root: /dataset/imagenet/

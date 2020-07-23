@@ -1,0 +1,17 @@
+model:
+  name: mobilenetv2
+
+criterion:
+  name: xent
+
+max_epoch: 150
+batch_size: 512
+
+optimizer:
+  name: sgd
+  lr: 0.05
+  momentum: 0.9
+  weight_decay: 4.0e-5
+
+scheduler:
+  name: cosine
