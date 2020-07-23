@@ -37,7 +37,7 @@ class SummaryWriter(Callback):
 
 class ConsoleWriter(SummaryWriter):
     """
-    Write scalar summaries to logging.
+    Write scalar summaries to console (and logger).
     """
     def __init__(self, scalars: Union[str, List[str]] = '*') -> None:
         self.matcher = NameMatcher(patterns=scalars)

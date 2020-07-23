@@ -90,7 +90,7 @@ class BestSaver(Callback):
             logger.warning(
                 f'`{self.scalar}` has not been added to `trainer.summary`.')
             return
-        step, value = self.trainer.summary[self.scalar]
+        step, value = self.trainer.summary[self.scalar][-1]
 
         if self.step is not None and step <= self.step:
             logger.warning(
