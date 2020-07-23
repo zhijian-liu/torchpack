@@ -1,3 +1,4 @@
 dataset:
   name: imagenet
   root: /dataset/imagenet/
+  num_classes: 1000

@@ -58,6 +58,7 @@ def main() -> None:
         model.cuda(),
         device_ids=[dist.local_rank()],
         find_unused_parameters=True)
+
     criterion = builder.make_criterion()
     optimizer = builder.make_optimizer(model)
     scheduler = builder.make_scheduler(optimizer)
