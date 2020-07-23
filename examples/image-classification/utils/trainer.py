@@ -1,9 +1,10 @@
 from typing import Any, Callable, Dict
 
 from torch import nn
+from torch.optim.lr_scheduler import _LRScheduler as Scheduler
+from torch.optim.optimizer import Optimizer
 
 from torchpack.train import Trainer
-from torchpack.utils.typing import Optimizer, Scheduler
 
 __all__ = ['ClassificationTrainer']
 

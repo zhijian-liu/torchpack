@@ -3,9 +3,9 @@ from typing import Any, Dict, List, Optional
 
 from torch.utils.data import DataLoader, DistributedSampler
 
-from torchpack.callbacks import (ConsoleWriter, EstimatedTimeLeft, JSONLWriter,
-                                 MetaInfoSaver, ProgressBar, TFEventWriter)
-from torchpack.callbacks.callback import Callback, Callbacks
+from torchpack.callbacks import (Callback, Callbacks, ConsoleWriter,
+                                 EstimatedTimeLeft, JSONLWriter, MetaInfoSaver,
+                                 ProgressBar, TFEventWriter)
 from torchpack.train.exception import StopTraining
 from torchpack.train.summary import Summary
 from torchpack.utils import humanize
@@ -27,14 +27,14 @@ class Trainer:
                             ) -> None:
         if callbacks is None:
             callbacks = []
-        callbacks.extend([
+        callbacks += [
             MetaInfoSaver(),
             ConsoleWriter(),
             TFEventWriter(),
             JSONLWriter(),
             ProgressBar(),
             EstimatedTimeLeft()
-        ])
+        ]
         self.train(dataflow=dataflow,
                    starting_epoch=starting_epoch,
                    max_epoch=max_epoch,
@@ -53,14 +53,13 @@ class Trainer:
 
         if callbacks is None:
             callbacks = []
-
         self.callbacks = Callbacks(callbacks)
         self.summary = Summary()
 
-        self.callbacks.set_trainer(self)
-        self.summary.set_trainer(self)
-
         try:
+            self.callbacks.set_trainer(self)
+            self.summary.set_trainer(self)
+
             self.epoch_num = self.starting_epoch - 1
             self.global_step = self.epoch_num * self.steps_per_epoch
 
@@ -110,8 +109,8 @@ class Trainer:
         pass
 
     def before_epoch(self) -> None:
-        if isinstance(self.dataflow, DataLoader) and isinstance(
-                self.dataflow.sampler, DistributedSampler):
+        if isinstance(self.dataflow, DataLoader) and \
+                isinstance(self.dataflow.sampler, DistributedSampler):
             self.dataflow.sampler.set_epoch(self.epoch_num)
         self._before_epoch()
         self.callbacks.before_epoch()
@@ -173,10 +172,10 @@ class Trainer:
 
     def state_dict(self) -> Dict[str, Any]:
         state_dict = self._state_dict()
+        state_dict['callbacks'] = self.callbacks.state_dict()
         state_dict['epoch_num'] = self.epoch_num
         state_dict['local_step'] = self.local_step
         state_dict['global_step'] = self.global_step
-        state_dict['callbacks'] = self.callbacks.state_dict()
         return state_dict
 
     def _state_dict(self) -> Dict[str, Any]:
