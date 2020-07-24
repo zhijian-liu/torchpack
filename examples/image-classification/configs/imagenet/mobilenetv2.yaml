@@ -1,5 +1,6 @@
 model:
   name: mobilenetv2
+  width_multipler: 1.0
 
 criterion:
   name: xent

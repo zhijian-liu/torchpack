@@ -94,9 +94,9 @@ class JSONLWriter(SummaryWriter):
         self.save_dir = fs.normpath(save_dir)
 
     def _set_trainer(self, trainer: Trainer) -> None:
-        fs.makedir(self.save_dir)
-        self.jsonl = open(os.path.join(self.save_dir, 'scalars.jsonl'), 'a')
         self.scalars = dict()
+        fs.makedir(self.save_dir)
+        self.file = open(os.path.join(self.save_dir, 'scalars.jsonl'), 'a')
 
     def _add_scalar(self, name: str, scalar: Union[int, float]) -> None:
         self.scalars[name] = scalar
@@ -110,13 +110,13 @@ class JSONLWriter(SummaryWriter):
     def _trigger(self) -> None:
         summary = {
             'epoch_num': self.trainer.epoch_num,
-            'global_step': self.trainer.global_step,
             'local_step': self.trainer.local_step,
+            'global_step': self.trainer.global_step,
             **self.scalars
         }
         self.scalars.clear()
-        self.jsonl.write(json.dumps(summary) + '\n')
-        self.jsonl.flush()
+        self.file.write(json.dumps(summary) + '\n')
+        self.file.flush()
 
     def _after_train(self) -> None:
-        self.jsonl.close()
+        self.file.close()

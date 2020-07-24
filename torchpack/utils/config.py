@@ -49,7 +49,7 @@ class Config(dict):
                 self[key] = value
 
     @multimethod
-    def update(self, opts: Union[List, Tuple]) -> None:  # noqa: F811
+    def update(self, opts: Union[List, Tuple]) -> None:  # type: ignore
         index = 0
         while index < len(opts):
             opt = opts[index]
