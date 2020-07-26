@@ -110,10 +110,10 @@ class ThroughputTracker(Callback):
         self.last_step = self.trainer.global_step
 
     def _before_epoch(self) -> None:
-        self.start_time = time.time()
+        self.start_time = time.perf_counter()
 
     def _after_epoch(self) -> None:
-        self.end_time = time.time()
+        self.end_time = time.perf_counter()
 
     def _trigger_epoch(self) -> None:
         steps_per_sec = (self.trainer.global_step -

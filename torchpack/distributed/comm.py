@@ -15,7 +15,7 @@ def allreduce(data: Any, reduction: str = 'sum') -> Any:
         return sum(data)
 
 
-def allgather(data: Any) -> List[Any]:
+def allgather(data: Any) -> List:
     world_size = context.size()
     if world_size == 1:
         return [data]

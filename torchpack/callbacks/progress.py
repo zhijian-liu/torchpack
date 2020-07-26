@@ -51,14 +51,14 @@ class EstimatedTimeLeft(Callback):
 
     def _before_train(self) -> None:
         self.times = deque(maxlen=self.last_k_epochs)
-        self.last_time = time.time()
+        self.last_time = time.perf_counter()
 
     def _trigger_epoch(self) -> None:
-        if self.trainer.epoch_num < self.trainer.max_epoch:
-            self.times.append(time.time() - self.last_time)
-            self.last_time = time.time()
+        if self.trainer.epoch_num < self.trainer.num_epochs:
+            self.times.append(time.perf_counter() - self.last_time)
+            self.last_time = time.perf_counter()
 
-            estimated_time = (self.trainer.max_epoch -
+            estimated_time = (self.trainer.num_epochs -
                               self.trainer.epoch_num) * np.mean(self.times)
             logger.info('Estimated time left: {}.'.format(
                 humanize.naturaldelta(estimated_time)))

@@ -29,7 +29,7 @@ class InferenceRunner(Callback):
         self._trigger()
 
     def _trigger(self) -> None:
-        start_time = time.time()
+        start_time = time.perf_counter()
         self.callbacks.before_epoch()
 
         with torch.no_grad():
@@ -40,4 +40,4 @@ class InferenceRunner(Callback):
 
         self.callbacks.after_epoch()
         logger.info('Inference finished in {}.'.format(
-            humanize.naturaldelta(time.time() - start_time)))
+            humanize.naturaldelta(time.perf_counter() - start_time)))

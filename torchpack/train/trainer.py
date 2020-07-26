@@ -21,8 +21,7 @@ class Trainer:
     def train_with_defaults(self,
                             dataflow: DataLoader,
                             *,
-                            starting_epoch: int = 1,
-                            max_epoch: int = 9999999,
+                            num_epochs: int = 9999999,
                             callbacks: Optional[List[Callback]] = None
                             ) -> None:
         if callbacks is None:
@@ -36,20 +35,17 @@ class Trainer:
             EstimatedTimeLeft()
         ]
         self.train(dataflow=dataflow,
-                   starting_epoch=starting_epoch,
-                   max_epoch=max_epoch,
+                   num_epochs=num_epochs,
                    callbacks=callbacks)
 
     def train(self,
               dataflow: DataLoader,
               *,
-              starting_epoch: int = 1,
-              max_epoch: int = 9999999,
+              num_epochs: int = 9999999,
               callbacks: Optional[List[Callback]] = None) -> None:
         self.dataflow = dataflow
         self.steps_per_epoch = len(self.dataflow)
-        self.starting_epoch = starting_epoch
-        self.max_epoch = max_epoch
+        self.num_epochs = num_epochs
 
         if callbacks is None:
             callbacks = []
@@ -60,19 +56,19 @@ class Trainer:
             self.callbacks.set_trainer(self)
             self.summary.set_trainer(self)
 
-            self.epoch_num = self.starting_epoch - 1
-            self.global_step = self.epoch_num * self.steps_per_epoch
+            self.epoch_num = 0
+            self.global_step = 0
 
-            train_time = time.time()
+            train_time = time.perf_counter()
             self.before_train()
 
-            while self.epoch_num < self.max_epoch:
+            while self.epoch_num < self.num_epochs:
                 self.epoch_num += 1
                 self.local_step = 0
 
                 logger.info('Epoch {}/{} started.'.format(
-                    self.epoch_num, self.max_epoch))
-                epoch_time = time.time()
+                    self.epoch_num, self.num_epochs))
+                epoch_time = time.perf_counter()
                 self.before_epoch()
 
                 for feed_dict in self.dataflow:
@@ -87,15 +83,15 @@ class Trainer:
 
                 self.after_epoch()
                 logger.info('Training finished in {}.'.format(
-                    humanize.naturaldelta(time.time() - epoch_time)))
+                    humanize.naturaldelta(time.perf_counter() - epoch_time)))
 
                 self.trigger_epoch()
                 logger.info('Epoch finished in {}.'.format(
-                    humanize.naturaldelta(time.time() - epoch_time)))
+                    humanize.naturaldelta(time.perf_counter() - epoch_time)))
 
             logger.success('{} epochs of training finished in {}.'.format(
-                self.max_epoch - self.starting_epoch + 1,
-                humanize.naturaldelta(time.time() - train_time)))
+                self.num_epochs,
+                humanize.naturaldelta(time.perf_counter() - train_time)))
         except StopTraining as e:
             logger.info('Training was stopped by {}.'.format(str(e)))
         finally:

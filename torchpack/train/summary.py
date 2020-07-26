@@ -11,7 +11,7 @@ __all__ = ['Summary']
 
 
 class Summary:
-    def __init__(self):
+    def __init__(self) -> None:
         self.history = defaultdict(deque)
 
     def set_trainer(self, trainer: Trainer) -> None:

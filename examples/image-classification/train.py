@@ -69,7 +69,7 @@ def main() -> None:
                                     scheduler=scheduler)
     trainer.train_with_defaults(
         dataflow['train'],
-        max_epoch=configs.max_epoch,
+        num_epochs=configs.num_epochs,
         callbacks=[
             SaverRestore(),
             InferenceRunner(dataflow['test'],

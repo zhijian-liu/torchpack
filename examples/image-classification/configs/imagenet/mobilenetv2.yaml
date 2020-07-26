@@ -5,7 +5,7 @@ model:
 criterion:
   name: xent
 
-max_epoch: 150
+num_epochs: 150
 batch_size: 512
 
 optimizer:

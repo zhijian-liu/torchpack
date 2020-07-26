@@ -10,9 +10,6 @@ from torchpack.datasets.dataset import Dataset
 
 __all__ = ['ImageNet']
 
-# filter warnings for corrupted data
-warnings.filterwarnings('ignore')
-
 
 class ImageNetDataset(datasets.ImageNet):
     def __init__(self,
@@ -27,7 +24,9 @@ class ImageNetDataset(datasets.ImageNet):
                          target_transform=target_transform)
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
-        image, label = super().__getitem__(index)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore')
+            image, label = super().__getitem__(index)
         return {'image': image, 'class': label}
 
 
