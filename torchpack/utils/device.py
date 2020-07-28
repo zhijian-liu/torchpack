@@ -1,7 +1,7 @@
 import os
 from typing import List, Union
 
-import torch
+import torch.cuda
 
 __all__ = ['parse_cuda_devices', 'set_cuda_visible_devices']
 
