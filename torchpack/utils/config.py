@@ -63,7 +63,10 @@ class Config(dict):
                 index += 2
             current = self
             subkeys = key.split('.')
-            value = literal_eval(value)
+            try:
+                value = literal_eval(value)
+            except:
+                pass
             for subkey in subkeys[:-1]:
                 current = current.setdefault(subkey, Config())
             current[subkeys[-1]] = value
