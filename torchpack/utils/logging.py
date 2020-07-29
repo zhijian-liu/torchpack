@@ -15,4 +15,4 @@ def __get_logger() -> Logger:
     return logger
 
 
-logger: Logger = __get_logger()
+logger = __get_logger()
