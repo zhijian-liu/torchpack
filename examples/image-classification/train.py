@@ -24,11 +24,11 @@ def main() -> None:
     torch.cuda.set_device(dist.local_rank())
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('cpath', metavar='FILE', help='path to config file.')
-    parser.add_argument('--run_dir', help='path to save outputs.')
+    parser.add_argument('config', metavar='FILE', help='config file')
+    parser.add_argument('--run-dir', metavar='DIR', help='run directory')
     args, opts = parser.parse_known_args()
 
-    configs.load(args.cpath, recursive=True)
+    configs.load(args.config, recursive=True)
     configs.update(opts)
 
     if args.run_dir is None:
@@ -37,7 +37,7 @@ def main() -> None:
         set_run_dir(args.run_dir)
 
     logger.info(' '.join([sys.executable] + sys.argv))
-    logger.info(f'Session started: "{args.run_dir}".' + '\n' + f'{configs}')
+    logger.info(f'Experiment started: "{args.run_dir}".' + '\n' + f'{configs}')
 
     dataset = builder.make_dataset()
     dataflow = dict()
