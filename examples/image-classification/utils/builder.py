@@ -1,6 +1,7 @@
 from typing import Callable
 
 import torch
+import torch.optim
 from torch import nn
 
 from torchpack.datasets.vision import ImageNet

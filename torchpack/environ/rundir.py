@@ -28,11 +28,11 @@ def set_run_dir(dirpath: str) -> None:
 
 
 def auto_set_run_dir() -> str:
-    subkeys = ['run']
+    tags = ['run']
     if git.is_inside_work_tree():
-        subkeys.append(git.get_commit_hash()[:8])
+        tags.append(git.get_commit_hash()[:8])
     if configs:
-        subkeys.append(configs.hash()[:8])
-    run_dir = os.path.join('runs', '-'.join(subkeys))
+        tags.append(configs.hash()[:8])
+    run_dir = os.path.join('runs', '-'.join(tags))
     set_run_dir(run_dir)
     return run_dir
