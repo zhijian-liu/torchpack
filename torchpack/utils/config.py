@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 from ast import literal_eval
 from typing import Any, Dict, List, Tuple, Union
@@ -78,6 +80,10 @@ class Config(dict):
                 value = value.dict()
             configs[key] = value
         return configs
+
+    def hash(self) -> str:
+        buffer = json.dumps(self.dict(), sort_keys=True)
+        return hashlib.sha256(buffer.encode()).hexdigest()
 
     def __str__(self) -> str:
         texts = []

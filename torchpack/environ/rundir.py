@@ -1,10 +1,11 @@
 import os
 
 from torchpack import distributed as dist
-from torchpack.utils import fs
+from torchpack.utils import fs, git
+from torchpack.utils.config import configs
 from torchpack.utils.logging import logger
 
-__all__ = ['get_run_dir', 'set_run_dir']
+__all__ = ['get_run_dir', 'set_run_dir', 'auto_set_run_dir']
 
 
 def get_run_dir() -> str:
@@ -24,3 +25,14 @@ def set_run_dir(dirpath: str) -> None:
                format=('{time:YYYY-MM-DD HH:mm:ss.SSS} | '
                        '{name}:{function}:{line} | '
                        '{level} | {message}'))
+
+
+def auto_set_run_dir() -> str:
+    subkeys = ['run']
+    if git.is_inside_work_tree():
+        subkeys.append(git.get_commit_hash()[:8])
+    if configs:
+        subkeys.append(configs.hash()[:8])
+    run_dir = os.path.join('runs', '-'.join(subkeys))
+    set_run_dir(run_dir)
+    return run_dir

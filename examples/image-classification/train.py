@@ -1,15 +1,16 @@
 import argparse
-import os
 import sys
 
 import torch
 import torch.backends.cudnn
+import torch.cuda
+import torch.nn
 import torch.utils.data
 
 from torchpack import distributed as dist
 from torchpack.callbacks import (InferenceRunner, MaxSaver, Saver,
                                  SaverRestore, TopKCategoricalAccuracy)
-from torchpack.environ import set_run_dir
+from torchpack.environ import auto_set_run_dir, set_run_dir
 from torchpack.utils.config import configs
 from torchpack.utils.logging import logger
 from utils import builder
@@ -24,20 +25,21 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument('cpath', metavar='FILE', help='path to config file.')
+    parser.add_argument('--run_dir', help='path to save outputs.')
     args, opts = parser.parse_known_args()
 
     configs.load(args.cpath, recursive=True)
     configs.update(opts)
 
-    run_name = '.'.join(os.path.splitext(args.cpath)[0].split(os.sep)[1:])
-    set_run_dir(os.path.join('runs', run_name))
+    if args.run_dir is None:
+        args.run_dir = auto_set_run_dir()
+    else:
+        set_run_dir(args.run_dir)
 
     logger.info(' '.join([sys.executable] + sys.argv))
-    logger.info('\n' + str(configs))
+    logger.info(f'Session started: "{args.run_dir}".' + '\n' + f'{configs}')
 
-    logger.info('Loading the dataset.')
     dataset = builder.make_dataset()
-
     dataflow = dict()
     for split in dataset:
         sampler = torch.utils.data.DistributedSampler(
@@ -52,7 +54,6 @@ def main() -> None:
             num_workers=configs.workers_per_gpu,
             pin_memory=True)
 
-    logger.info('Building the trainer.')
     model = builder.make_model()
     model = torch.nn.parallel.DistributedDataParallel(
         model.cuda(),
