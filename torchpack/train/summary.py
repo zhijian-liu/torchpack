@@ -58,7 +58,7 @@ class Summary:
         elif tensor.ndim == 3 and tensor.shape[-1] in [1, 3, 4]:
             tensor = tensor.transpose(2, 0, 1)
         assert tensor.ndim == 3 and tensor.shape[0] in [1, 3, 4], tensor.shape
-        self._add_image(name, tensor, max_to_keep=max_to_keep)  # type: ignore
+        self._add_image(name, tensor, max_to_keep=max_to_keep)
 
     def _add_image(self, name: str, tensor: np.ndarray, *,
                    max_to_keep: Optional[int]) -> None:
