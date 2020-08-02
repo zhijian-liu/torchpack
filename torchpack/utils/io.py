@@ -131,7 +131,8 @@ def load(fpath: str, **kwargs) -> Any:
         if fpath.endswith(extension) and 'load' in __io_registry[extension]:
             return __io_registry[extension]['load'](fpath, **kwargs)
 
-    raise NotImplementedError(f'"{fpath}" is not supported.')
+    fname = os.path.basename(fpath)
+    raise NotImplementedError(f'"{fname}" cannot be loaded.')
 
 
 def save(fpath: str, obj: Any, **kwargs) -> None:
@@ -143,4 +144,5 @@ def save(fpath: str, obj: Any, **kwargs) -> None:
             __io_registry[extension]['save'](fpath, obj, **kwargs)
             return
 
-    raise NotImplementedError(f'"{fpath}" is not supported.')
+    fname = os.path.basename(fpath)
+    raise NotImplementedError(f'"{fname}" cannot be saved.')
