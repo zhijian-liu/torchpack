@@ -5,7 +5,7 @@ from queue import Empty
 from typing import List, Optional
 
 import numpy as np
-import torch
+import torch.cuda
 from tensorpack.utils.concurrency import (ensure_proc_terminate,
                                           start_proc_mask_signal)
 from tensorpack.utils.nvml import NVMLContext

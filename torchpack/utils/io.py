@@ -1,7 +1,6 @@
 import json
 import os
 import pickle
-from collections import namedtuple
 from contextlib import contextmanager
 from typing import IO, Any, BinaryIO, Iterator, TextIO, Union
 
