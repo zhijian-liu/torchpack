@@ -108,19 +108,21 @@ def save_yaml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
         yaml.safe_dump(obj, fd, **kwargs)
 
 
+# yapf: disable
 __io_registry = {
-    '.json': dict(load=load_json, save=save_json),
-    '.jsonl': dict(load=load_jsonl, save=save_jsonl),
-    '.mat': dict(load=load_mat, save=save_mat),
-    '.npy': dict(load=load_npy, save=save_npy),
-    '.npz': dict(load=load_npz, save=save_npz),
-    '.pkl': dict(load=load_pkl, save=save_pkl),
-    '.pt': dict(load=load_pt, save=save_pt),
-    '.pth': dict(load=load_pt, save=save_pt),
-    '.pth.tar': dict(load=load_pt, save=save_pt),
-    '.yml': dict(load=load_yaml, save=save_yaml),
-    '.yaml': dict(load=load_yaml, save=save_yaml)
+    '.json': {'load': load_json, 'save': save_json},
+    '.jsonl': {'load': load_jsonl, 'save': save_jsonl},
+    '.mat': {'load': load_mat, 'save': save_mat},
+    '.npy': {'load': load_npy, 'save': save_npy},
+    '.npz': {'load': load_npz, 'save': save_npz},
+    '.pkl': {'load': load_pkl, 'save': save_pkl},
+    '.pt': {'load': load_pt, 'save': save_pt},
+    '.pth': {'load': load_pt, 'save': save_pt},
+    '.pth.tar': {'load': load_pt, 'save': save_pt},
+    '.yml': {'load': load_yaml, 'save': save_yaml},
+    '.yaml': {'load': load_yaml, 'save': save_yaml},
 }
+# yapf: enable
 
 
 def load(fpath: str, **kwargs) -> Any:
@@ -130,8 +132,7 @@ def load(fpath: str, **kwargs) -> Any:
         if fpath.endswith(extension) and 'load' in __io_registry[extension]:
             return __io_registry[extension]['load'](fpath, **kwargs)
 
-    fname = os.path.basename(fpath)
-    raise NotImplementedError(f'"{fname}" cannot be loaded.')
+    raise NotImplementedError(f'"{fpath}" cannot be loaded.')
 
 
 def save(fpath: str, obj: Any, **kwargs) -> None:
@@ -143,5 +144,4 @@ def save(fpath: str, obj: Any, **kwargs) -> None:
             __io_registry[extension]['save'](fpath, obj, **kwargs)
             return
 
-    fname = os.path.basename(fpath)
-    raise NotImplementedError(f'"{fname}" cannot be saved.')
+    raise NotImplementedError(f'"{fpath}" cannot be saved.')
