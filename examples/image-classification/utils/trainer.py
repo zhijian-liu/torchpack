@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict
 
-import torch.cuda
 from torch import nn
+from torch.cuda import amp
 
 from torchpack.train import Trainer
 from torchpack.utils.typing import Optimizer, Scheduler
@@ -22,7 +22,7 @@ class ClassificationTrainer(Trainer):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.amp_enabled = amp_enabled
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self.amp_enabled)
+        self.scaler = amp.GradScaler(enabled=self.amp_enabled)
 
     def _before_epoch(self) -> None:
         self.model.train()
@@ -31,7 +31,7 @@ class ClassificationTrainer(Trainer):
         inputs = feed_dict['image'].cuda(non_blocking=True)
         targets = feed_dict['class'].cuda(non_blocking=True)
 
-        with torch.cuda.amp.autocast(enabled=self.amp_enabled):
+        with amp.autocast(enabled=self.amp_enabled):
             outputs = self.model(inputs)
 
             if outputs.requires_grad:
