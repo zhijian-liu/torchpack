@@ -67,7 +67,8 @@ def main() -> None:
     trainer = ClassificationTrainer(model=model,
                                     criterion=criterion,
                                     optimizer=optimizer,
-                                    scheduler=scheduler)
+                                    scheduler=scheduler,
+                                    amp_enabled=configs.amp_enabled)
     trainer.train_with_defaults(
         dataflow['train'],
         num_epochs=configs.num_epochs,
