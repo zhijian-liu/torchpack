@@ -2,11 +2,11 @@ model:
   name: mobilenetv2
   width_multipler: 1.0
 
-criterion:
-  name: xent
-
 num_epochs: 150
 batch_size: 512
+
+criterion:
+  name: xent
 
 optimizer:
   name: sgd
