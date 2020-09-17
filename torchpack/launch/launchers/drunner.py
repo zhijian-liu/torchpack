@@ -7,6 +7,11 @@ from shlex import quote
 __all__ = ['main']
 
 
+def is_exportable(v):
+    IGNORE_REGEXES = ['BASH_FUNC_.*', 'OLDPWD']
+    return not any(re.match(r, v) for r in IGNORE_REGEXES)
+
+
 def get_free_tcp_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp:
         tcp.bind(('0.0.0.0', 0))
@@ -89,7 +94,8 @@ def main() -> None:
                                   hosts=args.hosts,
                                   environ=' '.join(
                                       f'-x {key}'
-                                      for key in sorted(environ.keys())),
+                                      for key in sorted(environ.keys())
+                                      if is_exportable(key)),
                                   command=command))
 
     if args.verbose:
