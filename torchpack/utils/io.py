@@ -82,6 +82,7 @@ def load_pkl(f: Union[str, BinaryIO], **kwargs) -> Any:
         except UnicodeDecodeError:
             if 'encoding' in kwargs:
                 raise
+            fd.seek(0)
             return pickle.load(fd, encoding='latin1', **kwargs)
 
 
