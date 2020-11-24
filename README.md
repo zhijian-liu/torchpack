@@ -1,5 +1,5 @@
 # Torchpack
-Torchpack is a neural network training interface based on PyTorch.
+Torchpack is a neural network training interface based on PyTorch, with a focus on flexibility.
 
 ## Installation
 
