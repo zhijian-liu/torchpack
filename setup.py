@@ -10,6 +10,7 @@ setup(
     author_email='zhijianliu.cs@gmail.com',
     url='https://github.com/zhijian-liu/torchpack',
     install_requires=[
+        'h5py',
         'loguru',
         'multimethod',
         'numpy',
