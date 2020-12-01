@@ -23,7 +23,7 @@ master_doc = 'index'
 
 project = 'torchpack'
 copyright = '2020, MIT Driverless and MIT HAN Lab'
-author = 'MIT Driverless and MIT HAN Lab'
+author = 'Torchpack contributors'
 
 # The full version, including alpha/beta/rc tags
 release = '0.3.0'
