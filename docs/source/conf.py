@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('../..'))
 
+# Set masterdoc as per https://github.com/readthedocs/readthedocs.org/issues/2569
+master_doc = 'index'
 
 # -- Project information -----------------------------------------------------
 
