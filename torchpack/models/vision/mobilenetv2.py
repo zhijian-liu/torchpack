@@ -1,9 +1,9 @@
-from typing import List, Tuple, Union
+from typing import ClassVar, List, Tuple, Union
 
 import torch
 from torch import nn
 
-from torchpack.models.utils import make_divisible
+from ..utils import make_divisible
 
 __all__ = ['MobileNetV2', 'MobileBlockV2']
 
@@ -33,7 +33,7 @@ class MobileBlockV2(nn.Module):
                           groups=in_channels,
                           bias=False),
                 nn.BatchNorm2d(in_channels),
-                nn.ReLU6(inplace=True),
+                nn.ReLU6(True),
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 nn.BatchNorm2d(out_channels),
             )
@@ -42,7 +42,7 @@ class MobileBlockV2(nn.Module):
             self.layers = nn.Sequential(
                 nn.Conv2d(in_channels, mid_channels, 1, bias=False),
                 nn.BatchNorm2d(mid_channels),
-                nn.ReLU6(inplace=True),
+                nn.ReLU6(True),
                 nn.Conv2d(mid_channels,
                           mid_channels,
                           kernel_size,
@@ -51,7 +51,7 @@ class MobileBlockV2(nn.Module):
                           groups=mid_channels,
                           bias=False),
                 nn.BatchNorm2d(mid_channels),
-                nn.ReLU6(inplace=True),
+                nn.ReLU6(True),
                 nn.Conv2d(mid_channels, out_channels, 1, bias=False),
                 nn.BatchNorm2d(out_channels),
             )
@@ -64,7 +64,7 @@ class MobileBlockV2(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    layers: List = [
+    layers: ClassVar[List] = [
         32, (1, 16, 1, 1), (6, 24, 2, 2), (6, 32, 3, 2), (6, 64, 4, 2),
         (6, 96, 3, 1), (6, 160, 3, 2), (6, 320, 1, 1), 1280
     ]
@@ -86,7 +86,7 @@ class MobileNetV2(nn.Module):
                           padding=1,
                           bias=False),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU6(inplace=True),
+                nn.ReLU6(True),
             )
         ])
         in_channels = out_channels
@@ -109,7 +109,7 @@ class MobileNetV2(nn.Module):
             nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU6(inplace=True),
+                nn.ReLU6(True),
             ))
         in_channels = out_channels
 

@@ -1,9 +1,9 @@
-from typing import List, Tuple, Union
+from typing import ClassVar, List, Tuple, Union
 
 import torch
 from torch import nn
 
-from torchpack.models.utils import make_divisible
+from ..utils import make_divisible
 
 __all__ = ['MobileNetV1', 'MobileBlockV1']
 
@@ -29,16 +29,17 @@ class MobileBlockV1(nn.Sequential):
                       groups=in_channels,
                       bias=False),
             nn.BatchNorm2d(in_channels),
-            nn.ReLU(inplace=True),
+            nn.ReLU(True),
             nn.Conv2d(in_channels, out_channels, 1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            nn.ReLU(True),
         )
 
 
 class MobileNetV1(nn.Module):
-    layers: List = [(32, 1, 2), (64, 1, 1), (128, 2, 2), (256, 2, 2),
-                    (512, 6, 2), (1024, 2, 2)]
+    layers: ClassVar[List] = [
+        32, (64, 1, 1), (128, 2, 2), (256, 2, 2), (512, 6, 2), (1024, 2, 2)
+    ]
 
     def __init__(self,
                  *,
@@ -57,7 +58,7 @@ class MobileNetV1(nn.Module):
                           padding=1,
                           bias=False),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True),
+                nn.ReLU(True),
             )
         ])
         in_channels = out_channels

@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import ClassVar, Dict, List, Tuple, Union
 
 import torch
 from torch import nn
@@ -43,13 +43,13 @@ class ShuffleBlockV2(nn.Module):
                 nn.BatchNorm2d(in_channels),
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True),
+                nn.ReLU(True),
             )
 
         self.branch2 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            nn.ReLU(True),
             nn.Conv2d(out_channels,
                       out_channels,
                       kernel_size,
@@ -60,7 +60,7 @@ class ShuffleBlockV2(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.Conv2d(out_channels, out_channels, 1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            nn.ReLU(True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -77,7 +77,7 @@ class ShuffleBlockV2(nn.Module):
 
 
 class ShuffleNetV2(nn.Module):
-    layers: Dict[float, List] = {
+    layers: ClassVar[Dict[float, List]] = {
         0.5: [24, (48, 4, 2), (96, 8, 2), (192, 4, 2), 1024],
         1.0: [24, (116, 4, 2), (232, 8, 2), (464, 4, 2), 1024],
         1.5: [24, (176, 4, 2), (352, 8, 2), (704, 4, 2), 1024],
@@ -101,7 +101,7 @@ class ShuffleNetV2(nn.Module):
                           padding=1,
                           bias=False),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True),
+                nn.ReLU(True),
             )
         ])
         in_channels = out_channels
@@ -119,7 +119,7 @@ class ShuffleNetV2(nn.Module):
             nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True),
+                nn.ReLU(True),
             ))
         in_channels = out_channels
 
