@@ -4,12 +4,12 @@ from typing import List, Optional, Union
 
 import numpy as np
 
-from torchpack.callbacks.callback import Callback
-from torchpack.environ import get_run_dir
-from torchpack.utils import fs
-from torchpack.utils.logging import logger
-from torchpack.utils.matching import NameMatcher
-from torchpack.utils.typing import Trainer
+from ..environ import get_run_dir
+from ..utils import fs
+from ..utils.logging import logger
+from ..utils.matching import NameMatcher
+from ..utils.typing import Trainer
+from .callback import Callback
 
 __all__ = ['SummaryWriter', 'ConsoleWriter', 'TFEventWriter', 'JSONLWriter']
 
@@ -108,15 +108,16 @@ class JSONLWriter(SummaryWriter):
         self.trigger()
 
     def _trigger(self) -> None:
-        summary = {
-            'epoch_num': self.trainer.epoch_num,
-            'local_step': self.trainer.local_step,
-            'global_step': self.trainer.global_step,
-            **self.scalars
-        }
-        self.scalars.clear()
-        self.file.write(json.dumps(summary) + '\n')
-        self.file.flush()
+        if self.scalars:
+            summary = {
+                'epoch_num': self.trainer.epoch_num,
+                'local_step': self.trainer.local_step,
+                'global_step': self.trainer.global_step,
+                **self.scalars
+            }
+            self.scalars.clear()
+            self.file.write(json.dumps(summary) + '\n')
+            self.file.flush()
 
     def _after_train(self) -> None:
         self.file.close()
