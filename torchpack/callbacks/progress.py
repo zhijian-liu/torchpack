@@ -3,7 +3,7 @@ from collections import deque
 from typing import List, Union
 
 import numpy as np
-import tqdm
+from tqdm.auto import tqdm
 
 from torchpack.callbacks.callback import Callback
 from torchpack.utils import humanize
@@ -23,7 +23,7 @@ class ProgressBar(Callback):
         self.matcher = NameMatcher(patterns=scalars)
 
     def _before_epoch(self) -> None:
-        self.pbar = tqdm.trange(self.trainer.steps_per_epoch, ncols=0)
+        self.pbar = tqdm(range(self.trainer.steps_per_epoch), ncols=0)
 
     def _trigger_step(self) -> None:
         texts = []
