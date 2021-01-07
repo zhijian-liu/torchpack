@@ -2,6 +2,7 @@ import argparse
 import os
 import re
 import socket
+import sys
 from shlex import quote
 
 __all__ = ['main']
@@ -82,7 +83,7 @@ def main() -> None:
 
     command = ' '.join(map(quote, args.command))
     if not args.verbose:
-        command = 'python -m torchpack.launch.assets.silentrun ' + command
+        command = sys.executable + ' -m torchpack.launch.assets.silentrun ' + command
 
     command = ('mpirun --allow-run-as-root '
                '-np {nproc} -H {hosts} '
