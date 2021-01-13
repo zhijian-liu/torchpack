@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from multimethod import multimethod
 
-from torchpack.utils import io
+from . import io
 
 __all__ = ['Config', 'configs']
 
@@ -28,7 +28,7 @@ class Config(dict):
             raise FileNotFoundError(fpath)
         fpaths = [fpath]
         if recursive:
-            while fpath:
+            while os.path.dirname(fpath) != fpath:
                 fpath = os.path.dirname(fpath)
                 for fname in ['default.yaml', 'default.yml']:
                     fpaths.append(os.path.join(fpath, fname))
