@@ -26,7 +26,7 @@ class Config(dict):
     def load(self, fpath: str, *, recursive: bool = False) -> None:
         if not os.path.exists(fpath):
             raise FileNotFoundError(fpath)
-        ext = os.path.splitext(fpath)
+        ext = os.path.splitext(fpath)[-1]
         fpaths = [fpath]
         if recursive:
             while os.path.dirname(fpath) != fpath:
