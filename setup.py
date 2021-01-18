@@ -15,6 +15,7 @@ setup(
         'multimethod',
         'numpy',
         'pyyaml',
+        'toml',
         'scipy',
         'tensorboard',
         'tensorpack',

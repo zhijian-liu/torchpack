@@ -8,6 +8,7 @@ import numpy as np
 import scipy.io
 import torch
 import yaml
+import toml
 
 from torchpack.utils import fs
 
@@ -109,6 +110,11 @@ def save_yaml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
         yaml.safe_dump(obj, fd, **kwargs)
 
 
+def save_toml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
+    with file_descriptor(f, mode='w') as fd:
+        toml.dump(obj, fd, **kwargs)
+
+
 # yapf: disable
 __io_registry = {
     '.json': {'load': load_json, 'save': save_json},
@@ -122,7 +128,10 @@ __io_registry = {
     '.pth.tar': {'load': load_pt, 'save': save_pt},
     '.yml': {'load': load_yaml, 'save': save_yaml},
     '.yaml': {'load': load_yaml, 'save': save_yaml},
+    '.toml': {'load': toml.load, 'save': save_toml}
 }
+
+
 # yapf: enable
 
 
