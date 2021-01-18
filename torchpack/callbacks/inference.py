@@ -2,7 +2,7 @@ import time
 from typing import List
 
 import torch
-import tqdm
+from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 
 from torchpack.callbacks.callback import Callback, Callbacks
@@ -33,7 +33,7 @@ class InferenceRunner(Callback):
         self.callbacks.before_epoch()
 
         with torch.no_grad():
-            for feed_dict in tqdm.tqdm(self.dataflow, ncols=0):
+            for feed_dict in tqdm(self.dataflow, ncols=0):
                 self.callbacks.before_step(feed_dict)
                 output_dict = self.trainer.run_step(feed_dict)
                 self.callbacks.after_step(output_dict)
