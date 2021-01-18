@@ -26,12 +26,12 @@ class Config(dict):
     def load(self, fpath: str, *, recursive: bool = False) -> None:
         if not os.path.exists(fpath):
             raise FileNotFoundError(fpath)
+        ext = os.path.splitext(fpath)
         fpaths = [fpath]
         if recursive:
             while os.path.dirname(fpath) != fpath:
                 fpath = os.path.dirname(fpath)
-                for fname in ['default.yaml', 'default.yml']:
-                    fpaths.append(os.path.join(fpath, fname))
+                fpaths.append(os.path.join(fpath, 'default' + ext))
         for fpath in reversed(fpaths):
             if os.path.exists(fpath):
                 self.update(io.load(fpath))
