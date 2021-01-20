@@ -6,16 +6,16 @@ from typing import IO, Any, BinaryIO, Iterator, TextIO, Union
 
 import numpy as np
 import scipy.io
+import toml
 import torch
 import yaml
-import toml
 
-from torchpack.utils import fs
+from . import fs
 
 __all__ = [
     'load', 'save', 'load_json', 'save_json', 'load_jsonl', 'save_jsonl',
     'load_mat', 'save_mat', 'load_npy', 'save_npy', 'load_npz', 'save_npz',
-    'load_pt', 'save_pt', 'load_yaml', 'save_yaml'
+    'load_pt', 'save_pt', 'load_taml', 'save_taml', 'load_yaml', 'save_yaml'
 ]
 
 
@@ -100,6 +100,15 @@ def save_pt(f: Union[str, BinaryIO], obj: Any, **kwargs) -> None:
     torch.save(obj, f, **kwargs)
 
 
+def load_toml(f: Union[str, TextIO], obj: Any, **kwargs) -> Any:
+    return toml.load(f, obj, **kwargs)
+
+
+def save_toml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
+    with file_descriptor(f, mode='w') as fd:
+        toml.dump(obj, fd, **kwargs)
+
+
 def load_yaml(f: Union[str, TextIO], **kwargs) -> Any:
     with file_descriptor(f, mode='r') as fd:
         return yaml.safe_load(fd, **kwargs)
@@ -108,11 +117,6 @@ def load_yaml(f: Union[str, TextIO], **kwargs) -> Any:
 def save_yaml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
     with file_descriptor(f, mode='w') as fd:
         yaml.safe_dump(obj, fd, **kwargs)
-
-
-def save_toml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
-    with file_descriptor(f, mode='w') as fd:
-        toml.dump(obj, fd, **kwargs)
 
 
 # yapf: disable
@@ -126,12 +130,10 @@ __io_registry = {
     '.pt': {'load': load_pt, 'save': save_pt},
     '.pth': {'load': load_pt, 'save': save_pt},
     '.pth.tar': {'load': load_pt, 'save': save_pt},
-    '.yml': {'load': load_yaml, 'save': save_yaml},
+    '.toml': {'load': load_toml, 'save': save_toml},
     '.yaml': {'load': load_yaml, 'save': save_yaml},
-    '.toml': {'load': toml.load, 'save': save_toml}
+    '.yml': {'load': load_yaml, 'save': save_yaml},
 }
-
-
 # yapf: enable
 
 
