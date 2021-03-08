@@ -8,7 +8,7 @@ _world_size, _world_rank = 1, 0
 _local_size, _local_rank = 1, 0
 
 
-def init() -> None:
+def init(backend: int = 'nccl') -> None:
     from mpi4py import MPI  # type: ignore
     world_comm = MPI.COMM_WORLD
     local_comm = MPI.COMM_WORLD.Split_type(MPI.COMM_TYPE_SHARED)
@@ -18,7 +18,7 @@ def init() -> None:
     _local_size, _local_rank = local_comm.Get_size(), local_comm.Get_rank()
 
     master_host = 'tcp://' + os.environ['MASTER_HOST']
-    torch.distributed.init_process_group(backend='nccl',
+    torch.distributed.init_process_group(backend=backend,
                                          init_method=master_host,
                                          world_size=_world_size,
                                          rank=_world_rank)
