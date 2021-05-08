@@ -3,12 +3,12 @@ from collections import deque
 from typing import List, Union
 
 import numpy as np
-from tqdm.auto import tqdm
+import tqdm
 
-from torchpack.callbacks.callback import Callback
-from torchpack.utils import humanize
-from torchpack.utils.logging import logger
-from torchpack.utils.matching import NameMatcher
+from ..utils import humanize
+from ..utils.logging import logger
+from ..utils.matching import NameMatcher
+from .callback import Callback
 
 __all__ = ['ProgressBar', 'EstimatedTimeLeft']
 

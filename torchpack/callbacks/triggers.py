@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, Optional
 
-from torchpack.callbacks.callback import Callback, ProxyCallback
+from .callback import Callback, ProxyCallback
 
 __all__ = ['EnableCallbackIf', 'PeriodicTrigger', 'PeriodicCallback']
 

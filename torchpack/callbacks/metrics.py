@@ -2,8 +2,8 @@ from typing import Any, Dict
 
 import torch
 
-from torchpack import distributed as dist
-from torchpack.callbacks.callback import Callback
+from .. import distributed as dist
+from .callback import Callback
 
 __all__ = [
     'TopKCategoricalAccuracy', 'CategoricalAccuracy', 'MeanSquaredError',

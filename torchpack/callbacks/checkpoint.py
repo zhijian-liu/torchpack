@@ -3,11 +3,11 @@ import os
 from collections import deque
 from typing import Any, ClassVar, Dict, Optional
 
-from torchpack.callbacks.callback import Callback
-from torchpack.environ import get_run_dir
-from torchpack.utils import fs, io
-from torchpack.utils.logging import logger
-from torchpack.utils.typing import Trainer
+from ..environ import get_run_dir
+from ..utils import fs, io
+from ..utils.logging import logger
+from ..utils.typing import Trainer
+from .callback import Callback
 
 __all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']
 

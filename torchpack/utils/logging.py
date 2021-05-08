@@ -1,6 +1,6 @@
 import sys
 
-from torchpack.utils.typing import Logger
+from .typing import Logger
 
 __all__ = ['logger']
 

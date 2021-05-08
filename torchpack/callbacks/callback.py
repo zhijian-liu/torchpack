@@ -1,8 +1,8 @@
 import traceback
 from typing import Any, Callable, Dict, List, Optional
 
-from torchpack import distributed as dist
-from torchpack.utils.typing import Trainer
+from .. import distributed as dist
+from ..utils.typing import Trainer
 
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 

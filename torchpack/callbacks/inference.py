@@ -2,13 +2,13 @@ import time
 from typing import List
 
 import torch
-from tqdm.auto import tqdm
+import tqdm
 from torch.utils.data import DataLoader
 
-from torchpack.callbacks.callback import Callback, Callbacks
-from torchpack.utils import humanize
-from torchpack.utils.logging import logger
-from torchpack.utils.typing import Trainer
+from ..utils import humanize
+from ..utils.logging import logger
+from ..utils.typing import Trainer
+from .callback import Callback, Callbacks
 
 __all__ = ['InferenceRunner']
 

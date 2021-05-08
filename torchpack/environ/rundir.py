@@ -1,9 +1,9 @@
 import os
 
-from torchpack import distributed as dist
-from torchpack.utils import fs, git
-from torchpack.utils.config import configs
-from torchpack.utils.logging import logger
+from .. import distributed as dist
+from ..utils import fs, git
+from ..utils.config import configs
+from ..utils.logging import logger
 
 __all__ = ['get_run_dir', 'set_run_dir', 'auto_set_run_dir']
 

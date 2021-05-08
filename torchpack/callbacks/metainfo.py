@@ -1,10 +1,10 @@
 import os
 from typing import Optional
 
-from torchpack.callbacks.callback import Callback
-from torchpack.environ import get_run_dir
-from torchpack.utils import fs, git, io
-from torchpack.utils.config import configs
+from ..environ import get_run_dir
+from ..utils import fs, git, io
+from ..utils.config import configs
+from .callback import Callback
 
 __all__ = ['MetaInfoSaver']
 

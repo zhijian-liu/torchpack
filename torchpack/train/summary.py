@@ -4,8 +4,8 @@ from typing import Any, Deque, Iterable, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from torchpack.callbacks.writers import SummaryWriter
-from torchpack.utils.typing import Trainer
+from ..callbacks import SummaryWriter
+from ..utils.typing import Trainer
 
 __all__ = ['Summary']
 

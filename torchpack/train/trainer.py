@@ -3,13 +3,13 @@ from typing import Any, Dict, List, Optional
 
 from torch.utils.data import DataLoader, DistributedSampler
 
-from torchpack.callbacks import (Callback, Callbacks, ConsoleWriter,
-                                 EstimatedTimeLeft, JSONLWriter, MetaInfoSaver,
-                                 ProgressBar, TFEventWriter)
-from torchpack.train.exception import StopTraining
-from torchpack.train.summary import Summary
-from torchpack.utils import humanize
-from torchpack.utils.logging import logger
+from ..callbacks import (Callback, Callbacks, ConsoleWriter, EstimatedTimeLeft,
+                         JSONLWriter, MetaInfoSaver, ProgressBar,
+                         TFEventWriter)
+from ..train.exception import StopTraining
+from ..train.summary import Summary
+from ..utils import humanize
+from ..utils.logging import logger
 
 __all__ = ['Trainer']
 
@@ -21,6 +21,7 @@ class Trainer:
     def train_with_defaults(self,
                             dataflow: DataLoader,
                             *,
+                            steps_per_epoch: Optional[int] = None,
                             num_epochs: int = 9999999,
                             callbacks: Optional[List[Callback]] = None
                             ) -> None:
@@ -36,21 +37,27 @@ class Trainer:
         ]
         self.train(dataflow=dataflow,
                    num_epochs=num_epochs,
+                   steps_per_epoch=steps_per_epoch,
                    callbacks=callbacks)
 
     def train(self,
               dataflow: DataLoader,
               *,
+              steps_per_epoch: Optional[int] = None,
               num_epochs: int = 9999999,
               callbacks: Optional[List[Callback]] = None) -> None:
         self.dataflow = dataflow
-        self.steps_per_epoch = len(self.dataflow)
+        if steps_per_epoch is None:
+            steps_per_epoch = len(self.dataflow)
+        self.steps_per_epoch = steps_per_epoch
         self.num_epochs = num_epochs
 
         if callbacks is None:
             callbacks = []
         self.callbacks = Callbacks(callbacks)
         self.summary = Summary()
+
+        iterator = iter(self.dataflow)
 
         try:
             self.callbacks.set_trainer(self)
@@ -71,9 +78,15 @@ class Trainer:
                 epoch_time = time.perf_counter()
                 self.before_epoch()
 
-                for feed_dict in self.dataflow:
+                while self.local_step < self.steps_per_epoch:
                     self.local_step += 1
                     self.global_step += 1
+
+                    try:
+                        feed_dict = next(iterator)
+                    except StopIteration:
+                        iterator = iter(self.dataflow)
+                        feed_dict = next(iterator)
 
                     self.before_step(feed_dict)
                     output_dict = self.run_step(feed_dict)
