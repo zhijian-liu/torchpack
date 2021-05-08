@@ -2,8 +2,8 @@ import time
 from typing import List
 
 import torch
-import tqdm
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from ..utils import humanize
 from ..utils.logging import logger

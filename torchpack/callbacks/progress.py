@@ -3,7 +3,7 @@ from collections import deque
 from typing import List, Union
 
 import numpy as np
-import tqdm
+from tqdm import tqdm
 
 from ..utils import humanize
 from ..utils.logging import logger
