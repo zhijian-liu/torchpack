@@ -13,7 +13,7 @@ def main() -> None:
     if rank == 0:
         command += ' 2>&1'
     else:
-        command += ' 1>/dev/null 2>/dev/null'
+        command += ' 1>/dev/null'
 
     os.execv('/bin/sh', ['/bin/sh', '-c', command])
 
