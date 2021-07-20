@@ -1,3 +1,4 @@
+import sys
 import time
 from typing import List
 
@@ -33,7 +34,7 @@ class InferenceRunner(Callback):
         self.callbacks.before_epoch()
 
         with torch.no_grad():
-            for feed_dict in tqdm(self.dataflow, ncols=0):
+            for feed_dict in tqdm(self.dataflow, file=sys.stdout):
                 self.callbacks.before_step(feed_dict)
                 output_dict = self.trainer.run_step(feed_dict)
                 self.callbacks.after_step(output_dict)

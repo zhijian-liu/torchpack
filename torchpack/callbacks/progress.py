@@ -1,3 +1,4 @@
+import sys
 import time
 from collections import deque
 from typing import List, Union
@@ -23,7 +24,7 @@ class ProgressBar(Callback):
         self.matcher = NameMatcher(patterns=scalars)
 
     def _before_epoch(self) -> None:
-        self.pbar = tqdm(range(self.trainer.steps_per_epoch), ncols=0)
+        self.pbar = tqdm(range(self.trainer.steps_per_epoch), file=sys.stdout)
 
     def _trigger_step(self) -> None:
         texts = []
