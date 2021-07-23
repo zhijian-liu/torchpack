@@ -4,7 +4,7 @@ __all__ = ['tqdm', 'trange']
 
 
 def tqdm(iterable, **kwargs):
-    from tqdm.auto import tqdm
+    from tqdm import tqdm
     return tqdm(iterable, **kwargs, file=sys.stdout)
 
 
