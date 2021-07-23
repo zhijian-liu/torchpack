@@ -3,9 +3,8 @@ from collections import deque
 from typing import List, Union
 
 import numpy as np
-from tqdm import tqdm
 
-from ..utils import humanize
+from ..utils import humanize, tqdm
 from ..utils.logging import logger
 from ..utils.matching import NameMatcher
 from .callback import Callback
@@ -23,7 +22,7 @@ class ProgressBar(Callback):
         self.matcher = NameMatcher(patterns=scalars)
 
     def _before_epoch(self) -> None:
-        self.pbar = tqdm(range(self.trainer.steps_per_epoch), ncols=0)
+        self.pbar = tqdm.trange(self.trainer.steps_per_epoch)
 
     def _trigger_step(self) -> None:
         texts = []
