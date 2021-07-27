@@ -90,7 +90,7 @@ def main() -> None:
                '-bind-to none -map-by slot '
                '{environ} '
                '-mca pml ob1 -mca btl ^openib '
-               '-mca btl_tcp_if_exclude docker0,lo '
+               '-mca btl_tcp_if_exclude docker0,lo,eno1,eno2,enxb03af2b6059f '
                '{command}'.format(nproc=args.nproc,
                                   hosts=args.hosts,
                                   environ=' '.join(
