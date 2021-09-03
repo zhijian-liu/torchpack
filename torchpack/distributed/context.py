@@ -20,12 +20,15 @@ def init(backend: int = 'nccl',
     _world_size, _world_rank = world_comm.Get_size(), world_comm.Get_rank()
     _local_size, _local_rank = local_comm.Get_size(), local_comm.Get_rank()
 
-    master_host = 'tcp://' + os.environ['MASTER_HOST']
-    torch.distributed.init_process_group(backend=backend,
-                                         init_method=master_host,
-                                         timeout=timeout,
-                                         world_size=_world_size,
-                                         rank=_world_rank)
+    if 'MASTER_HOST' in os.environ:
+        master_host = 'tcp://' + os.environ['MASTER_HOST']
+        torch.distributed.init_process_group(backend=backend,
+                                             init_method=master_host,
+                                             timeout=timeout,
+                                             world_size=_world_size,
+                                             rank=_world_rank)
+    else:
+        print("Distributed environment not detected, fall back to default")
 
 
 def size() -> int:
