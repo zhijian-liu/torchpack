@@ -22,13 +22,15 @@ def init(backend: int = 'nccl',
 
     if 'MASTER_HOST' in os.environ:
         master_host = 'tcp://' + os.environ['MASTER_HOST']
-        torch.distributed.init_process_group(backend=backend,
-                                             init_method=master_host,
-                                             timeout=timeout,
-                                             world_size=_world_size,
-                                             rank=_world_rank)
     else:
+        from torchpack.launch.launchers.drunner import get_free_tcp_port
+        master_host = 'tcp://localhost:{}'.format(get_free_tcp_port())
         print("Distributed environment not detected, fall back to default")
+    torch.distributed.init_process_group(backend=backend,
+                                         init_method=master_host,
+                                         timeout=timeout,
+                                         world_size=_world_size,
+                                         rank=_world_rank)
 
 
 def size() -> int:
