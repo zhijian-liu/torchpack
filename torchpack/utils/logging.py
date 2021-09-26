@@ -1,6 +1,10 @@
 import sys
+import typing
 
-from .typing import Logger
+if typing.TYPE_CHECKING:
+    from loguru import Logger
+else:
+    Logger = None
 
 __all__ = ['logger']
 
@@ -8,10 +12,12 @@ __all__ = ['logger']
 def __get_logger() -> Logger:
     from loguru import logger
     logger.remove()
-    logger.add(sys.stdout,
-               level='DEBUG',
-               format=('<green>[{time:YYYY-MM-DD HH:mm:ss.SSS}]</green> '
-                       '<level>{message}</level>'))
+    logger.add(
+        sys.stdout,
+        level='DEBUG',
+        format=('<green>[{time:YYYY-MM-DD HH:mm:ss.SSS}]</green> '
+                '<level>{message}</level>'),
+    )
     return logger
 
 

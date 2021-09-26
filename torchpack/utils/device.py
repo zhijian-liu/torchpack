@@ -8,9 +8,9 @@ __all__ = ['parse_cuda_devices', 'set_cuda_visible_devices']
 
 def parse_cuda_devices(text: str) -> List[int]:
     if text == '*':
-        return [device for device in range(torch.cuda.device_count())]
+        return list(range(torch.cuda.device_count()))
 
-    devices = []
+    devices: List[int] = []
     for device in text.split(','):
         device = device.strip().lower()
         if device == 'cpu':
@@ -25,9 +25,11 @@ def parse_cuda_devices(text: str) -> List[int]:
     return devices
 
 
-def set_cuda_visible_devices(devices: Union[str, List[int]],
-                             *,
-                             environ: os._Environ = os.environ) -> List[int]:
+def set_cuda_visible_devices(
+    devices: Union[str, List[int]],
+    *,
+    environ: os._Environ = os.environ,
+) -> List[int]:
     if isinstance(devices, str):
         devices = parse_cuda_devices(devices)
     environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, devices))

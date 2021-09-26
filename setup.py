@@ -10,23 +10,17 @@ setup(
     author_email='zhijianliu.cs@gmail.com',
     url='https://github.com/zhijian-liu/torchpack',
     install_requires=[
-        'h5py',
         'loguru',
         'multimethod',
         'numpy',
         'pyyaml',
-        'scipy',
-        'tensorboard',
         'tensorpack',
-        'toml',
         'torch>=1.5.0',
         'torchvision',
         'tqdm',
     ],
     python_requires='>=3.6',
     entry_points={
-        'console_scripts': [
-            'torchpack = torchpack.launch:main',
-        ],
+        'console_scripts': ['torchpack = torchpack.launch:main'],
     },
 )

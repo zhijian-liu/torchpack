@@ -1,16 +1,20 @@
 import traceback
-from typing import Any, Callable, Dict, List, Optional
+import typing
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
-from .. import distributed as dist
-from ..utils.typing import Trainer
+from torchpack import distributed as dist
+
+if typing.TYPE_CHECKING:
+    from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 
 
 class Callback:
-    """
-    Base class for all callbacks.
-    """
+    """Base class for all callbacks."""
+
     master_only: bool = False
 
     @property
@@ -30,9 +34,7 @@ class Callback:
             self._before_train()
 
     def _before_train(self) -> None:
-        """
-        Called before training.
-        """
+        """Define what to do before training."""
         pass
 
     def before_epoch(self) -> None:
@@ -40,9 +42,7 @@ class Callback:
             self._before_epoch()
 
     def _before_epoch(self) -> None:
-        """
-        Called before every epoch.
-        """
+        """Define what to do before every epoch."""
         pass
 
     def before_step(self, feed_dict: Dict[str, Any]) -> None:
@@ -50,9 +50,7 @@ class Callback:
             self._before_step(feed_dict)
 
     def _before_step(self, feed_dict: Dict[str, Any]) -> None:
-        """
-        Called before every step.
-        """
+        """Define what to do before every step."""
         pass
 
     def after_step(self, output_dict: Dict[str, Any]) -> None:
@@ -60,9 +58,7 @@ class Callback:
             self._after_step(output_dict)
 
     def _after_step(self, output_dict: Dict[str, Any]) -> None:
-        """
-        Called after every step.
-        """
+        """Define what to do after every step."""
         pass
 
     def trigger_step(self) -> None:
@@ -70,9 +66,7 @@ class Callback:
             self._trigger_step()
 
     def _trigger_step(self) -> None:
-        """
-        Called after after step.
-        """
+        """Define what to do after after step."""
         pass
 
     def after_epoch(self) -> None:
@@ -80,9 +74,7 @@ class Callback:
             self._after_epoch()
 
     def _after_epoch(self) -> None:
-        """
-        Called after every epoch.
-        """
+        """Define what to do after every epoch."""
         pass
 
     def trigger_epoch(self) -> None:
@@ -90,9 +82,7 @@ class Callback:
             self._trigger_epoch()
 
     def _trigger_epoch(self) -> None:
-        """
-        Called after after epoch.
-        """
+        """Define what to do after after epoch."""
         pass
 
     def trigger(self) -> None:
@@ -100,10 +90,10 @@ class Callback:
             self._trigger()
 
     def _trigger(self) -> None:
-        """
-        Override this method to define a general trigger behavior, to be used with trigger schedulers.
-        Note that the schedulers (e.g. :class:`PeriodicTrigger`) might call this method
-        both inside an epoch and after an epoch.
+        """Define a general trigger behavior, to be used with trigger schedulers.
+
+        Note that the schedulers (e.g. :class:`PeriodicTrigger`) might call
+        this method both inside an epoch and after an epoch.
         """
         pass
 
@@ -115,16 +105,14 @@ class Callback:
                 traceback.print_exc()
 
     def _after_train(self) -> None:
-        """
-        Called after training.
-        """
+        """Define what to do after training."""
         pass
 
     def state_dict(self) -> Dict[str, Any]:
-        return self._state_dict() if self.enabled else dict()
+        return self._state_dict() if self.enabled else {}
 
     def _state_dict(self) -> Dict[str, Any]:
-        return dict()
+        return {}
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         if self.enabled:
@@ -138,24 +126,25 @@ class Callback:
 
 
 class LambdaCallback(Callback):
-    """
-    A callback created with lambda functions.
-    """
-    def __init__(self,
-                 *,
-                 set_trainer: Optional[Callable] = None,
-                 before_train: Optional[Callable] = None,
-                 before_epoch: Optional[Callable] = None,
-                 before_step: Optional[Callable] = None,
-                 after_step: Optional[Callable] = None,
-                 trigger_step: Optional[Callable] = None,
-                 after_epoch: Optional[Callable] = None,
-                 trigger_epoch: Optional[Callable] = None,
-                 trigger: Optional[Callable] = None,
-                 after_train: Optional[Callable] = None,
-                 state_dict: Optional[Callable] = None,
-                 load_state_dict: Optional[Callable] = None,
-                 master_only: bool = False):
+    """A callback created with lambda functions."""
+
+    def __init__(
+        self,
+        *,
+        set_trainer: Optional[Callable] = None,
+        before_train: Optional[Callable] = None,
+        before_epoch: Optional[Callable] = None,
+        before_step: Optional[Callable] = None,
+        after_step: Optional[Callable] = None,
+        trigger_step: Optional[Callable] = None,
+        after_epoch: Optional[Callable] = None,
+        trigger_epoch: Optional[Callable] = None,
+        trigger: Optional[Callable] = None,
+        after_train: Optional[Callable] = None,
+        state_dict: Optional[Callable] = None,
+        load_state_dict: Optional[Callable] = None,
+        master_only: bool = False,
+    ) -> None:
         self.set_trainer_fn = set_trainer
         self.before_train_fn = before_train
         self.before_epoch_fn = before_epoch
@@ -211,7 +200,7 @@ class LambdaCallback(Callback):
             self.after_train_fn(self)
 
     def _state_dict(self) -> Dict[str, Any]:
-        return self.state_dict_fn(self) if self.state_dict_fn else dict()
+        return self.state_dict_fn(self) if self.state_dict_fn else {}
 
     def _load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         if self.load_state_dict_fn:
@@ -219,9 +208,8 @@ class LambdaCallback(Callback):
 
 
 class ProxyCallback(Callback):
-    """
-    A callback which proxy all methods to another callback.
-    """
+    """A callback which proxy all methods to another callback."""
+
     def __init__(self, callback: Callback) -> None:
         assert isinstance(callback, Callback), type(callback)
         self.callback = callback
@@ -267,9 +255,8 @@ class ProxyCallback(Callback):
 
 
 class Callbacks(Callback):
-    """
-    A container to hold callbacks.
-    """
+    """A container to hold callbacks."""
+
     def __init__(self, callbacks: List[Callback]) -> None:
         for callback in callbacks:
             assert isinstance(callback, Callback), type(callback)
@@ -316,12 +303,12 @@ class Callbacks(Callback):
             callback.after_train()
 
     def _state_dict(self) -> Dict[str, Any]:
-        state_dict = dict()
+        state_dict = {}
         for k, callback in enumerate(self.callbacks):
-            local_state = callback.state_dict()
-            if local_state:
+            state = callback.state_dict()
+            if state:
                 name = f'{str(callback).lower()}.{k}'
-                state_dict[name] = local_state
+                state_dict[name] = state
         return state_dict
 
     def _load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -335,3 +322,6 @@ class Callbacks(Callback):
 
     def __len__(self) -> int:
         return len(self.callbacks)
+
+    def __iter__(self) -> Iterator[Callback]:
+        return iter(self.callbacks)

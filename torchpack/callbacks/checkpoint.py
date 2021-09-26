@@ -1,32 +1,41 @@
 import glob
 import os
+import typing
 from collections import deque
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Deque, Dict, Optional
 
-from ..environ import get_run_dir
-from ..utils import fs, io
-from ..utils.logging import logger
-from ..utils.typing import Trainer
+from torchpack.environ import get_run_dir
+from torchpack.utils import fs, io
+from torchpack.utils.logging import logger
+
 from .callback import Callback
+
+if typing.TYPE_CHECKING:
+    from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']
 
 
 class Saver(Callback):
-    """
-    Save the checkpoint once triggered.
-    """
+    """Save the checkpoint once triggered."""
+
     master_only: bool = True
 
-    def __init__(self, *, max_to_keep: int = 4,
-                 save_dir: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        *,
+        max_to_keep: int = 4,
+        save_dir: Optional[str] = None,
+    ) -> None:
         self.max_to_keep = max_to_keep
         if save_dir is None:
             save_dir = os.path.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
 
     def _set_trainer(self, trainer: Trainer) -> None:
-        self.checkpoints = deque()
+        self.checkpoints: Deque[str] = deque()
         for fpath in sorted(glob.glob(os.path.join(self.save_dir,
                                                    'step-*.pt')),
                             key=os.path.getmtime):
@@ -49,8 +58,8 @@ class Saver(Callback):
 
     def _add_checkpoint(self, fpath: str) -> None:
         self.checkpoints.append(fpath)
-        while self.max_to_keep is not None and \
-                len(self.checkpoints) > self.max_to_keep:
+        while (self.max_to_keep is not None
+               and len(self.checkpoints) > self.max_to_keep):
             fpath = self.checkpoints.popleft()
             try:
                 fs.remove(fpath)
@@ -60,17 +69,18 @@ class Saver(Callback):
 
 
 class BestSaver(Callback):
-    """
-    Save the checkpoint with best value of some scalar in `trainer.summary`.
-    """
+    """Save the checkpoint with best value of some scalar in `trainer.summary`."""
+
     master_only: bool = True
     extreme: ClassVar[str]
 
-    def __init__(self,
-                 scalar: str,
-                 *,
-                 name: Optional[str] = None,
-                 save_dir: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        scalar: str,
+        *,
+        name: Optional[str] = None,
+        save_dir: Optional[str] = None,
+    ) -> None:
         self.scalar = scalar
         if name is None:
             name = self.extreme + '-' + scalar.replace('/', '-')
@@ -98,8 +108,9 @@ class BestSaver(Callback):
             return
         self.step = step
 
-        if self.best is None or (self.extreme == 'min' and value < self.best[1]) \
-                             or (self.extreme == 'max' and value > self.best[1]):
+        if (self.best is None
+                or (self.extreme == 'min' and value < self.best[1])
+                or (self.extreme == 'max' and value > self.best[1])):
             self.best = (step, value)
             save_path = os.path.join(self.save_dir, self.name + '.pt')
             try:
@@ -122,20 +133,19 @@ class BestSaver(Callback):
 
 
 class MinSaver(BestSaver):
-    """
-    Save the checkpoint with minimum value of some scalar in `trainer.summary`.
-    """
+    """Save the checkpoint with minimum value of some scalar in `trainer.summary`."""
+
     extreme: ClassVar[str] = 'min'
 
 
 class MaxSaver(BestSaver):
-    """
-    Save the checkpoint with maximum value of some scalar in `trainer.summary`.
-    """
+    """Save the checkpoint with maximum value of some scalar in `trainer.summary`."""
+
     extreme: ClassVar[str] = 'max'
 
 
 class SaverRestore(Callback):
+
     def __init__(self, load_dir: Optional[str] = None) -> None:
         if load_dir is None:
             load_dir = os.path.join(get_run_dir(), 'checkpoints')

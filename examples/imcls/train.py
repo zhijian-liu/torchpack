@@ -40,48 +40,55 @@ def main() -> None:
     logger.info(f'Experiment started: "{args.run_dir}".' + '\n' + f'{configs}')
 
     dataset = builder.make_dataset()
-    dataflow = dict()
+    dataflow = {}
     for split in dataset:
         sampler = torch.utils.data.DistributedSampler(
             dataset[split],
             num_replicas=dist.size(),
             rank=dist.rank(),
-            shuffle=(split == 'train'))
+            shuffle=(split == 'train'),
+        )
         dataflow[split] = torch.utils.data.DataLoader(
             dataset[split],
             batch_size=configs.batch_size // dist.size(),
             sampler=sampler,
             num_workers=configs.workers_per_gpu,
-            pin_memory=True)
+            pin_memory=True,
+        )
 
     model = builder.make_model()
     model = torch.nn.parallel.DistributedDataParallel(
         model.cuda(),
         device_ids=[dist.local_rank()],
-        find_unused_parameters=True)
+    )
 
     criterion = builder.make_criterion()
     optimizer = builder.make_optimizer(model)
     scheduler = builder.make_scheduler(optimizer)
 
-    trainer = ClassificationTrainer(model=model,
-                                    criterion=criterion,
-                                    optimizer=optimizer,
-                                    scheduler=scheduler,
-                                    amp_enabled=configs.amp_enabled)
+    trainer = ClassificationTrainer(
+        model=model,
+        criterion=criterion,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        amp_enabled=configs.amp.enabled,
+    )
     trainer.train_with_defaults(
         dataflow['train'],
         num_epochs=configs.num_epochs,
         callbacks=[
             SaverRestore(),
-            InferenceRunner(dataflow['test'],
-                            callbacks=[
-                                TopKCategoricalAccuracy(k=1, name='acc/top1'),
-                                TopKCategoricalAccuracy(k=5, name='acc/top5')
-                            ]),
+            InferenceRunner(
+                dataflow['test'],
+                callbacks=[
+                    TopKCategoricalAccuracy(k=1, name='acc/top1'),
+                    TopKCategoricalAccuracy(k=5, name='acc/top5'),
+                ],
+            ),
             MaxSaver('acc/top1'),
-            Saver()
-        ])
+            Saver(),
+        ],
+    )
 
 
 if __name__ == '__main__':

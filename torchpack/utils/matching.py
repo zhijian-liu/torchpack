@@ -5,6 +5,7 @@ __all__ = ['NameMatcher']
 
 
 class NameMatcher:
+
     def __init__(self, patterns: Optional[Union[str, List[str]]]):
         if patterns is None:
             patterns = []

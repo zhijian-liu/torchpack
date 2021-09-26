@@ -1,9 +1,10 @@
 import os
-from typing import Optional
+from typing import Dict, Optional
 
-from ..environ import get_run_dir
-from ..utils import fs, git, io
-from ..utils.config import configs
+from torchpack.environ import get_run_dir
+from torchpack.utils import fs, git, io
+from torchpack.utils.config import configs
+
 from .callback import Callback
 
 __all__ = ['MetaInfoSaver']
@@ -19,15 +20,19 @@ class MetaInfoSaver(Callback):
 
     def _before_train(self) -> None:
         if configs:
-            io.save(os.path.join(self.save_dir, 'configs.yaml'),
-                    configs.dict())
+            io.save(
+                os.path.join(self.save_dir, 'configs.yaml'),
+                configs.dict(),
+            )
 
         if git.is_inside_work_tree():
-            metainfo = dict()
+            metainfo: Dict[str, Optional[str]] = {}
             remote = git.get_remote_url()
             if remote:
                 metainfo['remote'] = remote
             metainfo['commit'] = git.get_commit_hash()
-            io.save(os.path.join(self.save_dir, 'git.json'),
-                    metainfo,
-                    indent=4)
+            io.save(
+                os.path.join(self.save_dir, 'git.json'),
+                metainfo,
+                indent=4,
+            )
