@@ -9,6 +9,8 @@ from torchpack.callbacks import SummaryWriter
 
 if typing.TYPE_CHECKING:
     from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['Summary']
 
@@ -18,11 +20,11 @@ class Summary:
     def __init__(self) -> None:
         self.history: Dict[str, Deque[Tuple[int, Any]]] = defaultdict(deque)
 
-    def set_trainer(self, trainer: 'Trainer') -> None:
+    def set_trainer(self, trainer: Trainer) -> None:
         self.trainer = trainer
         self._set_trainer(trainer)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.writers = []
         for callback in trainer.callbacks:
             if isinstance(callback, SummaryWriter):

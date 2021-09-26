@@ -12,6 +12,8 @@ from .callback import Callback
 
 if typing.TYPE_CHECKING:
     from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['Saver', 'MinSaver', 'MaxSaver', 'SaverRestore']
 
@@ -32,7 +34,7 @@ class Saver(Callback):
             save_dir = os.path.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.checkpoints: Deque[str] = deque()
         for fpath in sorted(glob.glob(os.path.join(self.save_dir,
                                                    'step-*.pt')),
@@ -87,7 +89,7 @@ class BestSaver(Callback):
             save_dir = os.path.join(get_run_dir(), 'checkpoints')
         self.save_dir = fs.normpath(save_dir)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.step, self.best = None, None
 
     def _trigger_epoch(self) -> None:

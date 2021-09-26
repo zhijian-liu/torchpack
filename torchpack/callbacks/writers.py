@@ -14,6 +14,8 @@ from .callback import Callback
 
 if typing.TYPE_CHECKING:
     from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['SummaryWriter', 'ConsoleWriter', 'TFEventWriter', 'JSONLWriter']
 
@@ -44,7 +46,7 @@ class ConsoleWriter(SummaryWriter):
     def __init__(self, scalars: Union[str, List[str]] = '*') -> None:
         self.matcher = NameMatcher(patterns=scalars)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.scalars: Dict[str, Union[int, float]] = {}
 
     def _add_scalar(self, name: str, scalar: Union[int, float]) -> None:
@@ -71,7 +73,7 @@ class TFEventWriter(SummaryWriter):
             save_dir = os.path.join(get_run_dir(), 'tensorboard')
         self.save_dir = fs.normpath(save_dir)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         from torch.utils.tensorboard import SummaryWriter
         self.writer = SummaryWriter(self.save_dir)
 
@@ -93,7 +95,7 @@ class JSONLWriter(SummaryWriter):
             save_dir = os.path.join(get_run_dir(), 'summary')
         self.save_dir = fs.normpath(save_dir)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.scalars: Dict[str, Union[int, float]] = {}
         fs.makedir(self.save_dir)
         self.file = open(os.path.join(self.save_dir, 'scalars.jsonl'), 'a')

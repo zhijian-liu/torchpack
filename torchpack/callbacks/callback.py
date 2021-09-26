@@ -6,6 +6,8 @@ from torchpack import distributed as dist
 
 if typing.TYPE_CHECKING:
     from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['Callback', 'LambdaCallback', 'ProxyCallback', 'Callbacks']
 
@@ -19,12 +21,12 @@ class Callback:
     def enabled(self) -> bool:
         return dist.is_master() or not self.master_only
 
-    def set_trainer(self, trainer: 'Trainer') -> None:
+    def set_trainer(self, trainer: Trainer) -> None:
         self.trainer = trainer
         if self.enabled:
             self._set_trainer(trainer)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         pass
 
     def before_train(self) -> None:
@@ -157,7 +159,7 @@ class LambdaCallback(Callback):
         self.load_state_dict_fn = load_state_dict
         self.master_only = master_only
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         if self.set_trainer_fn:
             self.set_trainer_fn(self, trainer)
 
@@ -212,7 +214,7 @@ class ProxyCallback(Callback):
         assert isinstance(callback, Callback), type(callback)
         self.callback = callback
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.callback.set_trainer(trainer)
 
     def _before_train(self) -> None:
@@ -260,7 +262,7 @@ class Callbacks(Callback):
             assert isinstance(callback, Callback), type(callback)
         self.callbacks = callbacks
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         for callback in self.callbacks:
             callback.set_trainer(trainer)
 

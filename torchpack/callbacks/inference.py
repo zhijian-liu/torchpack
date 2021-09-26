@@ -12,6 +12,8 @@ from .callback import Callback, Callbacks
 
 if typing.TYPE_CHECKING:
     from torchpack.train import Trainer
+else:
+    Trainer = None
 
 __all__ = ['InferenceRunner']
 
@@ -24,7 +26,7 @@ class InferenceRunner(Callback):
         self.dataflow = dataflow
         self.callbacks = Callbacks(callbacks)
 
-    def _set_trainer(self, trainer: 'Trainer') -> None:
+    def _set_trainer(self, trainer: Trainer) -> None:
         self.callbacks.set_trainer(trainer)
 
     def _trigger_epoch(self) -> None:
