@@ -12,6 +12,7 @@ __all__ = ['Config', 'configs']
 
 
 class Config(dict):
+
     def __getattr__(self, key: str) -> Any:
         if key not in self:
             raise AttributeError(key)
@@ -50,8 +51,8 @@ class Config(dict):
             else:
                 self[key] = value
 
-    @multimethod
-    def update(self, opts: Union[List, Tuple]) -> None:
+    @multimethod  # type: ignore [no-redef] # noqa: F811
+    def update(self, opts: Union[List, Tuple]) -> None:  # noqa: F811
         index = 0
         while index < len(opts):
             opt = opts[index]
@@ -67,14 +68,14 @@ class Config(dict):
             subkeys = key.split('.')
             try:
                 value = literal_eval(value)
-            except:
+            except Exception:
                 pass
             for subkey in subkeys[:-1]:
                 current = current.setdefault(subkey, Config())
             current[subkeys[-1]] = value
 
     def dict(self) -> Dict[str, Any]:
-        configs = dict()
+        configs = {}
         for key, value in self.items():
             if isinstance(value, Config):
                 value = value.dict()

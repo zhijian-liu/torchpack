@@ -33,9 +33,9 @@ def allgather(data: Any) -> List:
     max_size = max(sizes)
 
     # receiving tensors from all ranks
-    tensors = [torch.ByteTensor(size=(max_size, )).cuda() for _ in sizes]
+    tensors = [torch.ByteTensor(size=(max_size,)).cuda() for _ in sizes]
     if local_size != max_size:
-        padding = torch.ByteTensor(size=(max_size - local_size, )).cuda()
+        padding = torch.ByteTensor(size=(max_size - local_size,)).cuda()
         tensor = torch.cat((tensor, padding), dim=0)
     torch.distributed.all_gather(tensors, tensor)
 

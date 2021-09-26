@@ -3,28 +3,28 @@ from typing import Any, Dict, List, Optional
 
 from torch.utils.data import DataLoader, DistributedSampler
 
-from ..callbacks import (Callback, Callbacks, ConsoleWriter, EstimatedTimeLeft,
-                         JSONLWriter, MetaInfoSaver, ProgressBar,
-                         TFEventWriter)
-from ..train.exception import StopTraining
-from ..train.summary import Summary
-from ..utils import humanize
-from ..utils.logging import logger
+from torchpack.callbacks import (Callback, Callbacks, ConsoleWriter,
+                                 EstimatedTimeLeft, JSONLWriter, MetaInfoSaver,
+                                 ProgressBar, TFEventWriter)
+from torchpack.train.exception import StopTraining
+from torchpack.train.summary import Summary
+from torchpack.utils import humanize
+from torchpack.utils.logging import logger
 
 __all__ = ['Trainer']
 
 
 class Trainer:
-    """
-    Base class for a trainer.
-    """
-    def train_with_defaults(self,
-                            dataflow: DataLoader,
-                            *,
-                            steps_per_epoch: Optional[int] = None,
-                            num_epochs: int = 9999999,
-                            callbacks: Optional[List[Callback]] = None
-                            ) -> None:
+    """Base class for a trainer."""
+
+    def train_with_defaults(
+        self,
+        dataflow: DataLoader,
+        *,
+        steps_per_epoch: Optional[int] = None,
+        num_epochs: int = 9999999,
+        callbacks: Optional[List[Callback]] = None,
+    ) -> None:
         if callbacks is None:
             callbacks = []
         callbacks += [
@@ -40,12 +40,14 @@ class Trainer:
                    steps_per_epoch=steps_per_epoch,
                    callbacks=callbacks)
 
-    def train(self,
-              dataflow: DataLoader,
-              *,
-              steps_per_epoch: Optional[int] = None,
-              num_epochs: int = 9999999,
-              callbacks: Optional[List[Callback]] = None) -> None:
+    def train(
+        self,
+        dataflow: DataLoader,
+        *,
+        steps_per_epoch: Optional[int] = None,
+        num_epochs: int = 9999999,
+        callbacks: Optional[List[Callback]] = None,
+    ) -> None:
         self.dataflow = dataflow
         if steps_per_epoch is None:
             steps_per_epoch = len(self.dataflow)
@@ -106,7 +108,7 @@ class Trainer:
                 self.num_epochs,
                 humanize.naturaldelta(time.perf_counter() - train_time)))
         except StopTraining as e:
-            logger.info('Training was stopped by {}.'.format(str(e)))
+            logger.info(f'Training was stopped by {str(e)}.')
         finally:
             self.after_train()
 
@@ -139,9 +141,7 @@ class Trainer:
         return output_dict
 
     def _run_step(self, feed_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Defines what to do in one iteration.
-        """
+        """Define what to do in one iteration."""
         raise NotImplementedError
 
     def after_step(self, output_dict: Dict[str, Any]) -> None:
@@ -188,7 +188,7 @@ class Trainer:
         return state_dict
 
     def _state_dict(self) -> Dict[str, Any]:
-        return dict()
+        return {}
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         self.epoch_num = state_dict.pop('epoch_num')

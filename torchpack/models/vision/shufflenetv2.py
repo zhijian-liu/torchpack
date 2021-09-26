@@ -1,4 +1,4 @@
-from typing import ClassVar, Dict, List, Tuple, Union
+from typing import ClassVar, Dict, List
 
 import torch
 from torch import nn
@@ -15,12 +15,15 @@ def channel_shuffle(inputs: torch.Tensor, groups: int) -> torch.Tensor:
 
 
 class ShuffleBlockV2(nn.Module):
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 kernel_size: Union[int, Tuple[int, int]],
-                 *,
-                 stride: int = 1) -> None:
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        *,
+        stride: int = 1,
+    ) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -33,13 +36,15 @@ class ShuffleBlockV2(nn.Module):
 
         if stride != 1:
             self.branch1 = nn.Sequential(
-                nn.Conv2d(in_channels,
-                          in_channels,
-                          kernel_size,
-                          stride=stride,
-                          padding=kernel_size // 2,
-                          groups=in_channels,
-                          bias=False),
+                nn.Conv2d(
+                    in_channels,
+                    in_channels,
+                    kernel_size,
+                    stride=stride,
+                    padding=kernel_size // 2,
+                    groups=in_channels,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(in_channels),
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 nn.BatchNorm2d(out_channels),
@@ -50,13 +55,15 @@ class ShuffleBlockV2(nn.Module):
             nn.Conv2d(in_channels, out_channels, 1, bias=False),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(True),
-            nn.Conv2d(out_channels,
-                      out_channels,
-                      kernel_size,
-                      stride=stride,
-                      padding=kernel_size // 2,
-                      groups=out_channels,
-                      bias=False),
+            nn.Conv2d(
+                out_channels,
+                out_channels,
+                kernel_size,
+                stride=stride,
+                padding=kernel_size // 2,
+                groups=out_channels,
+                bias=False,
+            ),
             nn.BatchNorm2d(out_channels),
             nn.Conv2d(out_channels, out_channels, 1, bias=False),
             nn.BatchNorm2d(out_channels),
@@ -84,22 +91,26 @@ class ShuffleNetV2(nn.Module):
         2.0: [24, (244, 4, 2), (488, 8, 2), (976, 4, 2), 2048]
     }
 
-    def __init__(self,
-                 *,
-                 in_channels: int = 3,
-                 num_classes: int = 1000,
-                 width_multiplier: float = 1) -> None:
+    def __init__(
+        self,
+        *,
+        in_channels: int = 3,
+        num_classes: int = 1000,
+        width_multiplier: float = 1,
+    ) -> None:
         super().__init__()
 
         out_channels = self.layers[width_multiplier][0]
         layers = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(in_channels,
-                          out_channels,
-                          3,
-                          stride=2,
-                          padding=1,
-                          bias=False),
+                nn.Conv2d(
+                    in_channels,
+                    out_channels,
+                    3,
+                    stride=2,
+                    padding=1,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU(True),
             )
@@ -130,9 +141,11 @@ class ShuffleNetV2(nn.Module):
     def reset_parameters(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight,
-                                        mode='fan_out',
-                                        nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight,
+                    mode='fan_out',
+                    nonlinearity='relu',
+                )
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
             if isinstance(m, nn.Linear):

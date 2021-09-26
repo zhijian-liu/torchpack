@@ -1,2 +1,2 @@
-from .trainer import *
 from .exception import *
+from .trainer import *

@@ -2,7 +2,8 @@ from typing import Any, Dict
 
 import torch
 
-from .. import distributed as dist
+from torchpack import distributed as dist
+
 from .callback import Callback
 
 __all__ = [
@@ -12,12 +13,15 @@ __all__ = [
 
 
 class TopKCategoricalAccuracy(Callback):
-    def __init__(self,
-                 k: int,
-                 *,
-                 output_tensor: str = 'outputs',
-                 target_tensor: str = 'targets',
-                 name: str = 'accuracy') -> None:
+
+    def __init__(
+        self,
+        k: int,
+        *,
+        output_tensor: str = 'outputs',
+        target_tensor: str = 'targets',
+        name: str = 'accuracy',
+    ) -> None:
         self.k = k
         self.output_tensor = output_tensor
         self.target_tensor = target_tensor
@@ -45,23 +49,31 @@ class TopKCategoricalAccuracy(Callback):
 
 
 class CategoricalAccuracy(TopKCategoricalAccuracy):
-    def __init__(self,
-                 *,
-                 output_tensor: str = 'outputs',
-                 target_tensor: str = 'targets',
-                 name: str = 'accuracy') -> None:
-        super().__init__(k=1,
-                         output_tensor=output_tensor,
-                         target_tensor=target_tensor,
-                         name=name)
+
+    def __init__(
+        self,
+        *,
+        output_tensor: str = 'outputs',
+        target_tensor: str = 'targets',
+        name: str = 'accuracy',
+    ) -> None:
+        super().__init__(
+            k=1,
+            output_tensor=output_tensor,
+            target_tensor=target_tensor,
+            name=name,
+        )
 
 
 class MeanSquaredError(Callback):
-    def __init__(self,
-                 *,
-                 output_tensor: str = 'outputs',
-                 target_tensor: str = 'targets',
-                 name: str = 'error') -> None:
+
+    def __init__(
+        self,
+        *,
+        output_tensor: str = 'outputs',
+        target_tensor: str = 'targets',
+        name: str = 'error',
+    ) -> None:
         self.output_tensor = output_tensor
         self.target_tensor = target_tensor
         self.name = name
@@ -86,11 +98,14 @@ class MeanSquaredError(Callback):
 
 
 class MeanAbsoluteError(Callback):
-    def __init__(self,
-                 *,
-                 output_tensor: str = 'outputs',
-                 target_tensor: str = 'targets',
-                 name: str = 'error') -> None:
+
+    def __init__(
+        self,
+        *,
+        output_tensor: str = 'outputs',
+        target_tensor: str = 'targets',
+        name: str = 'error',
+    ) -> None:
         self.output_tensor = output_tensor
         self.target_tensor = target_tensor
         self.name = name

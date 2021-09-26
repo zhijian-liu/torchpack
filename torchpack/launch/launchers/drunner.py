@@ -1,9 +1,10 @@
 import argparse
 import os
 import re
-import socket
 import sys
 from shlex import quote
+
+from torchpack.utils.network import get_free_tcp_port
 
 __all__ = ['main']
 
@@ -11,13 +12,6 @@ __all__ = ['main']
 def is_exportable(v):
     IGNORE_REGEXES = ['BASH_FUNC_.*', 'OLDPWD']
     return not any(re.match(r, v) for r in IGNORE_REGEXES)
-
-
-def get_free_tcp_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp:
-        tcp.bind(('0.0.0.0', 0))
-        port = tcp.getsockname()[1]
-    return port
 
 
 def main() -> None:
@@ -58,7 +52,7 @@ def main() -> None:
     if not args.hosts:
         if args.hostfile:
             hosts = []
-            with open(args.hostfile, 'r') as fp:
+            with open(args.hostfile) as fp:
                 for line in fp.read().splitlines():
                     hostname = line.split()[0]
                     slots = line.split('=')[1]
@@ -91,13 +85,13 @@ def main() -> None:
                '{environ} '
                '-mca pml ob1 -mca btl ^openib '
                '-mca btl_tcp_if_exclude docker0,lo '
-               '{command}'.format(nproc=args.nproc,
-                                  hosts=args.hosts,
-                                  environ=' '.join(
-                                      f'-x {key}'
-                                      for key in sorted(environ.keys())
-                                      if is_exportable(key)),
-                                  command=command))
+               '{command}'.format(
+                   nproc=args.nproc,
+                   hosts=args.hosts,
+                   environ=' '.join(
+                       f'-x {key}' for key in sorted(environ.keys())
+                       if is_exportable(key)),
+                   command=command))
 
     if args.verbose:
         print(command)

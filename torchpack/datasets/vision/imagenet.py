@@ -12,16 +12,21 @@ __all__ = ['ImageNet']
 
 
 class ImageNetDataset(datasets.ImageNet):
-    def __init__(self,
-                 *,
-                 root: str,
-                 split: str,
-                 transform: Optional[Callable] = None,
-                 target_transform: Optional[Callable] = None) -> None:
-        super().__init__(root=root,
-                         split=('train' if split == 'train' else 'val'),
-                         transform=transform,
-                         target_transform=target_transform)
+
+    def __init__(
+        self,
+        *,
+        root: str,
+        split: str,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None,
+    ) -> None:
+        super().__init__(
+            root=root,
+            split=('train' if split == 'train' else 'val'),
+            transform=transform,
+            target_transform=target_transform,
+        )
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
         with warnings.catch_warnings():
@@ -31,38 +36,46 @@ class ImageNetDataset(datasets.ImageNet):
 
 
 class ImageNet(Dataset):
-    def __init__(self,
-                 *,
-                 root: str,
-                 num_classes: int = 1000,
-                 transforms: Optional[Dict[str, Callable]] = None) -> None:
+
+    def __init__(
+        self,
+        *,
+        root: str,
+        num_classes: int = 1000,
+        transforms: Optional[Dict[str, Callable]] = None,
+    ) -> None:
         if transforms is None:
-            transforms = dict()
+            transforms = {}
         if 'train' not in transforms:
             transforms['train'] = Compose([
                 RandomResizedCrop(224),
                 RandomHorizontalFlip(),
                 ToTensor(),
-                Normalize(mean=[0.485, 0.456, 0.406],
-                          std=[0.229, 0.224, 0.225])
+                Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                )
             ])
         if 'test' not in transforms:
             transforms['test'] = Compose([
                 Resize(256),
                 CenterCrop(224),
                 ToTensor(),
-                Normalize(mean=[0.485, 0.456, 0.406],
-                          std=[0.229, 0.224, 0.225])
+                Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                )
             ])
 
         super().__init__({
-            split: ImageNetDataset(root=root,
-                                   split=split,
-                                   transform=transforms[split])
-            for split in ['train', 'test']
+            split: ImageNetDataset(
+                root=root,
+                split=split,
+                transform=transforms[split],
+            ) for split in ['train', 'test']
         })
 
-        indices = dict()
+        indices = {}
         for k in range(num_classes):
             indices[k * (1000 // num_classes)] = k
 

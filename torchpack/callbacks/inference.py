@@ -1,29 +1,30 @@
 import time
+import typing
 from typing import List
 
 import torch
 from torch.utils.data import DataLoader
 
-from ..utils import humanize
-from ..utils.logging import logger
-from ..utils import tqdm
-from ..utils.typing import Trainer
+from torchpack.utils import humanize, tqdm
+from torchpack.utils.logging import logger
+
 from .callback import Callback, Callbacks
+
+if typing.TYPE_CHECKING:
+    from torchpack.train import Trainer
 
 __all__ = ['InferenceRunner']
 
 
 class InferenceRunner(Callback):
-    """
-    A callback that runs inference with a list of :class:`Callback`.
-    """
+    """Run inference with a list of :class:`Callback`."""
 
     def __init__(self, dataflow: DataLoader, *,
                  callbacks: List[Callback]) -> None:
         self.dataflow = dataflow
         self.callbacks = Callbacks(callbacks)
 
-    def _set_trainer(self, trainer: Trainer) -> None:
+    def _set_trainer(self, trainer: 'Trainer') -> None:
         self.callbacks.set_trainer(trainer)
 
     def _trigger_epoch(self) -> None:

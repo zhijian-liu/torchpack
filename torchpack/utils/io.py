@@ -2,20 +2,19 @@ import json
 import os
 import pickle
 from contextlib import contextmanager
-from typing import IO, Any, BinaryIO, Iterator, TextIO, Union
+from io import TextIOWrapper
+from typing import IO, Any, BinaryIO, Callable, Dict, Iterator, TextIO, Union
 
 import numpy as np
-import scipy.io
-import toml
 import torch
 import yaml
 
-from . import fs
+from torchpack.utils import fs
 
 __all__ = [
     'load', 'save', 'load_json', 'save_json', 'load_jsonl', 'save_jsonl',
     'load_mat', 'save_mat', 'load_npy', 'save_npy', 'load_npz', 'save_npz',
-    'load_pt', 'save_pt', 'load_taml', 'save_taml', 'load_yaml', 'save_yaml'
+    'load_pt', 'save_pt', 'load_toml', 'save_toml', 'load_yaml', 'save_yaml'
 ]
 
 
@@ -29,6 +28,7 @@ def file_descriptor(f: Union[str, IO], mode: str = 'r') -> Iterator[IO]:
         yield f
     finally:
         if opened:
+            assert isinstance(f, TextIOWrapper), type(f)
             f.close()
 
 
@@ -53,10 +53,12 @@ def save_jsonl(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
 
 
 def load_mat(f: Union[str, BinaryIO], **kwargs) -> Any:
+    import scipy.io
     return scipy.io.loadmat(f, **kwargs)
 
 
 def save_mat(f: Union[str, BinaryIO], obj: Any, **kwargs) -> None:
+    import scipy.io
     scipy.io.savemat(f, obj, **kwargs)
 
 
@@ -100,18 +102,20 @@ def save_pt(f: Union[str, BinaryIO], obj: Any, **kwargs) -> None:
     torch.save(obj, f, **kwargs)
 
 
-def load_toml(f: Union[str, TextIO], obj: Any, **kwargs) -> Any:
-    return toml.load(f, obj, **kwargs)
+def load_toml(f: Union[str, TextIO], obj: Any) -> Any:
+    import toml
+    return toml.load(f, obj)
 
 
-def save_toml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
+def save_toml(f: Union[str, TextIO], obj: Any) -> None:
+    import toml
     with file_descriptor(f, mode='w') as fd:
-        toml.dump(obj, fd, **kwargs)
+        toml.dump(obj, fd)
 
 
-def load_yaml(f: Union[str, TextIO], **kwargs) -> Any:
+def load_yaml(f: Union[str, TextIO]) -> Any:
     with file_descriptor(f, mode='r') as fd:
-        return yaml.safe_load(fd, **kwargs)
+        return yaml.safe_load(fd)
 
 
 def save_yaml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
@@ -120,7 +124,7 @@ def save_yaml(f: Union[str, TextIO], obj: Any, **kwargs) -> None:
 
 
 # yapf: disable
-__io_registry = {
+__io_registry: Dict[str, Dict[str, Callable]] = {
     '.json': {'load': load_json, 'save': save_json},
     '.jsonl': {'load': load_jsonl, 'save': save_jsonl},
     '.mat': {'load': load_mat, 'save': save_mat},

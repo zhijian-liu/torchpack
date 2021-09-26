@@ -2,7 +2,6 @@ from typing import Any, Callable, Dict
 
 from torch import nn
 from torch.cuda import amp
-
 from torchpack.train import Trainer
 from torchpack.utils.typing import Optimizer, Scheduler
 
@@ -10,13 +9,16 @@ __all__ = ['ClassificationTrainer']
 
 
 class ClassificationTrainer(Trainer):
-    def __init__(self,
-                 *,
-                 model: nn.Module,
-                 criterion: Callable,
-                 optimizer: Optimizer,
-                 scheduler: Scheduler,
-                 amp_enabled: bool = False) -> None:
+
+    def __init__(
+        self,
+        *,
+        model: nn.Module,
+        criterion: Callable,
+        optimizer: Optimizer,
+        scheduler: Scheduler,
+        amp_enabled: bool = False,
+    ) -> None:
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
@@ -31,10 +33,10 @@ class ClassificationTrainer(Trainer):
         inputs = feed_dict['image'].cuda(non_blocking=True)
         targets = feed_dict['class'].cuda(non_blocking=True)
 
-        with amp.autocast(enabled=self.amp_enabled):
+        with amp.autocast(enabled=self.model.training and self.amp_enabled):
             outputs = self.model(inputs)
 
-            if outputs.requires_grad:
+            if self.model.training:
                 loss = self.criterion(outputs, targets)
                 self.summary.add_scalar('loss', loss.item())
 
@@ -50,7 +52,7 @@ class ClassificationTrainer(Trainer):
         self.scheduler.step()
 
     def _state_dict(self) -> Dict[str, Any]:
-        state_dict = dict()
+        state_dict = {}
         state_dict['model'] = self.model.state_dict()
         state_dict['scaler'] = self.scaler.state_dict()
         state_dict['optimizer'] = self.optimizer.state_dict()

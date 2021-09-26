@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import os
 import time
-from queue import Empty
+from queue import Empty, Queue
 from typing import List, Optional
 
 import numpy as np
@@ -10,19 +10,21 @@ from tensorpack.utils.concurrency import (ensure_proc_terminate,
                                           start_proc_mask_signal)
 from tensorpack.utils.nvml import NVMLContext
 
-from ..utils.logging import logger
+from torchpack.utils.logging import logger
+
 from .callback import Callback
 
 __all__ = ['GPUUtilizationTracker', 'ThroughputTracker']
 
 
 class GPUUtilizationTracker(Callback):
+    """Track the average GPU utilization within an epoch.
+
+    It will start a process to track GPU utilization through NVML every second
+    within the epoch (the time of `trigger_epoch` is not included). This
+    callback creates a process, therefore it is not safe to be used with MPI.
     """
-    Track the average GPU utilization within an epoch.
-    It will start a process to track GPU utilization through NVML
-    every second within the epoch (the time of `trigger_epoch` is not included).
-    This callback creates a process, therefore it is not safe to be used with MPI.
-    """
+
     master_only: bool = True
 
     def __init__(self, *, devices: Optional[List[int]] = None) -> None:
@@ -58,14 +60,16 @@ class GPUUtilizationTracker(Callback):
                     meters = meters[:max(len(meters) - 1, 1)]
                     queue.put(np.mean(meters, axis=0))
                     event.clear()
-        except:
+        except Exception:
             queue.put(None)
 
     def _before_train(self) -> None:
-        self.queue = mp.Queue()
+        self.queue: Queue[np.ndarray] = mp.Queue()
         self.event = mp.Event()
-        self.process = mp.Process(target=self._worker,
-                                  args=(self.devices, self.queue, self.event))
+        self.process = mp.Process(
+            target=self._worker,
+            args=(self.devices, self.queue, self.event),
+        )
         ensure_proc_terminate(self.process)
         start_proc_mask_signal(self.process)
 
@@ -90,7 +94,9 @@ class GPUUtilizationTracker(Callback):
         if len(self.devices) > 1:
             for k, device in enumerate(self.devices):
                 self.trainer.summary.add_scalar(
-                    'utilization/gpu{}'.format(device), meters[k])
+                    f'utilization/gpu{device}',
+                    meters[k],
+                )
 
     def _after_train(self) -> None:
         if self.process.is_alive():
@@ -98,9 +104,11 @@ class GPUUtilizationTracker(Callback):
 
 
 class ThroughputTracker(Callback):
+    """Track the throughput within an epoch.
+
+    Note that the time of `trigger_epoch` is not included.
     """
-    Track the throughput within an epoch (the time of `trigger_epoch` is not included).
-    """
+
     master_only: bool = True
 
     def __init__(self, *, samples_per_step: Optional[int] = None) -> None:
@@ -116,14 +124,18 @@ class ThroughputTracker(Callback):
         self.end_time = time.perf_counter()
 
     def _trigger_epoch(self) -> None:
-        steps_per_sec = (self.trainer.global_step -
-                         self.last_step) / (self.end_time - self.start_time)
+        steps_per_sec = (self.trainer.global_step
+                         - self.last_step) / (self.end_time - self.start_time)
         self.last_step = self.trainer.global_step
 
         if self.samples_per_step is None:
-            self.trainer.summary.add_scalar('throughput/steps_per_sec',
-                                            steps_per_sec)
+            self.trainer.summary.add_scalar(
+                'throughput/steps_per_sec',
+                steps_per_sec,
+            )
         else:
             samples_per_sec = steps_per_sec * self.samples_per_step
-            self.trainer.summary.add_scalar('throughput/samples_per_sec',
-                                            samples_per_sec)
+            self.trainer.summary.add_scalar(
+                'throughput/samples_per_sec',
+                samples_per_sec,
+            )
