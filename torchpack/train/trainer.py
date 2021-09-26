@@ -6,10 +6,11 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torchpack.callbacks import (Callback, Callbacks, ConsoleWriter,
                                  EstimatedTimeLeft, JSONLWriter, MetaInfoSaver,
                                  ProgressBar, TFEventWriter)
-from torchpack.train.exception import StopTraining
-from torchpack.train.summary import Summary
 from torchpack.utils import humanize
 from torchpack.utils.logging import logger
+
+from .exception import StopTraining
+from .summary import Summary
 
 __all__ = ['Trainer']
 
@@ -35,10 +36,12 @@ class Trainer:
             ProgressBar(),
             EstimatedTimeLeft()
         ]
-        self.train(dataflow=dataflow,
-                   num_epochs=num_epochs,
-                   steps_per_epoch=steps_per_epoch,
-                   callbacks=callbacks)
+        self.train(
+            dataflow=dataflow,
+            num_epochs=num_epochs,
+            steps_per_epoch=steps_per_epoch,
+            callbacks=callbacks,
+        )
 
     def train(
         self,

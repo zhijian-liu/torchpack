@@ -9,7 +9,7 @@ from torchpack.utils.network import get_free_tcp_port
 __all__ = ['main']
 
 
-def is_exportable(v):
+def is_exportable(v) -> bool:
     IGNORE_REGEXES = ['BASH_FUNC_.*', 'OLDPWD']
     return not any(re.match(r, v) for r in IGNORE_REGEXES)
 

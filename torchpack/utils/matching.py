@@ -6,7 +6,7 @@ __all__ = ['NameMatcher']
 
 class NameMatcher:
 
-    def __init__(self, patterns: Optional[Union[str, List[str]]]):
+    def __init__(self, patterns: Optional[Union[str, List[str]]]) -> None:
         if patterns is None:
             patterns = []
         elif isinstance(patterns, str):

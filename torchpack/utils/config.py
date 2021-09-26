@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from multimethod import multimethod
 
-from . import io
+from torchpack.utils import io
 
 __all__ = ['Config', 'configs']
 

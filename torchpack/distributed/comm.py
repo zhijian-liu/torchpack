@@ -13,9 +13,11 @@ def allreduce(data: Any, reduction: str = 'sum') -> Any:
     data = allgather(data)
     if reduction == 'sum':
         return sum(data)
+    else:
+        raise NotImplementedError(reduction)
 
 
-def allgather(data: Any) -> List:
+def allgather(data: Any) -> List[Any]:
     world_size = context.size()
     if world_size == 1:
         return [data]
