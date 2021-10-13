@@ -12,12 +12,12 @@ __all__ = ['broadcast', 'allgather', 'allreduce', 'barrier']
 def _serialize(obj: Any) -> torch.Tensor:
     buffer = pickle.dumps(obj)
     storage = torch.ByteStorage.from_buffer(buffer)
-    tensor = torch.ByteTensor(storage).cuda()
+    tensor = torch.ByteTensor(storage)
     return tensor
 
 
 def _deserialize(tensor: torch.Tensor, size: Optional[int] = None) -> Any:
-    buffer = tensor.cpu().numpy().tobytes()
+    buffer = tensor.numpy().tobytes()
     if size is not None:
         buffer = buffer[:size]
     obj = pickle.loads(buffer)
@@ -31,7 +31,7 @@ def broadcast(obj: Any, src: int = 0) -> Any:
 
     # serialize
     if context.rank() == src:
-        tensor = _serialize(obj)
+        tensor = _serialize(obj).cuda()
 
     # broadcast the tensor size
     if context.rank() == src:
@@ -47,7 +47,7 @@ def broadcast(obj: Any, src: int = 0) -> Any:
 
     # deserialize
     if context.rank() != src:
-        obj = _deserialize(tensor)
+        obj = _deserialize(tensor.cpu())
     return obj
 
 
@@ -57,7 +57,7 @@ def allgather(obj: Any) -> List[Any]:
         return [obj]
 
     # serialize
-    tensor = _serialize(obj)
+    tensor = _serialize(obj).cuda()
 
     # gather the tensor size
     local_size = torch.LongTensor([tensor.numel()]).cuda()
@@ -76,7 +76,7 @@ def allgather(obj: Any) -> List[Any]:
     # deserialize
     objs = []
     for size, tensor in zip(sizes, tensors):
-        obj = _deserialize(tensor, size=size)
+        obj = _deserialize(tensor.cpu(), size=size)
         objs.append(obj)
     return objs
 
