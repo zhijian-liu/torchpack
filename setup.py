@@ -14,7 +14,6 @@ setup(
         'multimethod',
         'numpy',
         'pyyaml',
-        'tensorpack',
         'torch>=1.5.0',
         'torchvision',
         'tqdm',
