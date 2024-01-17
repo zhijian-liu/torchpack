@@ -7,7 +7,7 @@ setup(
     version=__version__,
     packages=find_packages(exclude=['examples']),
     author='Zhijian Liu',
-    author_email='zhijianliu.cs@gmail.com',
+    author_email='torchpack@zhijianliu.com',
     url='https://github.com/zhijian-liu/torchpack',
     install_requires=[
         'loguru',
